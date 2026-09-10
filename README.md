@@ -16,12 +16,13 @@ the agent workspace.
 | `VoiceMemAgent_v0.5.0.zip` | **The product.** Full agent source, machine-independent (no runtime state inside: no `.venv`, models, or memory). Install = unzip + `START.bat`. | 1.8 MB |
 | `VoiceMemAgent_v0.5.0_GitHubSync.zip` | **First authenticated sync evidence**: token permission check, push output, fresh-clone verification of the mirror state after the sync. | 6 KB |
 | `VoiceMemAgent_v0.5.0_MirrorCheck.zip` | **The mirror check**: proof that this GitHub mirror is byte-identical to the locally produced artifacts (SHA-256 tables from both sides, git clone evidence). Verdict: `PASS`. | 8 KB |
+| `VoiceMemAgent_v0.5.0_SyncSetup.zip` | **Standing sync policy + infrastructure**: the sync script, the procedure document, and the setup-run evidence (every future update goes to the GitHub mirror). | 12 KB |
 | `VoiceMemAgent_v0.5.0_Verification.zip` | **The verification record** (not a product release): independent verification report — phases + engineering decisions, evidence files (pin verification, clean-install manifest, retrieval baseline, trait assessment, test gate), `identity.json` and `RECOVERY.md`. | 29 KB |
 
 ## Verify your download
 
 ```bash
-sha256sum VoiceMemAgent_v0.5.0.zip VoiceMemAgent_v0.5.0_GitHubSync.zip VoiceMemAgent_v0.5.0_MirrorCheck.zip VoiceMemAgent_v0.5.0_Verification.zip
+sha256sum VoiceMemAgent_v0.5.0.zip VoiceMemAgent_v0.5.0_GitHubSync.zip VoiceMemAgent_v0.5.0_MirrorCheck.zip VoiceMemAgent_v0.5.0_SyncSetup.zip VoiceMemAgent_v0.5.0_Verification.zip
 ```
 
 Expected:
@@ -30,6 +31,7 @@ Expected:
 45c1feba29dc61492aa148b167c31e60509b7eeeede003f33348f430254ceb40  VoiceMemAgent_v0.5.0.zip
 1b4596351d8ce45e0f750e1c21c0693366fdb0ab9ab3c0a627335e06bb353847  VoiceMemAgent_v0.5.0_GitHubSync.zip
 89bc2933843301e1317708e2c4b98083ef3129d149611c945a9ee9dd6a44bc14  VoiceMemAgent_v0.5.0_MirrorCheck.zip
+bce2979501864e54281e9615d563d5a0f3148c690b53e105060f58ff251be559  VoiceMemAgent_v0.5.0_SyncSetup.zip
 aa880796031a5ada388a75cdae26befc723d6e37988589d4a0bf6b91331db631  VoiceMemAgent_v0.5.0_Verification.zip
 ```
 
