@@ -5,8 +5,7 @@ voice memory agent. This repository hosts the versioned release packages
 and their verification artifacts — the canonical build source lives in
 the agent workspace.
 
-**Latest stable release: `v0.5.0`** (controlled VoiceMem foundation —
-independently re-verified).
+**Latest stable release: `v0.5.0`**
 
 ---
 
@@ -14,22 +13,24 @@ independently re-verified).
 
 | File | What it is | Size |
 | --- | --- | --- |
-| `VoiceMemAgent_v0.5.0.zip` | **The product.** Full agent source, machine-independent (no runtime state inside: no `.venv`, models, or memory). Install = unzip + `START.bat`. | 1.9 MB |
-| `VoiceMemAgent_v0.5.0_Verification.zip` | **The verification record** (not a product release): independent re-verification report of the v0.5.0 foundation — A–Q phases + ten engineering decisions, 5 evidence files (pin verification, clean-install manifest, A/B retrieval baseline, trait assessment, test gate 921 OK / 24 skipped), `identity.json` and `RECOVERY.md`. | 29 KB |
-| `VoiceMemAgent_v0.5.0_MirrorCheck.zip` | **The mirror check**: proof that this GitHub mirror is byte-identical to the locally produced artifacts (SHA-256 tables from both sides, git clone evidence, ZIP content listings). Verdict: `PASS`. | 8 KB |
+| `VoiceMemAgent_v0.5.0.zip` | **The product.** Full agent source, machine-independent (no runtime state inside: no `.venv`, models, or memory). Install = unzip + `START.bat`. | 1.8 MB |
+| `VoiceMemAgent_v0.5.0_GitHubSync.zip` | **First authenticated sync evidence**: token permission check, push output, fresh-clone verification of the mirror state after the sync. | 6 KB |
+| `VoiceMemAgent_v0.5.0_MirrorCheck.zip` | **The mirror check**: proof that this GitHub mirror is byte-identical to the locally produced artifacts (SHA-256 tables from both sides, git clone evidence). Verdict: `PASS`. | 8 KB |
+| `VoiceMemAgent_v0.5.0_Verification.zip` | **The verification record** (not a product release): independent verification report — phases + engineering decisions, evidence files (pin verification, clean-install manifest, retrieval baseline, trait assessment, test gate), `identity.json` and `RECOVERY.md`. | 29 KB |
 
 ## Verify your download
 
 ```bash
-sha256sum VoiceMemAgent_v0.5.0.zip VoiceMemAgent_v0.5.0_Verification.zip VoiceMemAgent_v0.5.0_MirrorCheck.zip
+sha256sum VoiceMemAgent_v0.5.0.zip VoiceMemAgent_v0.5.0_GitHubSync.zip VoiceMemAgent_v0.5.0_MirrorCheck.zip VoiceMemAgent_v0.5.0_Verification.zip
 ```
 
 Expected:
 
 ```text
 45c1feba29dc61492aa148b167c31e60509b7eeeede003f33348f430254ceb40  VoiceMemAgent_v0.5.0.zip
-aa880796031a5ada388a75cdae26befc723d6e37988589d4a0bf6b91331db631  VoiceMemAgent_v0.5.0_Verification.zip
+1b4596351d8ce45e0f750e1c21c0693366fdb0ab9ab3c0a627335e06bb353847  VoiceMemAgent_v0.5.0_GitHubSync.zip
 89bc2933843301e1317708e2c4b98083ef3129d149611c945a9ee9dd6a44bc14  VoiceMemAgent_v0.5.0_MirrorCheck.zip
+aa880796031a5ada388a75cdae26befc723d6e37988589d4a0bf6b91331db631  VoiceMemAgent_v0.5.0_Verification.zip
 ```
 
 (`.sha256` sidecar files are included next to each ZIP.)
@@ -58,16 +59,15 @@ At a single end-to-end failure, re-run `START.bat repair`.
 - **Test gate:** 921 passed / 24 skipped, reproduced in a downgraded
   (no vendor PYTHONPATH) main-sandbox venv.
 - **Local vendor patches:** exactly 10 files vs upstream, all mapped in a
-  documented ledger (VM-LOCAL-001..006, VM-LOCAL-EN + 4 port patches) —
-  permanently local, never upstreamed.
-- Full details: open `VoiceMemAgent_v0.5.0_Verification.zip` →
-  `docs/VERIFICATION_REPORT_v0.5.0.md`.
+  documented ledger — permanently local, never upstreamed.
+- Full details: open the `*_Verification.zip` → `docs/` report.
 
 ## Mirrors
 
 - This repository is the **external distribution mirror**, synced with
   write access granted by the owner (token-scoped, revocable).
-- The download page inside the build environment links here directly.
+- Standing sync policy: every future update (new release + evidence
+  packages) is pushed here automatically (`scripts/sync_github_mirror.sh`).
 
 ---
 
@@ -78,13 +78,9 @@ stabil verzió a **v0.5.0**. Mit találhat itt:
 
 - **`VoiceMemAgent_v0.5.0.zip`** — maga a termék. Gépfüggetlen forrás,
   telepítés: kicsomagolás + `START.bat` dupla kattintás, minden mást a
-  bootstrap elintéz.
-- **`VoiceMemAgent_v0.5.0_Verification.zip`** — a v0.5.0 alap
-  független ellenőrzésének teljes dokumentuma (A–Q riport, 10 mérnöki
-  döntés, 5 bizonyítékfájl, helyreállítási útmutató).
-- **`VoiceMemAgent_v0.5.0_MirrorCheck.zip`** — annak bizonyítéka, hogy
-  ez a tükör bájtról bájtra azonos az eredetileg legyártott csomagokkal.
+  bootstrap elintézi.
+- **Verifikációs / evidencia ZIP-ek** — a kiadások független
+  ellenőrzésének dokumentumai és a tükör szinkron bizonyítékai.
 
 Letöltés után ellenőrizd a SHA-256 összegeket (fenti táblázat). A vendor
-identitás a `e8384e0…` pin (nem a 0.2.3-as csomagverzió). A teljes
-verifikációs történet a Verifikációs ZIP `docs/` mappájában olvasható.
+identitás a `e8384e0…` pin (nem a 0.2.3-as csomagverzió).
