@@ -19,11 +19,12 @@ the agent workspace.
 | `VoiceMemAgent_v0.5.0_SyncSetup.zip` | **Standing sync policy + infrastructure**: the sync script, the procedure document, and the setup-run evidence (every future update goes to the GitHub mirror). | 12 KB |
 | `VoiceMemAgent_v0.5.0_Verification.zip` | **The verification record** (not a product release): independent verification report — phases + engineering decisions, evidence files (pin verification, clean-install manifest, retrieval baseline, trait assessment, test gate), `identity.json` and `RECOVERY.md`. | 29 KB |
 | `VoiceMemAgent_v0.5.1_ForensicTrace.zip` | **TASK 1 ASR→LLM forensic trace**: the proven break point (CLI bridge adapter tables referenced non-existent vendor API — every CLI turn ran memoryless), the smallest-correct-fix patch, the post-fix trace matrix (S1–S7b green; thinking-only fails loud), and the full test-gate record. | 41 KB |
+| `VoiceMemAgent_v0.5.1_Task2Gate.zip` | **Evidence package** for the `Task2Gate.zip` work unit (GOLDEN RULE deliverable: RECOVERY.md + identity.json + evidence). | 35 KB |
 
 ## Verify your download
 
 ```bash
-sha256sum VoiceMemAgent_v0.5.1.zip VoiceMemAgent_v0.5.0_GitHubSync.zip VoiceMemAgent_v0.5.0_MirrorCheck.zip VoiceMemAgent_v0.5.0_SyncSetup.zip VoiceMemAgent_v0.5.0_Verification.zip VoiceMemAgent_v0.5.1_ForensicTrace.zip
+sha256sum VoiceMemAgent_v0.5.1.zip VoiceMemAgent_v0.5.0_GitHubSync.zip VoiceMemAgent_v0.5.0_MirrorCheck.zip VoiceMemAgent_v0.5.0_SyncSetup.zip VoiceMemAgent_v0.5.0_Verification.zip VoiceMemAgent_v0.5.1_ForensicTrace.zip VoiceMemAgent_v0.5.1_Task2Gate.zip
 ```
 
 Expected:
@@ -35,6 +36,7 @@ Expected:
 bce2979501864e54281e9615d563d5a0f3148c690b53e105060f58ff251be559  VoiceMemAgent_v0.5.0_SyncSetup.zip
 aa880796031a5ada388a75cdae26befc723d6e37988589d4a0bf6b91331db631  VoiceMemAgent_v0.5.0_Verification.zip
 68b3c0dbf751bc61ac38458e7efde739b6de7e978e3d6f990382e6ce704caedc  VoiceMemAgent_v0.5.1_ForensicTrace.zip
+b24ea62f65ce77bdaf94fb843e10e8c1b88c7e1fcd37c064806e948d538abbbb  VoiceMemAgent_v0.5.1_Task2Gate.zip
 ```
 
 (`.sha256` sidecar files are included next to each ZIP.)
