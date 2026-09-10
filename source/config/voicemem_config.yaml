@@ -1,0 +1,179 @@
+# =============================================================================
+# config/voicemem_config.yaml — VoiceMem M0/M1 alkalmazás-konfiguráció
+# =============================================================================
+#
+# Mit tud ez a fájl: az app (app/config.py AgentConfig) összes hangolható
+# beállítása. Betöltés: AgentConfig.from_yaml("config/voicemem_config.yaml")
+# — az `app:` szekció flat kulcsokra olvad rá, az ismeretlen kulcsokat a
+# betöltő türelmesen figyelmen kívül hagyja.
+#
+# Feloldási sorrend (a legerősebbtől a leggyengébbig):
+#   1. Környezeti változók (config/env.local.ps1 — a V1 spec 18.1 nevei)
+#   2. Ez a YAML fájl
+#   3. Dataclass-alapértékek (app/config.py)
+#   A KÖRNYEZETI VÁLTOZÓK FELÜLÍRJÁK ezt a fájlt (pl. LLAMA_SERVER_PORT,
+#   OPENAI_BASE_URL, VOICEMEM_EMBED_DIM, TTS_HU_VOICE, VOICEMEM_LOG_LEVEL)!
+#
+# M0 alapelv (spec 26): a REPO-GYÖKÉR az egyetlen működési egység — minden
+# modell, memória, adat és log a projekten belül él, semmi nem függ a gép
+# más pontján telepített dolgoktól (nincs D:/, nincs ~/.cache).
+#
+# Modell-elrendezés (M0 §7 + M2 — a scripts/download_models.ps1 ide tölt):
+#   models/
+#   ├── asr/qwen3-asr-0.6b/             Qwen3-ASR-0.6B (M1: 0.6B, NEM 1.7B)
+#   ├── llm/qwen3.6-35b-a3b/           BÁRMELY GGUF (v0.4.17: az EGYETLEN LLM
+#   │                                  Qwen3.6 35B A3B IQ4_XS; tetszőleges
+#   │                                  fájlnév - a GGUF magic dönt; Ollama
+#   │                                  sha256-... blob is betölthető; a web UI
+#   │                                  model picker / llm_model.json felülírja)
+#   ├── tts/piper/                      hu_HU-anna/berta/imre + en_US-lessac
+#   ├── vad/silero-vad/silero_vad.onnx  Silero VAD v6.2.1 (CPU, ONNX)
+#   ├── embedding/multilingual-e5-small VoiceMem memória-embedding (384 dim)
+#   ├── emotion/emotion2vec-plus-base/  M2: emotion2vec+ base (CPU, funasr)
+#   └── hf/                             HF cache gyökér (HF_HOME izoláció)
+# Binárisok: bin/ (llama-server.exe, piper.exe). VoiceMem pinned klón:
+# vendor/voicemem. Memória: memory/ (sqlite/qdrant/backups).
+#
+# M1 szigorúsági megjegyzések:
+#   - enable_speaker értéke M2-ben KIZÁRÓLAG false lehet (speaker
+#     recognition = M3; az AgentConfig.validate() elutasítja a true értéket).
+#   - enable_emotion M2-ben ALAPÉRTELMEZÉSBEN true (a milestones 8.6
+#     modularitási szerződés flag-je); VOICEMEM_ENABLE_EMOTION=0 env-rel
+#     kikapcsolható - ekkor a pipeline pontosan az M1 viselkedést futtatja
+#     (nincs proszodia-elemzés, nincs emotion-block a promptban).
+#   - a hiányzó érzelemmodell NEM blokkolja az indítást: graceful
+#     degradation az M1 módra (a check_runtime_assets nem tartalmazza).
+#   - voicemem_mode mindig "text_mode" — a "multi_modal" minden mérföldkőben
+#     véglegesen kizárt (scene recognition nincs).
+#   - sample_rate 16000 és output_sample_rate 22050 kötelező (VAD/ASR- és
+#     Piper-hangkövetelmény, a validate() ellenőrzi).
+#   - offline: true — futás közbeni hálózati hívás nincs (a config/env.local.ps1
+#     a HF_HUB_OFFLINE=1-et is beállítja).
+# =============================================================================
+
+# --- dokumentációs szekciók (a from_yaml ezeket ignorálja, csak emberi olvasásra) ---
+
+project:
+  name: "voicemem-agent"
+  version: "0.5.2"        # a VERSION fájl az egyetlen forrás — ezt kézzel szinkronban tartani
+  offline: true           # runtime offline mód (telepítés után)
+
+paths:
+  model_root: "models"    # összes modell — a repo-gyökér alatt
+  memory_root: "memory"   # VoiceMem hosszú távú memória (sqlite/qdrant/backups)
+  data_root: "data"
+  logs_root: "logs"
+  hf_home: "models/hf"    # HF cache izoláció (HF_HOME/HF_HUB_CACHE/TRANSFORMERS_CACHE)
+
+# --- tényleges AgentConfig mezők (a from_yaml ezeket veszi fel) ---
+
+app:
+  # --- útvonalak (M0: a repo-gyökérhez relatívan) ---
+  model_root: "models"           # minden modell-eszköz gyökere
+  data_root: "data"              # smoke-teszt hangok, benchmark bemenetek
+  logs_root: "logs"              # futásidejű logok
+
+  # --- hang be-/kimenet ---
+  sample_rate: 16000            # mikrofon (VAD + ASR), 16 kHz mono
+  output_sample_rate: 22050     # Piper kimenet, 22.05 kHz mono int16
+  audio_input_device: ""        # üres = rendszer-default mikrofon (sounddevice)
+  audio_output_device: ""       # üres = rendszer-default hangszóró
+
+  # --- VAD (Silero v6.2.1, CPU, ONNX) ---
+  # v0.4.11: 0.5 -> 0.25 (user request + field log: a line-in/jobb mikrofon
+  # halk beszédénél a Silero csúcs-valószínűsége 0.25-0.5 közé eshet, és a
+  # 0.5-ös küszöb sosem lőtt be). TISZTA hangon a Silero 0.6-0.95-öt ad —
+  # ha a csúcs ennek ellenére is ~0.00 marad, az NEM küszöb-probléma, hanem
+  # a bemeneti lánc problémája (v0.4.9: a Chrome noiseSuppression + a
+  # aliased downsample elferdítette a jelet; a v0.4.10 már mindkettőt
+  # javította: noiseSuppression:false + anti-aliased downsampler).
+  vad_energy_fallback: true     # v0.4.14: energia-tartalék kapu a Silero MÖGÖTT
+                                 # (ha a Silero süket erre a csatornára - l.
+                                 # app/vad.py FusedVad - a beszédszintű jel
+                                 # akkor is nyitja a kaput: a mikrofon -> ASR
+                                 # -> agent átmenet nem halhat el a VAD
+                                 # véleményén; a Silero saját kapuja érintetlen)
+  vad_threshold: 0.25           # beszéd kezdetének/végének küszöbe
+  vad_hangover_ms: 300          # ennyi csend után SPEECH_END -> válasz indul
+  vad_frame_ms: 32              # Silero: 512 minta @ 16 kHz
+
+  # --- barge-in (válasz alatti közbeszólás) ---
+  barge_in_threshold: 0.30      # speech- valószínűség küszöbe TTS alatt
+  barge_in_min_speech_ms: 500   # folyamatos beszéd a megszakításhoz
+
+  # --- ASR (Qwen3-ASR-0.6B, GPU) ---
+  asr_model_name: "Qwen/Qwen3-ASR-0.6B"  # M1: 0.6B (milestones 4.4), NEM 1.7B
+  asr_device: "cuda"            # cuda -> cpu fallback az app-ban kezelt
+  asr_chunk_ms: 600             # kvázi-streaming kötegméret
+  asr_language: ""              # v0.4.7: "" = automatikus nyelvfelismeres (a
+                               # modell 30 nyelven, magyarul is beszel);
+                               # erolteteshez teljes nev: "Hungarian"/"English"
+  asr_max_new_tokens: 256       # v0.4.7: generalasi plafon lehivasra
+
+  # --- LLM (llama.cpp llama-server, OpenAI-kompatibilis) ---
+  # v0.4.16: az EGYETLEN LLM a Qwen3.6 35B A3B IQ4_XS (a class-default itt
+  # és a config/env.local.ps1 LLM-MODELPROFIL blokkja együtt adja ki; az
+  # env.dot-source FELÜLÍRJA ezt a yaml-értéket induláskor). LLM MODEL COUNT
+  # futáskor: 1 - nincs csendes váltás, nincs felhő-fallback és NINCS
+  # visszaesési profil (a Qwen3.6 az egyetlen produkcios modell).
+  # MODELLUT (v0.4.17, portable): a config/llm_model.json-ben tárolt abszolut
+  # útvonal (a web UI "LLM model" szekcióválasztása VAGY az
+  # identify_ollama_blob.ps1 -Select) felülírja a LLAMA_MODEL_PATH env-értéket;
+  # a GGUF a saját helyén marad (bármelyik meghajtón, Ollama-blob is: a
+  # llama.cpp a GGUF magic-et nézi, nem a fájlnevet) - a projektbe NEM
+  # másolódik. Ha semmi nincs konfigurálva: NINCS megtévesztő projekt-default
+  # (v0.4.17: korábban nem létező útvonalat jelzett ki) - a pickert kell
+  # használni. Kód nincs benne, hardcode nincs benne.
+  llama_server_host: "127.0.0.1"   # loopback: nincs külső expozíció
+  llama_server_port: 8080
+  llm_model_name: "qwen3.6-35b-a3b"
+  llm_context_size: 8192           # 8K kontextus (nem növeljük feleslegesen)
+  llm_n_gpu_layers: 26             # RÉSZLEGES offload: ~19 GB modell > 12 GB VRAM
+  llm_parallel: 1                  # llama-server --parallel slotok száma
+  llm_cache_type_k: "q8_0"         # 8-bit KV cache -> VRAM-megtakarítás
+  llm_cache_type_v: "q8_0"
+  llm_temperature: 0.7
+  llm_max_tokens: 512
+  # v0.4.4: request-szintu thinking-ki Kapcsolo (chat_template_kwargs + reasoning_effort
+  # "none") - a hibrid-reasoning modell gondolkodasi csatornaja nelkule a
+  # valasz contentje
+  # URES maradhat (a b10717 llama-server enable_thinking defaultja TRUE).
+  llm_disable_thinking: true
+
+  # --- TTS (Piper, subprocess) ---
+  tts_hu_voice: "hu_HU-anna-medium"    # alternatívák (letölthető): berta, imre
+  tts_en_voice: "en_US-lessac-medium"
+  tts_first_chunk_chars: 24        # első mondat-ablak (alacsony TTFB)
+  tts_chunk_chars: 80              # további chunkok mérete
+
+  # --- VoiceMem hosszú távú memória ---
+  user_id: "voice_user"            # M3 horog — M1-ben fix érték
+  top_k: 5                         # visszaidézett memóriadarabok száma
+  voicemem_mode: "text_mode"       # SOHA "multi_modal" (validate() tiltja)
+  embed_dim: 384                   # multilingual-e5-small kimeneti dimenzió
+
+  # --- M2/M3 zászlók ---
+  enable_emotion: true             # M2: proszodia-elemzés BE (8.6 modularitási
+                                   # flag; false = az M1 pipeline változatlanul)
+  enable_speaker: true             # M3: beszélő-azonosítás BE (9.5 modularitási
+                                   # flag; false = az M1/M2 pipeline változatlanul)
+
+  # --- M2 érzelmi intelligencia (emotion2vec+ base, CPU) ---
+  emotion_model_name: "emotion2vec/emotion2vec_plus_base"  # HF repo (dokumentáció)
+  emotion_window_s: 5.0            # proszodia-ablak: az utterance utolsó N mp-je
+  emotion_fusion_prosody_weight: 0.6   # spec 8.3.3: 0.6 proszódia + 0.4 szemantika
+  emotion_slow_length_scale: 1.1   # Piper --length_scale frusztrált usernél (8.4)
+  emotion_store_threshold: 0.5     # erős érzelem VoiceMem-fact küszöb (8.3.4)
+
+  # --- M3 beszélő-azonosítás (SpeechBrain ECAPA, CPU) ---
+  speaker_model_name: "speechbrain/spkrec-ecapa-voxceleb"  # HF repo (dokumentáció)
+  speaker_match_threshold: 0.5     # spec 9.3.2 ECAPA azonosítási küszöb
+                                   # (konzervatív: ismeretlen hang -> voice_user
+                                   # fallback, a memóriák SOHA nem keverednek;
+                                   # a SpeechBrain pár-piros példaértéke 0.25)
+  speaker_window_s: 5.0            # embedding-ablak: az utterance utolsó N mp-je (9.3.1)
+  speaker_registration_min_s: 10.0 # spec 9.3.3: regisztrációhoz ~10 s tiszta beszéd
+
+  # --- egyéb ---
+  offline: true                    # futás közben nulla hálózati forgalom
+  log_level: "INFO"                # DEBUG | INFO | WARNING | ERROR

@@ -1,0 +1,114 @@
+{
+  "schema": 1,
+  "name": "voicemem",
+  "controlled_source": "vendor/voicemem",
+  "status": "controlled-fork",
+  "provenance": {
+    "upstream_repo": "https://github.com/xzf-thu/VoiceMem.git",
+    "upstream_commit": "e8384e087bd2f44eb05fc7ae1a3c525ea8244179",
+    "upstream_tag": "v0.0.1",
+    "upstream_package_version": "0.2.3",
+    "fork_created": "2026-09-10",
+    "fork_policy": "UPSTREAM_POLICY.md",
+    "note": "The upstream package version (0.2.3) is NOT an identity marker. The Git commit e8384e087bd2f44eb05fc7ae1a3c525ea8244179 is the authoritative identity of the imported base. The vendor tree ships inside this repository and is installed with 'pip install -e vendor\\voicemem'; no deployment path clones upstream."
+  },
+  "embedding_policy": {
+    "invariant": "Every VoiceMem memory embedding operation routes through the explicitly injected local multilingual E5 (intfloat/multilingual-e5-small, 384-d, offline) or, when nothing is injected, the same local E5 via LocalE5Embedder. No memory embedding path may call a remote OpenAI embedding service, and no OpenAI Embeddings API fallback exists.",
+    "model": "intfloat/multilingual-e5-small",
+    "dimensions": 384,
+    "model_location_env": "VOICEMEM_E5_MODEL",
+    "embed_dim_env": "VOICEMEM_EMBED_DIM",
+    "runtime_verification": "import voicemem; assert voicemem.CONTROLLED_FORK and voicemem.CONTROLLED_UPSTREAM_COMMIT == 'e8384e087bd2f44eb05fc7ae1a3c525ea8244179'"
+  },
+  "local_patches": [
+    {
+      "id": "VM-LOCAL-001",
+      "file": "voicemem/orchestrator.py",
+      "based_on_upstream": "961efe8 (intent)",
+      "divergence": "upstream keeps OpenAI as the no-injection default; we default to local E5 and remove the OpenAI embeddings call entirely",
+      "summary": "_embed_text uses the injected embedder; _embed_uncached is local E5 only (the OpenAI embeddings API call was removed)"
+    },
+    {
+      "id": "VM-LOCAL-002",
+      "file": "voicemem/leftbrain/brain.py",
+      "summary": "left-brain repo default embedder is LocalE5Embedder (was OpenAILocalEmbedder)"
+    },
+    {
+      "id": "VM-LOCAL-003",
+      "file": "voicemem/utils/defaults.py",
+      "summary": "default_utils embedding factory returns LocalE5Embedder (was OpenAILocalEmbedder)"
+    },
+    {
+      "id": "VM-LOCAL-004",
+      "file": "voicemem/rightbrain/traits_store.py",
+      "summary": "trait embedding failure logs one loud warning instead of silently writing NULL rb_traits.embedding rows"
+    },
+    {
+      "id": "VM-LOCAL-005",
+      "file": "voicemem/leftbrain/mem0_backend_store.py",
+      "summary": "delete_memory is opt-in (VOICEMEM_ALLOW_MEMORY_DELETE=1); archive_memory remains the reversible path"
+    },
+    {
+      "id": "VM-LOCAL-006",
+      "file": "voicemem/__init__.py",
+      "summary": "controlled-fork runtime identity constants (CONTROLLED_FORK / CONTROLLED_UPSTREAM_COMMIT / CONTROLLED_PATCHES)"
+    },
+    {
+      "id": "VM-LOCAL-EN",
+      "file": "voicemem/leftbrain/merged_extraction.py",
+      "applied_by": "scripts/patch_voicemem_english.py (idempotent; folded into the vendor tree at fork creation)",
+      "summary": "trait/emotion extraction prompt localised to English (slot values stay the package enum)"
+    },
+    {
+      "id": "VM-LOCAL-007",
+      "file": "voicemem/rightbrain/brain.py",
+      "based_on_upstream": "none (new guard)",
+      "divergence": "upstream hard-deletes right-brain heartnotes on an ungated LLM decision; we default-deny and require VOICEMEM_ALLOW_MEMORY_DELETE=1",
+      "summary": "run_cleanup DELETE path routed through _execute_heartnote_deletes: same opt-in gate as VM-LOCAL-005, default deny, loud log; supersede branch unchanged (always non-destructive)"
+    },
+    {
+      "id": "VM-LOCAL-008",
+      "file": "voicemem/leftbrain/mem0_backend_store.py + memory_repository.py + memory_repository_v2.py + local_memory_store.py + brain.py",
+      "based_on_upstream": "none (new semantics)",
+      "divergence": "upstream UPDATE overwrites the fact text in place (history destroyed); we append a new observation row and mark the old row superseded_by (both rows keep text + provenance)",
+      "summary": "UPDATE = append + explicit supersession: new row carries supersedes + provenance; old row only gains superseded_by/superseded_at metadata (text/created_at preserved); JSON mirror appends instead of overwriting; cognitive annotation targets the NEW id; search marks hits superseded_by and ranks current-first; _dedupe_near never collapses an explicit supersession pair"
+    },
+    {
+      "id": "VM-LOCAL-009",
+      "file": "voicemem/leftbrain/memory_repository.py + cognitive_graph/store.py",
+      "based_on_upstream": "none (new cascade)",
+      "divergence": "upstream left delete leaves cognitive-graph rows referencing the dead id; we cascade",
+      "summary": "a permitted delete (VM-LOCAL-005 opt-in) also removes memories wrapper rows, entity_memory_links, memory_tags (V2) and graph_entity_memories (slot-split layer) so no stale graph truth survives"
+    }
+  ],
+  "ported_upstream_fixes": [
+    {
+      "id": "UPSTREAM-961efe8",
+      "upstream_commit": "961efe8c218dba74eab42efe2f0f5d7866ea4ad3",
+      "summary": "use the injected embedder everywhere (see VM-LOCAL-001 for the local divergence)"
+    },
+    {
+      "id": "UPSTREAM-91d2e42",
+      "upstream_commit": "91d2e42f685b171cb04a486cf01e3be7b25d2dc6",
+      "summary": "vector dimension mismatch guards in cosine/graph_entity_store/traits_store (print -> logging locally)"
+    },
+    {
+      "id": "UPSTREAM-f535f9d",
+      "upstream_commit": "f535f9d53673b39105110646f3c4d4894edc6619",
+      "summary": "trait similarity threshold bound to embedder dimensions (384-d E5 -> 0.88)"
+    },
+    {
+      "id": "UPSTREAM-e3cc965",
+      "upstream_commit": "e3cc96532bce708ba798c9272061cec015973c6f",
+      "summary": "observed_at dates validated (_as_date) so recency signals and [date] prefixes actually work"
+    }
+  ],
+  "verification": {
+    "pin_file": "VOICEMEM_PIN.json (this file)",
+    "runtime_import_attr": "voicemem.CONTROLLED_UPSTREAM_COMMIT",
+    "import_path_must_be_under": "vendor/voicemem",
+    "install_command": "pip install -e vendor\\voicemem",
+    "regression_tests": "tests/unit/test_voicemem_controlled.py (source-level + subprocess-isolated runtime probes)",
+    "assess_tool": "scripts/assess_trait_embeddings.py (read-only; --dry-run-backfill for planning)"
+  }
+}

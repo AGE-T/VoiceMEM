@@ -1,0 +1,42 @@
+{
+  "database": "/tmp/vmrt_verify/vmrt_verify.sqlite",
+  "rb_traits_table": true,
+  "filter_user": null,
+  "expected_dim": 384,
+  "total_traits": 2,
+  "null_embeddings": 0,
+  "non_null_embeddings": 2,
+  "healthy_embeddings": 2,
+  "stale_dimension_embeddings": 0,
+  "dimension_histogram": {
+    "384": 2
+  },
+  "unexpected_dimensions": [],
+  "per_user": {
+    "e2e_user": {
+      "total": 2,
+      "null": 0,
+      "ok": 2,
+      "stale": 0
+    }
+  },
+  "per_slot": {
+    "情绪": {
+      "total": 1,
+      "null": 0,
+      "ok": 1,
+      "stale": 0
+    },
+    "喜好与厌恶": {
+      "total": 1,
+      "null": 0,
+      "ok": 1,
+      "stale": 0
+    }
+  },
+  "backfill_plan": {
+    "would_reembed_null": [],
+    "would_reembed_stale_dim": [],
+    "note": "DRY RUN ONLY - no data was modified. Rows with NULL or wrong-dimension embeddings would be re-embedded with the local multilingual E5 in an explicitly approved backfill operation."
+  }
+}

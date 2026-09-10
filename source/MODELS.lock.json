@@ -1,0 +1,142 @@
+{
+  "schema_version": 2,
+  "_note": "Pinned model manifest for the M1+M2 strict model set (one-click bootstrap reads this file for local presence checks - see scripts/bootstrap.ps1 Test-ModelsPresent). v0.4.16: the LLM entry was REMOVED from the auto-download set - the ONE AND ONLY LLM is Qwen3.6 35B A3B IQ4_XS (operator-placed GGUF, ~19 GB, tested source hf.co/bartowski/Qwen_Qwen3.6-35B-A3B-GGUF:IQ4_XS, NO fallback profile). It may live on ANY drive: select it with the web UI 'LLM model' picker (config/llm_model.json) or scripts/find_qwen_gguf.ps1 (-SetEnv), or place it at models/llm/qwen3.6-35b-a3b/Qwen3.6-35B-A3B-IQ4_XS.gguf. The file is never auto-downloaded and never copied into the project. . pinned_revision 'main' tracks the repo default branch; replace it with a full commit SHA for strict reproducibility - the resolved revision is recorded into INSTALL_MANIFEST.json by scripts/write_install_manifest.py after the download. snapshot=true means a full repo snapshot (the '(full repo snapshot)' files marker is kept for backward compatibility with older tooling); presence is probed via snapshot_probe plus a total-size floor (min_total_mb). Tools are GitHub release binaries installed into bin/ by scripts/install_m1.ps1 (step 11); pins must stay in sync with the variables at the top of that script. The M2 emotion entry (emotion2vec+ base) and the M3 speaker entry (speechbrain ECAPA) are CPU-only and optional at runtime - a missing emotion model degrades the pipeline to M1 behaviour, a missing speaker model to M1/M2 (fixed user_id), never blocks startup.",
+  "models": [
+    {
+      "component": "asr",
+      "repo": "Qwen/Qwen3-ASR-0.6B",
+      "target_dir": "models/asr/qwen3-asr-0.6b",
+      "files": [
+        "(full repo snapshot)"
+      ],
+      "snapshot": true,
+      "snapshot_probe": "config.json",
+      "min_total_mb": 500,
+      "pinned_revision": "main"
+    },
+    {
+      "component": "embedding",
+      "repo": "intfloat/multilingual-e5-small",
+      "target_dir": "models/embedding/multilingual-e5-small",
+      "files": [
+        "(full repo snapshot)"
+      ],
+      "snapshot": true,
+      "snapshot_probe": "config.json",
+      "min_total_mb": 200,
+      "pinned_revision": "main"
+    },
+    {
+      "component": "emotion",
+      "repo": "emotion2vec/emotion2vec_plus_base",
+      "_note": "M2 prosody emotion analyzer (90M, CPU via funasr AutoModel). Official HF re-host by the emotion2vec team; weights under the FunASR Model Open Source License Agreement v1.1 (attribution - keep the model name; see LICENSES.md). Only the 4 runtime files are downloaded - repo images and the example/ folder are skipped.",
+      "target_dir": "models/emotion/emotion2vec-plus-base",
+      "files": [
+        "model.pt",
+        "config.yaml",
+        "tokens.txt",
+        "configuration.json"
+      ],
+      "snapshot": false,
+      "pinned_revision": "main",
+      "min_bytes": {
+        "model.pt": 1073741824,
+        "config.yaml": 1000,
+        "tokens.txt": 50,
+        "configuration.json": 100
+      }
+    },
+    {
+      "component": "speaker",
+      "repo": "speechbrain/spkrec-ecapa-voxceleb",
+      "_note": "M3 speaker embedding model (ECAPA-TDNN, 192-dim, ~23M params, CPU via the speechbrain pip package). Official SpeechBrain org re-host; Apache-2.0, NOT gated. All 5 runtime files are downloaded (hyperparams.yaml's pretrainer loads embedding_model.ckpt, mean_var_norm_emb.ckpt, classifier.ckpt, label_encoder.txt) - the repo example audio files are skipped. Loaded from the LOCAL directory at runtime (from_hparams source=<local path>) - no network calls after the download.",
+      "target_dir": "models/speaker/ecapa-voxceleb",
+      "files": [
+        "embedding_model.ckpt",
+        "hyperparams.yaml",
+        "mean_var_norm_emb.ckpt",
+        "classifier.ckpt",
+        "label_encoder.txt"
+      ],
+      "snapshot": false,
+      "pinned_revision": "main",
+      "min_bytes": {
+        "embedding_model.ckpt": 80000000,
+        "hyperparams.yaml": 500,
+        "mean_var_norm_emb.ckpt": 500,
+        "classifier.ckpt": 1048576,
+        "label_encoder.txt": 10240
+      }
+    },
+    {
+      "component": "vad",
+      "repo": "tphakala/silero-vad",
+      "_mirror_note": "Well-maintained re-host of the Silero VAD v6.2.1 release (flat silero_vad.onnx). The original silero/silero-vad repo path v6.2.1/silero_vad.onnx is the automatic fallback; download_models.ps1 flattens the file into models/vad/silero-vad/ either way.",
+      "target_dir": "models/vad/silero-vad",
+      "files": [
+        "silero_vad.onnx"
+      ],
+      "snapshot": false,
+      "pinned_revision": "main",
+      "min_bytes": {
+        "silero_vad.onnx": 1048576
+      }
+    },
+    {
+      "component": "tts",
+      "repo": "rhasspy/piper-voices",
+      "target_dir": "models/tts/piper",
+      "files": [
+        "hu_HU-anna-medium.onnx",
+        "hu_HU-anna-medium.onnx.json",
+        "hu_HU-berta-medium.onnx",
+        "hu_HU-berta-medium.onnx.json",
+        "hu_HU-imre-medium.onnx",
+        "hu_HU-imre-medium.onnx.json",
+        "en_US-lessac-medium.onnx",
+        "en_US-lessac-medium.onnx.json"
+      ],
+      "snapshot": false,
+      "pinned_revision": "main",
+      "min_bytes": {
+        "hu_HU-anna-medium.onnx": 1048576,
+        "hu_HU-anna-medium.onnx.json": 1,
+        "hu_HU-berta-medium.onnx": 1048576,
+        "hu_HU-berta-medium.onnx.json": 1,
+        "hu_HU-imre-medium.onnx": 1048576,
+        "hu_HU-imre-medium.onnx.json": 1,
+        "en_US-lessac-medium.onnx": 1048576,
+        "en_US-lessac-medium.onnx.json": 1
+      }
+    }
+  ],
+  "tools": [
+    {
+      "component": "llama-server",
+      "provider": "github-release",
+      "repo": "ggml-org/llama.cpp",
+      "tag": "b10717",
+      "assets": [
+        "llama-b10717-bin-win-cuda-13.3-x64.zip",
+        "cudart-llama-bin-win-cuda-13.3-x64.zip"
+      ],
+      "target_dir": "bin",
+      "files": [
+        "llama-server.exe"
+      ]
+    },
+    {
+      "component": "piper",
+      "provider": "github-release",
+      "repo": "rhasspy/piper",
+      "tag": "2023.11.14-2",
+      "assets": [
+        "piper_windows_amd64.zip"
+      ],
+      "target_dir": "bin",
+      "files": [
+        "piper.exe"
+      ]
+    }
+  ]
+}

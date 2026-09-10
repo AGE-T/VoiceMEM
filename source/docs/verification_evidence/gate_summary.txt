@@ -1,0 +1,1 @@
+GATE (main venv, degraded mode): Ran 921 tests, OK (skipped=24) — reproduced 2026-09-10T10:12:18Z

@@ -1,0 +1,56 @@
+{
+  "schema": "task2-perf/1",
+  "runs": 20,
+  "note": "20 measured runs after 2 warmups, real E5+store, mock LLM (classify leg ~5ms)",
+  "HU": {
+    "query": "Mit csin\u00e1ltam tegnap este?",
+    "simple": {
+      "mean": 67.3,
+      "median": 67.6,
+      "p95": 84.9,
+      "min": 42.2,
+      "max": 113.3
+    },
+    "rich": {
+      "mean": 70.6,
+      "median": 70.5,
+      "p95": 89.8,
+      "min": 52.5,
+      "max": 93.8
+    }
+  },
+  "EN": {
+    "query": "Which report did I finish last week?",
+    "simple": {
+      "mean": 71.6,
+      "median": 73.0,
+      "p95": 83.5,
+      "min": 51.2,
+      "max": 88.7
+    },
+    "rich": {
+      "mean": 70.1,
+      "median": 70.6,
+      "p95": 79.6,
+      "min": 51.8,
+      "max": 115.8
+    }
+  },
+  "EMPTY": {
+    "query": "qwertyuiop asdfgh",
+    "simple": {
+      "mean": 62.6,
+      "median": 64.0,
+      "p95": 81.3,
+      "min": 43.3,
+      "max": 87.0
+    },
+    "rich": {
+      "mean": 69.1,
+      "median": 69.5,
+      "p95": 88.2,
+      "min": 51.8,
+      "max": 95.1
+    }
+  }
+}

@@ -1,0 +1,41 @@
+# pyproject.toml - minimalis setuptools csomag-meta a voicemem-agent repohoz.
+# A nehez fuggosegek (torch, transformers, onnxruntime, sounddevice, ...) a
+# requirements.txt / requirements.lock es az optional-dependencies "target"
+# extra alatt dokumentaltak - az alap telepites szandekosan pehelysulyu, hogy
+# a fejlesztoi sandbox is mukodjon (CONTRACT.md: guardolt importok).
+# A licenc mezot szandekosan nem allitjuk be (a repo sajat licensze meg
+# nincs veglegesitve; lasd LICENSES.md az osszetevok licensz-manifeszthez).
+# Epites: python -m build
+#
+# MEGJEGYZES: a version mezot KEZZEL tartjuk szinkronban a repo-gyokeri
+# VERSION fajllal (az az egyetlen forras; a config/voicemem_config.yaml
+# project.version mezot is abbol frissitik).
+
+[build-system]
+requires = ["setuptools>=69"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "voicemem-agent"
+version = "0.5.2"
+description = "Fully local HU/EN voice agent with long-term memory - M0/M1"
+requires-python = ">=3.11"
+dependencies = [
+    "numpy>=2.0",
+    "PyYAML>=6.0",
+    "httpx>=0.27",
+]
+
+[project.optional-dependencies]
+# Celgep (Windows 11 + RTX 5070): GPU/hang/kulso engine kotelezok.
+# A torch cu128 wheel kulon indexrol telepitendo (lasd requirements.lock).
+target = [
+    "transformers>=5.0",
+    "onnxruntime>=1.20",
+    "sounddevice>=0.5.0",
+    "soundfile>=0.12",
+    "sentence-transformers>=3.0",
+]
+
+[tool.setuptools]
+packages = ["app"]

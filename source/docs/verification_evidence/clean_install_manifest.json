@@ -1,0 +1,55 @@
+{
+  "dependencies": {
+    "pip": "25.0.1",
+    "voicemem": "0.2.3"
+  },
+  "generated_at": "2026-09-10T09:58:10+00:00",
+  "gpu": null,
+  "models": [],
+  "offline": {
+    "hf_hub_offline": false,
+    "transformers_offline": false
+  },
+  "os": {
+    "machine": "x86_64",
+    "release": "5.10.134-013.8.3.kangaroo.al8.x86_64",
+    "system": "Linux",
+    "version": "#1 SMP Fri May 29 08:22:43 UTC 2026"
+  },
+  "project": {
+    "git_commit": null,
+    "name": "voicemem-agent",
+    "version": "0.5.0"
+  },
+  "python": {
+    "executable": "/tmp/clean_verify_v050/VoiceMemAgent_v0.5.0/.venv2/bin/python",
+    "implementation": "CPython",
+    "version": "3.12.14"
+  },
+  "torch": null,
+  "voicemem": {
+    "commit": "e8384e087bd2f44eb05fc7ae1a3c525ea8244179",
+    "controlled": true,
+    "git_commit": "e8384e087bd2f44eb05fc7ae1a3c525ea8244179",
+    "git_tag": "v0.0.1",
+    "local_patches": [
+      "VM-LOCAL-001",
+      "VM-LOCAL-002",
+      "VM-LOCAL-003",
+      "VM-LOCAL-004",
+      "VM-LOCAL-005",
+      "VM-LOCAL-006",
+      "VM-LOCAL-EN"
+    ],
+    "package_version": "0.2.3",
+    "pin_file": "VOICEMEM_PIN.json",
+    "pin_verified": true,
+    "requested_ref": "v0.0.1",
+    "runtime_commit_attr": "e8384e087bd2f44eb05fc7ae1a3c525ea8244179",
+    "runtime_import_path": "/tmp/clean_verify_v050/VoiceMemAgent_v0.5.0/vendor/voicemem/voicemem/__init__.py",
+    "upstream_commit": "e8384e087bd2f44eb05fc7ae1a3c525ea8244179",
+    "upstream_repo": "https://github.com/xzf-thu/VoiceMem.git",
+    "upstream_tag": "v0.0.1",
+    "version": "0.2.3"
+  }
+}

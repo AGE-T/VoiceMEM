@@ -1,0 +1,42 @@
+VoiceMem controlled-source verification
+  root   : /home/z/my-project/voicemem-agent
+  vendor : /home/z/my-project/voicemem-agent/vendor/voicemem
+  pin    : /home/z/my-project/voicemem-agent/VOICEMEM_PIN.json
+  commit : e8384e087bd2f44eb05fc7ae1a3c525ea8244179
+
+[1/3] SOURCE checks
+  [ok]   vendor/voicemem/voicemem package present
+  [ok]   vendor/voicemem/pyproject.toml present
+  [ok]   VOICEMEM_PIN.json present at the agent root
+  [ok]   pin upstream_commit == e8384e087bd2f44eb05fc7ae1a3c525ea8244179
+  [ok]   pin upstream_tag == v0.0.1
+  [ok]   runtime identity block: CONTROLLED_FORK
+  [ok]   runtime identity block: CONTROLLED_UPSTREAM_COMMIT matches the pin
+  [ok]   patch ledger lists VM-LOCAL-001
+  [ok]   patch ledger lists VM-LOCAL-002
+  [ok]   patch ledger lists VM-LOCAL-003
+  [ok]   patch ledger lists VM-LOCAL-004
+  [ok]   patch ledger lists VM-LOCAL-005
+  [ok]   patch ledger lists VM-LOCAL-006
+  [ok]   VM-LOCAL-001: _embed_text routes through the injected embedder
+  [ok]   VM-LOCAL-001: local E5 cache key used
+  [ok]   VM-LOCAL-001: _embed_uncached is local-E5 only
+  [ok]   VM-LOCAL-001: no OpenAI embeddings call in _embed_uncached
+  [ok]   VM-LOCAL-003: default embedding factory is LocalE5Embedder
+  [ok]   VM-LOCAL-002: left-brain repo default embedder is LocalE5Embedder
+  [ok]   VM-LOCAL-004: trait embedding failure is loud (logged, not silent NULL)
+  [ok]   UPSTREAM-f535f9d: trait threshold bound to embedder dimension
+  [ok]   UPSTREAM-91d2e42: cosine dimension guard
+  [ok]   VM-LOCAL-005: delete_memory opt-in safety guard
+  [ok]   UPSTREAM-e3cc965: observed_at date validation
+  [ok]   VM-LOCAL-EN: English trait/emotion extraction localisation marker
+  [ok]   vendor tree is NOT a git clone (controlled source, no fetch surface)
+  [ok]   no stale .clone_ref file
+
+[2/3] RUNTIME checks
+  [info] voicemem.__file__ = /home/z/my-project/voicemem-agent/vendor/voicemem/voicemem/__init__.py
+  [ok]   import resolves under vendor/voicemem
+  [ok]   CONTROLLED_FORK is True
+  [ok]   runtime CONTROLLED_UPSTREAM_COMMIT matches the pin
+
+VERIFICATION OK (source+runtime)

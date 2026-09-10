@@ -1,0 +1,3171 @@
+{
+  "schema": "task2-retrieval-baseline/1",
+  "repo_state": {
+    "version": "0.5.1",
+    "vendor_pin": "e8384e087bd2f44eb05fc7ae1a3c525ea8244179"
+  },
+  "today": "2026-09-10",
+  "yesterday": "2026-09-09",
+  "last_monday": "2026-08-31",
+  "next_monday": "2026-09-14",
+  "runs_per_measurement": 5,
+  "corpus": [
+    {
+      "utterance": "A kedvenc kávém a hosszú kávé, minden reggel iszom egyet Budapesten.",
+      "observed_at": "2026-09-10",
+      "fact": "A felhasználó kedvenc kávéja a hosszú kávé, minden reggel iszik egyet Budapesten.",
+      "slot": "daily_life"
+    },
+    {
+      "utterance": "I always get nervous before presentations",
+      "observed_at": "2026-09-10",
+      "fact": "The user always gets nervous before presentations",
+      "slot": "work"
+    },
+    {
+      "utterance": "Tegnap este moziba mentem Annával.",
+      "observed_at": "2026-09-09",
+      "fact": "A felhasználó tegnap este moziba ment Annával.",
+      "slot": "relationships"
+    },
+    {
+      "utterance": "Holnap reggel 8-kor fogorvoshoz megyek.",
+      "observed_at": "2026-09-10",
+      "fact": "A felhasználó holnap reggel 8-kor fogorvoshoz megy.",
+      "slot": "health"
+    },
+    {
+      "utterance": "Múlt héten 10 kilométert futottam.",
+      "observed_at": "2026-08-31",
+      "fact": "A felhasználó múlt héten 10 kilométert futott.",
+      "slot": "health"
+    },
+    {
+      "utterance": "Last week I finished the quarterly report for the Q3 audit.",
+      "observed_at": "2026-08-31",
+      "fact": "The user finished the quarterly report for the Q3 audit last week",
+      "slot": "work"
+    },
+    {
+      "utterance": "Jövő héten Párizsba utazom a családdal.",
+      "observed_at": "2026-09-10",
+      "fact": "A felhasználó jövő héten Párizsba utazik a családjával.",
+      "slot": "goals"
+    },
+    {
+      "utterance": "I dislike long meetings",
+      "observed_at": "2026-09-10",
+      "fact": "The user dislikes long meetings",
+      "slot": "work"
+    }
+  ],
+  "path_a": [
+    {
+      "latency": {
+        "mean_ms": 65.3,
+        "median_ms": 63.7,
+        "min_ms": 58.6,
+        "max_ms": 72.5
+      },
+      "hits": 5,
+      "rb_hits": 0,
+      "rank_of_expected": 1,
+      "hit_texts": [
+        "A felhasználó kedvenc kávéja a hosszú kávé, minden reggel iszik egyet Budapesten.",
+        "A felhasználó holnap reggel 8-kor fogorvoshoz megy.",
+        "A felhasználó tegnap este moziba ment Annával.",
+        "A felhasználó múlt héten 10 kilométert futott.",
+        "A felhasználó jövő héten Párizsba utazik a családjával."
+      ],
+      "search_mode": "fallback",
+      "slots": [],
+      "entities": [],
+      "slot_mem_ids": 0,
+      "final_candidate_ids": 0,
+      "timing": {
+        "slot_filter_ms": 0.0,
+        "entity_narrow_ms": 0.0,
+        "rank_ms": 58.1,
+        "rb_ms": 67.8,
+        "total_ms": 67.8
+      },
+      "hit_fields": [
+        {
+          "memory_id": "7e87239b-d139-4170-aca4-db72a6f70da7",
+          "text": "A felhasználó kedvenc kávéja a hosszú kávé, minden reggel iszik egyet Budapesten.",
+          "score": 0.9373,
+          "base_score": 0.8873,
+          "time_boost": false,
+          "observed_at": "2026-09-10",
+          "attributed_to": "user",
+          "metadata_keys": [
+            "metadata",
+            "role"
+          ],
+          "metadata": {
+            "metadata": "{'turn_id': 'utt_da75ecbc', 'voice_id': 'utt_da75ecbc', 'time_start': '2026-09-10', 'time_end': '2026-09-10', 'voice_slo",
+            "role": "user"
+          }
+        },
+        {
+          "memory_id": "ea314dbd-2f96-421d-8d4b-9c5807d895ef",
+          "text": "A felhasználó holnap reggel 8-kor fogorvoshoz megy.",
+          "score": 0.88,
+          "base_score": 0.83,
+          "time_boost": false,
+          "observed_at": "2026-09-10",
+          "attributed_to": "user",
+          "metadata_keys": [
+            "metadata",
+            "role"
+          ],
+          "metadata": {
+            "metadata": "{'turn_id': 'utt_d188453f', 'voice_id': 'utt_d188453f', 'time_start': '2026-09-10', 'time_end': '2026-09-10', 'voice_slo",
+            "role": "user"
+          }
+        },
+        {
+          "memory_id": "e2cc677b-9001-4ffb-8fa7-41b7c8ee2c5d",
+          "text": "A felhasználó tegnap este moziba ment Annával.",
+          "score": 0.7915,
+          "base_score": 0.7915,
+          "time_boost": false,
+          "observed_at": "2026-09-09",
+          "attributed_to": "user",
+          "metadata_keys": [
+            "metadata",
+            "role"
+          ],
+          "metadata": {
+            "metadata": "{'turn_id': 'utt_4c542707', 'voice_id': 'utt_4c542707', 'time_start': '2026-09-09', 'time_end': '2026-09-09', 'voice_slo",
+            "role": "user"
+          }
+        }
+      ],
+      "rb_fields": [],
+      "query": "Milyen kávét iszom reggel?",
+      "tag": "HU-simple"
+    },
+    {
+      "latency": {
+        "mean_ms": 68.7,
+        "median_ms": 70.4,
+        "min_ms": 50.1,
+        "max_ms": 81.7
+      },
+      "hits": 5,
+      "rb_hits": 4,
+      "rank_of_expected": 1,
+      "hit_texts": [
+        "The user always gets nervous before presentations",
+        "A felhasználó tegnap este moziba ment Annával.",
+        "A felhasználó holnap reggel 8-kor fogorvoshoz megy.",
+        "A felhasználó múlt héten 10 kilométert futott.",
+        "A felhasználó jövő héten Párizsba utazik a családjával."
+      ],
+      "search_mode": "fallback",
+      "slots": [],
+      "entities": [],
+      "slot_mem_ids": 0,
+      "final_candidate_ids": 0,
+      "timing": {
+        "slot_filter_ms": 0.0,
+        "entity_narrow_ms": 0.0,
+        "rank_ms": 41.1,
+        "rb_ms": 41.1,
+        "total_ms": 41.1
+      },
+      "hit_fields": [
+        {
+          "memory_id": "8c6a03b2-123b-47dc-97c6-52e7c388afbb",
+          "text": "The user always gets nervous before presentations",
+          "score": 0.9354,
+          "base_score": 0.8354,
+          "time_boost": false,
+          "observed_at": "2026-09-10",
+          "attributed_to": "user",
+          "metadata_keys": [
+            "metadata",
+            "role"
+          ],
+          "metadata": {
+            "metadata": "{'turn_id': 'utt_928208bf', 'voice_id': 'utt_928208bf', 'time_start': '2026-09-10', 'time_end': '2026-09-10', 'voice_slo",
+            "role": "user"
+          }
+        },
+        {
+          "memory_id": "e2cc677b-9001-4ffb-8fa7-41b7c8ee2c5d",
+          "text": "A felhasználó tegnap este moziba ment Annával.",
+          "score": 0.7763,
+          "base_score": 0.7763,
+          "time_boost": false,
+          "observed_at": "2026-09-09",
+          "attributed_to": "user",
+          "metadata_keys": [
+            "metadata",
+            "role"
+          ],
+          "metadata": {
+            "metadata": "{'turn_id': 'utt_4c542707', 'voice_id': 'utt_4c542707', 'time_start': '2026-09-09', 'time_end': '2026-09-09', 'voice_slo",
+            "role": "user"
+          }
+        },
+        {
+          "memory_id": "ea314dbd-2f96-421d-8d4b-9c5807d895ef",
+          "text": "A felhasználó holnap reggel 8-kor fogorvoshoz megy.",
+          "score": 0.7694,
+          "base_score": 0.7694,
+          "time_boost": false,
+          "observed_at": "2026-09-10",
+          "attributed_to": "user",
+          "metadata_keys": [
+            "metadata",
+            "role"
+          ],
+          "metadata": {
+            "metadata": "{'turn_id': 'utt_d188453f', 'voice_id': 'utt_d188453f', 'time_start': '2026-09-10', 'time_end': '2026-09-10', 'voice_slo",
+            "role": "user"
+          }
+        }
+      ],
+      "rb_fields": [
+        {
+          "source": "profile",
+          "priority": 0.932,
+          "content": "gets nervous before presentations（情绪）｜他说过：I always get nervous before presentations",
+          "metadata_keys": [
+            "claim",
+            "slot_name",
+            "trait_id"
+          ]
+        },
+        {
+          "source": "situation_pattern",
+          "priority": 0.7436,
+          "content": "[2026-09-10] Emotional note: I dislike long meetings (inner note: {\"text\": \"[curious] A felhasználó most osztott meg valamit, ami láthatóan fontos neki.\"})",
+          "metadata_keys": [
+            "anchor_score",
+            "emotion"
+          ]
+        }
+      ],
+      "query": "how do I feel before presentations?",
+      "tag": "EN-simple"
+    },
+    {
+      "latency": {
+        "mean_ms": 59.9,
+        "median_ms": 59.5,
+        "min_ms": 51.8,
+        "max_ms": 72.2
+      },
+      "hits": 5,
+      "rb_hits": 0,
+      "rank_of_expected": 1,
+      "hit_texts": [
+        "The user dislikes long meetings",
+        "A felhasználó holnap reggel 8-kor fogorvoshoz megy.",
+        "The user always gets nervous before presentations",
+        "A felhasználó tegnap este moziba ment Annával.",
+        "A felhasználó kedvenc kávéja a hosszú kávé, minden reggel iszik egyet Budapesten."
+      ],
+      "search_mode": "fallback",
+      "slots": [],
+      "entities": [],
+      "slot_mem_ids": 0,
+      "final_candidate_ids": 0,
+      "timing": {
+        "slot_filter_ms": 0.0,
+        "entity_narrow_ms": 0.0,
+        "rank_ms": 47.1,
+        "rb_ms": 47.1,
+        "total_ms": 47.1
+      },
+      "hit_fields": [
+        {
+          "memory_id": "2e957f67-7a1c-483f-8f04-44cb9da44598",
+          "text": "The user dislikes long meetings",
+          "score": 0.807,
+          "base_score": 0.807,
+          "time_boost": false,
+          "observed_at": "2026-09-10",
+          "attributed_to": "user",
+          "metadata_keys": [
+            "metadata",
+            "role"
+          ],
+          "metadata": {
+            "metadata": "{'turn_id': 'utt_2ac6f85b', 'voice_id': 'utt_2ac6f85b', 'time_start': '2026-09-10', 'time_end': '2026-09-10', 'voice_slo",
+            "role": "user"
+          }
+        },
+        {
+          "memory_id": "ea314dbd-2f96-421d-8d4b-9c5807d895ef",
+          "text": "A felhasználó holnap reggel 8-kor fogorvoshoz megy.",
+          "score": 0.7561,
+          "base_score": 0.7561,
+          "time_boost": false,
+          "observed_at": "2026-09-10",
+          "attributed_to": "user",
+          "metadata_keys": [
+            "metadata",
+            "role"
+          ],
+          "metadata": {
+            "metadata": "{'turn_id': 'utt_d188453f', 'voice_id': 'utt_d188453f', 'time_start': '2026-09-10', 'time_end': '2026-09-10', 'voice_slo",
+            "role": "user"
+          }
+        },
+        {
+          "memory_id": "8c6a03b2-123b-47dc-97c6-52e7c388afbb",
+          "text": "The user always gets nervous before presentations",
+          "score": 0.75,
+          "base_score": 0.75,
+          "time_boost": false,
+          "observed_at": "2026-09-10",
+          "attributed_to": "user",
+          "metadata_keys": [
+            "metadata",
+            "role"
+          ],
+          "metadata": {
+            "metadata": "{'turn_id': 'utt_928208bf', 'voice_id': 'utt_928208bf', 'time_start': '2026-09-10', 'time_end': '2026-09-10', 'voice_slo",
+            "role": "user"
+          }
+        }
+      ],
+      "rb_fields": [],
+      "query": "what do I dislike at work?",
+      "tag": "EN-simple"
+    },
+    {
+      "latency": {
+        "mean_ms": 80.3,
+        "median_ms": 66.9,
+        "min_ms": 54.3,
+        "max_ms": 133.3
+      },
+      "hits": 5,
+      "rb_hits": 0,
+      "rank_of_expected": 1,
+      "hit_texts": [
+        "A felhasználó kedvenc kávéja a hosszú kávé, minden reggel iszik egyet Budapesten.",
+        "A felhasználó holnap reggel 8-kor fogorvoshoz megy.",
+        "A felhasználó tegnap este moziba ment Annával.",
+        "A felhasználó múlt héten 10 kilométert futott.",
+        "A felhasználó jövő héten Párizsba utazik a családjával."
+      ],
+      "search_mode": "fallback",
+      "slots": [],
+      "entities": [],
+      "slot_mem_ids": 0,
+      "final_candidate_ids": 0,
+      "timing": {
+        "slot_filter_ms": 0.0,
+        "entity_narrow_ms": 0.0,
+        "rank_ms": 39.3,
+        "rb_ms": 45.6,
+        "total_ms": 45.6
+      },
+      "hit_fields": [
+        {
+          "memory_id": "7e87239b-d139-4170-aca4-db72a6f70da7",
+          "text": "A felhasználó kedvenc kávéja a hosszú kávé, minden reggel iszik egyet Budapesten.",
+          "score": 1.0688,
+          "base_score": 0.9188,
+          "time_boost": false,
+          "observed_at": "2026-09-10",
+          "attributed_to": "user",
+          "metadata_keys": [
+            "metadata",
+            "role"
+          ],
+          "metadata": {
+            "metadata": "{'turn_id': 'utt_da75ecbc', 'voice_id': 'utt_da75ecbc', 'time_start': '2026-09-10', 'time_end': '2026-09-10', 'voice_slo",
+            "role": "user"
+          }
+        },
+        {
+          "memory_id": "ea314dbd-2f96-421d-8d4b-9c5807d895ef",
+          "text": "A felhasználó holnap reggel 8-kor fogorvoshoz megy.",
+          "score": 0.9025,
+          "base_score": 0.8525,
+          "time_boost": false,
+          "observed_at": "2026-09-10",
+          "attributed_to": "user",
+          "metadata_keys": [
+            "metadata",
+            "role"
+          ],
+          "metadata": {
+            "metadata": "{'turn_id': 'utt_d188453f', 'voice_id': 'utt_d188453f', 'time_start': '2026-09-10', 'time_end': '2026-09-10', 'voice_slo",
+            "role": "user"
+          }
+        },
+        {
+          "memory_id": "e2cc677b-9001-4ffb-8fa7-41b7c8ee2c5d",
+          "text": "A felhasználó tegnap este moziba ment Annával.",
+          "score": 0.8236,
+          "base_score": 0.8236,
+          "time_boost": false,
+          "observed_at": "2026-09-09",
+          "attributed_to": "user",
+          "metadata_keys": [
+            "metadata",
+            "role"
+          ],
+          "metadata": {
+            "metadata": "{'turn_id': 'utt_4c542707', 'voice_id': 'utt_4c542707', 'time_start': '2026-09-09', 'time_end': '2026-09-09', 'voice_slo",
+            "role": "user"
+          }
+        }
+      ],
+      "rb_fields": [],
+      "query": "kedvenc kávé minden reggel",
+      "tag": "HU-simple-keywords"
+    },
+    {
+      "latency": {
+        "mean_ms": 60.4,
+        "median_ms": 60.8,
+        "min_ms": 48.9,
+        "max_ms": 75.3
+      },
+      "hits": 5,
+      "rb_hits": 0,
+      "rank_of_expected": 1,
+      "hit_texts": [
+        "A felhasználó tegnap este moziba ment Annával.",
+        "A felhasználó holnap reggel 8-kor fogorvoshoz megy.",
+        "A felhasználó múlt héten 10 kilométert futott.",
+        "A felhasználó jövő héten Párizsba utazik a családjával.",
+        "A felhasználó kedvenc kávéja a hosszú kávé, minden reggel iszik egyet Budapesten."
+      ],
+      "search_mode": "fallback",
+      "slots": [],
+      "entities": [],
+      "slot_mem_ids": 0,
+      "final_candidate_ids": 0,
+      "timing": {
+        "slot_filter_ms": 0.0,
+        "entity_narrow_ms": 0.0,
+        "rank_ms": 36.8,
+        "rb_ms": 70.3,
+        "total_ms": 70.3
+      },
+      "hit_fields": [
+        {
+          "memory_id": "e2cc677b-9001-4ffb-8fa7-41b7c8ee2c5d",
+          "text": "A felhasználó tegnap este moziba ment Annával.",
+          "score": 0.9148,
+          "base_score": 0.8548,
+          "time_boost": false,
+          "observed_at": "2026-09-09",
+          "attributed_to": "user",
+          "metadata_keys": [
+            "metadata",
+            "role"
+          ],
+          "metadata": {
+            "metadata": "{'turn_id': 'utt_4c542707', 'voice_id': 'utt_4c542707', 'time_start': '2026-09-09', 'time_end': '2026-09-09', 'voice_slo",
+            "role": "user"
+          }
+        },
+        {
+          "memory_id": "ea314dbd-2f96-421d-8d4b-9c5807d895ef",
+          "text": "A felhasználó holnap reggel 8-kor fogorvoshoz megy.",
+          "score": 0.8402,
+          "base_score": 0.8402,
+          "time_boost": false,
+          "observed_at": "2026-09-10",
+          "attributed_to": "user",
+          "metadata_keys": [
+            "metadata",
+            "role"
+          ],
+          "metadata": {
+            "metadata": "{'turn_id': 'utt_d188453f', 'voice_id': 'utt_d188453f', 'time_start': '2026-09-10', 'time_end': '2026-09-10', 'voice_slo",
+            "role": "user"
+          }
+        },
+        {
+          "memory_id": "91ff873a-2339-4a34-a476-6b60064c9e09",
+          "text": "A felhasználó múlt héten 10 kilométert futott.",
+          "score": 0.8376,
+          "base_score": 0.8376,
+          "time_boost": false,
+          "observed_at": "2026-08-31",
+          "attributed_to": "user",
+          "metadata_keys": [
+            "metadata",
+            "role"
+          ],
+          "metadata": {
+            "metadata": "{'turn_id': 'utt_935b6a9a', 'voice_id': 'utt_935b6a9a', 'time_start': '2026-08-31', 'time_end': '2026-08-31', 'voice_slo",
+            "role": "user"
+          }
+        }
+      ],
+      "rb_fields": [],
+      "query": "Mit csináltam tegnap este?",
+      "tag": "HU-temporal"
+    },
+    {
+      "latency": {
+        "mean_ms": 56.4,
+        "median_ms": 60.7,
+        "min_ms": 43.8,
+        "max_ms": 66.2
+      },
+      "hits": 5,
+      "rb_hits": 0,
+      "rank_of_expected": 1,
+      "hit_texts": [
+        "A felhasználó tegnap este moziba ment Annával.",
+        "A felhasználó holnap reggel 8-kor fogorvoshoz megy.",
+        "A felhasználó múlt héten 10 kilométert futott.",
+        "The user finished the quarterly report for the Q3 audit last week",
+        "A felhasználó jövő héten Párizsba utazik a családjával."
+      ],
+      "search_mode": "fallback",
+      "slots": [],
+      "entities": [],
+      "slot_mem_ids": 0,
+      "final_candidate_ids": 0,
+      "timing": {
+        "slot_filter_ms": 0.0,
+        "entity_narrow_ms": 0.0,
+        "rank_ms": 55.6,
+        "rb_ms": 56.1,
+        "total_ms": 56.1
+      },
+      "hit_fields": [
+        {
+          "memory_id": "e2cc677b-9001-4ffb-8fa7-41b7c8ee2c5d",
+          "text": "A felhasználó tegnap este moziba ment Annával.",
+          "score": 0.8304,
+          "base_score": 0.8304,
+          "time_boost": false,
+          "observed_at": "2026-09-09",
+          "attributed_to": "user",
+          "metadata_keys": [
+            "metadata",
+            "role"
+          ],
+          "metadata": {
+            "metadata": "{'turn_id': 'utt_4c542707', 'voice_id': 'utt_4c542707', 'time_start': '2026-09-09', 'time_end': '2026-09-09', 'voice_slo",
+            "role": "user"
+          }
+        },
+        {
+          "memory_id": "ea314dbd-2f96-421d-8d4b-9c5807d895ef",
+          "text": "A felhasználó holnap reggel 8-kor fogorvoshoz megy.",
+          "score": 0.7905,
+          "base_score": 0.7905,
+          "time_boost": false,
+          "observed_at": "2026-09-10",
+          "attributed_to": "user",
+          "metadata_keys": [
+            "metadata",
+            "role"
+          ],
+          "metadata": {
+            "metadata": "{'turn_id': 'utt_d188453f', 'voice_id': 'utt_d188453f', 'time_start': '2026-09-10', 'time_end': '2026-09-10', 'voice_slo",
+            "role": "user"
+          }
+        },
+        {
+          "memory_id": "91ff873a-2339-4a34-a476-6b60064c9e09",
+          "text": "A felhasználó múlt héten 10 kilométert futott.",
+          "score": 0.7899,
+          "base_score": 0.7899,
+          "time_boost": false,
+          "observed_at": "2026-08-31",
+          "attributed_to": "user",
+          "metadata_keys": [
+            "metadata",
+            "role"
+          ],
+          "metadata": {
+            "metadata": "{'turn_id': 'utt_935b6a9a', 'voice_id': 'utt_935b6a9a', 'time_start': '2026-08-31', 'time_end': '2026-08-31', 'voice_slo",
+            "role": "user"
+          }
+        }
+      ],
+      "rb_fields": [],
+      "query": "What did I do yesterday evening?",
+      "tag": "EN->HU-temporal"
+    },
+    {
+      "latency": {
+        "mean_ms": 65.0,
+        "median_ms": 70.1,
+        "min_ms": 44.9,
+        "max_ms": 83.1
+      },
+      "hits": 5,
+      "rb_hits": 0,
+      "rank_of_expected": 1,
+      "hit_texts": [
+        "A felhasználó holnap reggel 8-kor fogorvoshoz megy.",
+        "A felhasználó tegnap este moziba ment Annával.",
+        "A felhasználó jövő héten Párizsba utazik a családjával.",
+        "A felhasználó kedvenc kávéja a hosszú kávé, minden reggel iszik egyet Budapesten.",
+        "A felhasználó múlt héten 10 kilométert futott."
+      ],
+      "search_mode": "fallback",
+      "slots": [],
+      "entities": [],
+      "slot_mem_ids": 0,
+      "final_candidate_ids": 0,
+      "timing": {
+        "slot_filter_ms": 0.0,
+        "entity_narrow_ms": 0.0,
+        "rank_ms": 78.1,
+        "rb_ms": 78.1,
+        "total_ms": 78.1
+      },
+      "hit_fields": [
+        {
+          "memory_id": "ea314dbd-2f96-421d-8d4b-9c5807d895ef",
+          "text": "A felhasználó holnap reggel 8-kor fogorvoshoz megy.",
+          "score": 0.9651,
+          "base_score": 0.8651,
+          "time_boost": false,
+          "observed_at": "2026-09-10",
+          "attributed_to": "user",
+          "metadata_keys": [
+            "metadata",
+            "role"
+          ],
+          "metadata": {
+            "metadata": "{'turn_id': 'utt_d188453f', 'voice_id': 'utt_d188453f', 'time_start': '2026-09-10', 'time_end': '2026-09-10', 'voice_slo",
+            "role": "user"
+          }
+        },
+        {
+          "memory_id": "e2cc677b-9001-4ffb-8fa7-41b7c8ee2c5d",
+          "text": "A felhasználó tegnap este moziba ment Annával.",
+          "score": 0.8452,
+          "base_score": 0.8452,
+          "time_boost": false,
+          "observed_at": "2026-09-09",
+          "attributed_to": "user",
+          "metadata_keys": [
+            "metadata",
+            "role"
+          ],
+          "metadata": {
+            "metadata": "{'turn_id': 'utt_4c542707', 'voice_id': 'utt_4c542707', 'time_start': '2026-09-09', 'time_end': '2026-09-09', 'voice_slo",
+            "role": "user"
+          }
+        },
+        {
+          "memory_id": "64e917ba-d892-4697-8a63-160015dcb127",
+          "text": "A felhasználó jövő héten Párizsba utazik a családjával.",
+          "score": 0.8334,
+          "base_score": 0.8334,
+          "time_boost": false,
+          "observed_at": "2026-09-10",
+          "attributed_to": "user",
+          "metadata_keys": [
+            "metadata",
+            "role"
+          ],
+          "metadata": {
+            "metadata": "{'turn_id': 'utt_5c834935', 'voice_id': 'utt_5c834935', 'time_start': '2026-09-10', 'time_end': '2026-09-10', 'voice_slo",
+            "role": "user"
+          }
+        }
+      ],
+      "rb_fields": [],
+      "query": "Mi a programom holnap reggel?",
+      "tag": "HU-temporal"
+    },
+    {
+      "latency": {
+        "mean_ms": 60.3,
+        "median_ms": 65.6,
+        "min_ms": 44.6,
+        "max_ms": 67.8
+      },
+      "hits": 5,
+      "rb_hits": 0,
+      "rank_of_expected": 1,
+      "hit_texts": [
+        "A felhasználó holnap reggel 8-kor fogorvoshoz megy.",
+        "A felhasználó tegnap este moziba ment Annával.",
+        "A felhasználó jövő héten Párizsba utazik a családjával.",
+        "A felhasználó kedvenc kávéja a hosszú kávé, minden reggel iszik egyet Budapesten.",
+        "A felhasználó múlt héten 10 kilométert futott."
+      ],
+      "search_mode": "fallback",
+      "slots": [],
+      "entities": [],
+      "slot_mem_ids": 0,
+      "final_candidate_ids": 0,
+      "timing": {
+        "slot_filter_ms": 0.0,
+        "entity_narrow_ms": 0.0,
+        "rank_ms": 53.7,
+        "rb_ms": 61.2,
+        "total_ms": 61.2
+      },
+      "hit_fields": [
+        {
+          "memory_id": "ea314dbd-2f96-421d-8d4b-9c5807d895ef",
+          "text": "A felhasználó holnap reggel 8-kor fogorvoshoz megy.",
+          "score": 0.8122,
+          "base_score": 0.8122,
+          "time_boost": false,
+          "observed_at": "2026-09-10",
+          "attributed_to": "user",
+          "metadata_keys": [
+            "metadata",
+            "role"
+          ],
+          "metadata": {
+            "metadata": "{'turn_id': 'utt_d188453f', 'voice_id': 'utt_d188453f', 'time_start': '2026-09-10', 'time_end': '2026-09-10', 'voice_slo",
+            "role": "user"
+          }
+        },
+        {
+          "memory_id": "e2cc677b-9001-4ffb-8fa7-41b7c8ee2c5d",
+          "text": "A felhasználó tegnap este moziba ment Annával.",
+          "score": 0.7963,
+          "base_score": 0.7963,
+          "time_boost": false,
+          "observed_at": "2026-09-09",
+          "attributed_to": "user",
+          "metadata_keys": [
+            "metadata",
+            "role"
+          ],
+          "metadata": {
+            "metadata": "{'turn_id': 'utt_4c542707', 'voice_id': 'utt_4c542707', 'time_start': '2026-09-09', 'time_end': '2026-09-09', 'voice_slo",
+            "role": "user"
+          }
+        },
+        {
+          "memory_id": "64e917ba-d892-4697-8a63-160015dcb127",
+          "text": "A felhasználó jövő héten Párizsba utazik a családjával.",
+          "score": 0.7854,
+          "base_score": 0.7854,
+          "time_boost": false,
+          "observed_at": "2026-09-10",
+          "attributed_to": "user",
+          "metadata_keys": [
+            "metadata",
+            "role"
+          ],
+          "metadata": {
+            "metadata": "{'turn_id': 'utt_5c834935', 'voice_id': 'utt_5c834935', 'time_start': '2026-09-10', 'time_end': '2026-09-10', 'voice_slo",
+            "role": "user"
+          }
+        }
+      ],
+      "rb_fields": [],
+      "query": "What are my plans for tomorrow morning?",
+      "tag": "EN->HU-temporal"
+    },
+    {
+      "latency": {
+        "mean_ms": 60.0,
+        "median_ms": 57.5,
+        "min_ms": 52.2,
+        "max_ms": 75.2
+      },
+      "hits": 5,
+      "rb_hits": 0,
+      "rank_of_expected": 1,
+      "hit_texts": [
+        "A felhasználó múlt héten 10 kilométert futott.",
+        "A felhasználó tegnap este moziba ment Annával.",
+        "A felhasználó holnap reggel 8-kor fogorvoshoz megy.",
+        "A felhasználó jövő héten Párizsba utazik a családjával.",
+        "A felhasználó kedvenc kávéja a hosszú kávé, minden reggel iszik egyet Budapesten."
+      ],
+      "search_mode": "fallback",
+      "slots": [],
+      "entities": [],
+      "slot_mem_ids": 0,
+      "final_candidate_ids": 0,
+      "timing": {
+        "slot_filter_ms": 0.0,
+        "entity_narrow_ms": 0.0,
+        "rank_ms": 47.0,
+        "rb_ms": 49.6,
+        "total_ms": 49.6
+      },
+      "hit_fields": [
+        {
+          "memory_id": "91ff873a-2339-4a34-a476-6b60064c9e09",
+          "text": "A felhasználó múlt héten 10 kilométert futott.",
+          "score": 0.917,
+          "base_score": 0.867,
+          "time_boost": false,
+          "observed_at": "2026-08-31",
+          "attributed_to": "user",
+          "metadata_keys": [
+            "metadata",
+            "role"
+          ],
+          "metadata": {
+            "metadata": "{'turn_id': 'utt_935b6a9a', 'voice_id': 'utt_935b6a9a', 'time_start': '2026-08-31', 'time_end': '2026-08-31', 'voice_slo",
+            "role": "user"
+          }
+        },
+        {
+          "memory_id": "e2cc677b-9001-4ffb-8fa7-41b7c8ee2c5d",
+          "text": "A felhasználó tegnap este moziba ment Annával.",
+          "score": 0.8225,
+          "base_score": 0.8225,
+          "time_boost": false,
+          "observed_at": "2026-09-09",
+          "attributed_to": "user",
+          "metadata_keys": [
+            "metadata",
+            "role"
+          ],
+          "metadata": {
+            "metadata": "{'turn_id': 'utt_4c542707', 'voice_id': 'utt_4c542707', 'time_start': '2026-09-09', 'time_end': '2026-09-09', 'voice_slo",
+            "role": "user"
+          }
+        },
+        {
+          "memory_id": "ea314dbd-2f96-421d-8d4b-9c5807d895ef",
+          "text": "A felhasználó holnap reggel 8-kor fogorvoshoz megy.",
+          "score": 0.8178,
+          "base_score": 0.8178,
+          "time_boost": false,
+          "observed_at": "2026-09-10",
+          "attributed_to": "user",
+          "metadata_keys": [
+            "metadata",
+            "role"
+          ],
+          "metadata": {
+            "metadata": "{'turn_id': 'utt_d188453f', 'voice_id': 'utt_d188453f', 'time_start': '2026-09-10', 'time_end': '2026-09-10', 'voice_slo",
+            "role": "user"
+          }
+        }
+      ],
+      "rb_fields": [],
+      "query": "Múlt héten mit futottam?",
+      "tag": "HU-temporal"
+    },
+    {
+      "latency": {
+        "mean_ms": 66.1,
+        "median_ms": 70.7,
+        "min_ms": 53.3,
+        "max_ms": 77.6
+      },
+      "hits": 5,
+      "rb_hits": 0,
+      "rank_of_expected": 2,
+      "hit_texts": [
+        "A felhasználó múlt héten 10 kilométert futott.",
+        "The user finished the quarterly report for the Q3 audit last week",
+        "A felhasználó jövő héten Párizsba utazik a családjával.",
+        "A felhasználó tegnap este moziba ment Annával.",
+        "A felhasználó holnap reggel 8-kor fogorvoshoz megy."
+      ],
+      "search_mode": "fallback",
+      "slots": [],
+      "entities": [],
+      "slot_mem_ids": 0,
+      "final_candidate_ids": 0,
+      "timing": {
+        "slot_filter_ms": 0.0,
+        "entity_narrow_ms": 0.0,
+        "rank_ms": 59.8,
+        "rb_ms": 65.9,
+        "total_ms": 65.9
+      },
+      "hit_fields": [
+        {
+          "memory_id": "91ff873a-2339-4a34-a476-6b60064c9e09",
+          "text": "A felhasználó múlt héten 10 kilométert futott.",
+          "score": 0.8587,
+          "base_score": 0.8337,
+          "time_boost": false,
+          "observed_at": "2026-08-31",
+          "attributed_to": "user",
+          "metadata_keys": [
+            "metadata",
+            "role"
+          ],
+          "metadata": {
+            "metadata": "{'turn_id': 'utt_935b6a9a', 'voice_id': 'utt_935b6a9a', 'time_start': '2026-08-31', 'time_end': '2026-08-31', 'voice_slo",
+            "role": "user"
+          }
+        },
+        {
+          "memory_id": "84630b95-da46-4305-b1d8-6e8a60aee42b",
+          "text": "The user finished the quarterly report for the Q3 audit last week",
+          "score": 0.8539,
+          "base_score": 0.8289,
+          "time_boost": false,
+          "observed_at": "2026-08-31",
+          "attributed_to": "user",
+          "metadata_keys": [
+            "metadata",
+            "role"
+          ],
+          "metadata": {
+            "metadata": "{'turn_id': 'utt_50e2b3a8', 'voice_id': 'utt_50e2b3a8', 'time_start': '2026-08-31', 'time_end': '2026-08-31', 'voice_slo",
+            "role": "user"
+          }
+        },
+        {
+          "memory_id": "64e917ba-d892-4697-8a63-160015dcb127",
+          "text": "A felhasználó jövő héten Párizsba utazik a családjával.",
+          "score": 0.8475,
+          "base_score": 0.8225,
+          "time_boost": false,
+          "observed_at": "2026-09-10",
+          "attributed_to": "user",
+          "metadata_keys": [
+            "metadata",
+            "role"
+          ],
+          "metadata": {
+            "metadata": "{'turn_id': 'utt_5c834935', 'voice_id': 'utt_5c834935', 'time_start': '2026-09-10', 'time_end': '2026-09-10', 'voice_slo",
+            "role": "user"
+          }
+        }
+      ],
+      "rb_fields": [],
+      "query": "Mit csináltam múlt héten a Q3 audit kapcsán?",
+      "tag": "HU->EN-multi"
+    },
+    {
+      "latency": {
+        "mean_ms": 72.9,
+        "median_ms": 70.7,
+        "min_ms": 63.1,
+        "max_ms": 81.8
+      },
+      "hits": 5,
+      "rb_hits": 0,
+      "rank_of_expected": 1,
+      "hit_texts": [
+        "The user finished the quarterly report for the Q3 audit last week",
+        "A felhasználó tegnap este moziba ment Annával.",
+        "A felhasználó múlt héten 10 kilométert futott.",
+        "A felhasználó holnap reggel 8-kor fogorvoshoz megy.",
+        "A felhasználó jövő héten Párizsba utazik a családjával."
+      ],
+      "search_mode": "fallback",
+      "slots": [],
+      "entities": [],
+      "slot_mem_ids": 0,
+      "final_candidate_ids": 0,
+      "timing": {
+        "slot_filter_ms": 0.0,
+        "entity_narrow_ms": 0.0,
+        "rank_ms": 34.1,
+        "rb_ms": 46.6,
+        "total_ms": 46.6
+      },
+      "hit_fields": [
+        {
+          "memory_id": "84630b95-da46-4305-b1d8-6e8a60aee42b",
+          "text": "The user finished the quarterly report for the Q3 audit last week",
+          "score": 0.9448,
+          "base_score": 0.8323,
+          "time_boost": false,
+          "observed_at": "2026-08-31",
+          "attributed_to": "user",
+          "metadata_keys": [
+            "metadata",
+            "role"
+          ],
+          "metadata": {
+            "metadata": "{'turn_id': 'utt_50e2b3a8', 'voice_id': 'utt_50e2b3a8', 'time_start': '2026-08-31', 'time_end': '2026-08-31', 'voice_slo",
+            "role": "user"
+          }
+        },
+        {
+          "memory_id": "e2cc677b-9001-4ffb-8fa7-41b7c8ee2c5d",
+          "text": "A felhasználó tegnap este moziba ment Annával.",
+          "score": 0.7933,
+          "base_score": 0.7933,
+          "time_boost": false,
+          "observed_at": "2026-09-09",
+          "attributed_to": "user",
+          "metadata_keys": [
+            "metadata",
+            "role"
+          ],
+          "metadata": {
+            "metadata": "{'turn_id': 'utt_4c542707', 'voice_id': 'utt_4c542707', 'time_start': '2026-09-09', 'time_end': '2026-09-09', 'voice_slo",
+            "role": "user"
+          }
+        },
+        {
+          "memory_id": "91ff873a-2339-4a34-a476-6b60064c9e09",
+          "text": "A felhasználó múlt héten 10 kilométert futott.",
+          "score": 0.7926,
+          "base_score": 0.7926,
+          "time_boost": false,
+          "observed_at": "2026-08-31",
+          "attributed_to": "user",
+          "metadata_keys": [
+            "metadata",
+            "role"
+          ],
+          "metadata": {
+            "metadata": "{'turn_id': 'utt_935b6a9a', 'voice_id': 'utt_935b6a9a', 'time_start': '2026-08-31', 'time_end': '2026-08-31', 'voice_slo",
+            "role": "user"
+          }
+        }
+      ],
+      "rb_fields": [],
+      "query": "Which report did I finish last week?",
+      "tag": "EN-multi"
+    },
+    {
+      "latency": {
+        "mean_ms": 69.9,
+        "median_ms": 70.7,
+        "min_ms": 55.1,
+        "max_ms": 82.7
+      },
+      "hits": 5,
+      "rb_hits": 0,
+      "rank_of_expected": 1,
+      "hit_texts": [
+        "A felhasználó jövő héten Párizsba utazik a családjával.",
+        "A felhasználó múlt héten 10 kilométert futott.",
+        "A felhasználó holnap reggel 8-kor fogorvoshoz megy.",
+        "A felhasználó tegnap este moziba ment Annával.",
+        "A felhasználó kedvenc kávéja a hosszú kávé, minden reggel iszik egyet Budapesten."
+      ],
+      "search_mode": "fallback",
+      "slots": [],
+      "entities": [],
+      "slot_mem_ids": 0,
+      "final_candidate_ids": 0,
+      "timing": {
+        "slot_filter_ms": 0.0,
+        "entity_narrow_ms": 0.0,
+        "rank_ms": 48.8,
+        "rb_ms": 54.2,
+        "total_ms": 54.2
+      },
+      "hit_fields": [
+        {
+          "memory_id": "64e917ba-d892-4697-8a63-160015dcb127",
+          "text": "A felhasználó jövő héten Párizsba utazik a családjával.",
+          "score": 0.91,
+          "base_score": 0.86,
+          "time_boost": false,
+          "observed_at": "2026-09-10",
+          "attributed_to": "user",
+          "metadata_keys": [
+            "metadata",
+            "role"
+          ],
+          "metadata": {
+            "metadata": "{'turn_id': 'utt_5c834935', 'voice_id': 'utt_5c834935', 'time_start': '2026-09-10', 'time_end': '2026-09-10', 'voice_slo",
+            "role": "user"
+          }
+        },
+        {
+          "memory_id": "91ff873a-2339-4a34-a476-6b60064c9e09",
+          "text": "A felhasználó múlt héten 10 kilométert futott.",
+          "score": 0.8931,
+          "base_score": 0.8431,
+          "time_boost": false,
+          "observed_at": "2026-08-31",
+          "attributed_to": "user",
+          "metadata_keys": [
+            "metadata",
+            "role"
+          ],
+          "metadata": {
+            "metadata": "{'turn_id': 'utt_935b6a9a', 'voice_id': 'utt_935b6a9a', 'time_start': '2026-08-31', 'time_end': '2026-08-31', 'voice_slo",
+            "role": "user"
+          }
+        },
+        {
+          "memory_id": "ea314dbd-2f96-421d-8d4b-9c5807d895ef",
+          "text": "A felhasználó holnap reggel 8-kor fogorvoshoz megy.",
+          "score": 0.8291,
+          "base_score": 0.8291,
+          "time_boost": false,
+          "observed_at": "2026-09-10",
+          "attributed_to": "user",
+          "metadata_keys": [
+            "metadata",
+            "role"
+          ],
+          "metadata": {
+            "metadata": "{'turn_id': 'utt_d188453f', 'voice_id': 'utt_d188453f', 'time_start': '2026-09-10', 'time_end': '2026-09-10', 'voice_slo",
+            "role": "user"
+          }
+        }
+      ],
+      "rb_fields": [],
+      "query": "Jövő héten hová utazom?",
+      "tag": "HU-temporal"
+    },
+    {
+      "latency": {
+        "mean_ms": 59.1,
+        "median_ms": 66.6,
+        "min_ms": 43.6,
+        "max_ms": 70.8
+      },
+      "hits": 5,
+      "rb_hits": 0,
+      "rank_of_expected": null,
+      "hit_texts": [
+        "A felhasználó holnap reggel 8-kor fogorvoshoz megy.",
+        "A felhasználó tegnap este moziba ment Annával.",
+        "A felhasználó múlt héten 10 kilométert futott.",
+        "A felhasználó kedvenc kávéja a hosszú kávé, minden reggel iszik egyet Budapesten.",
+        "A felhasználó jövő héten Párizsba utazik a családjával."
+      ],
+      "search_mode": "fallback",
+      "slots": [],
+      "entities": [],
+      "slot_mem_ids": 0,
+      "final_candidate_ids": 0,
+      "timing": {
+        "slot_filter_ms": 0.0,
+        "entity_narrow_ms": 0.0,
+        "rank_ms": 61.9,
+        "rb_ms": 61.9,
+        "total_ms": 61.9
+      },
+      "hit_fields": [
+        {
+          "memory_id": "ea314dbd-2f96-421d-8d4b-9c5807d895ef",
+          "text": "A felhasználó holnap reggel 8-kor fogorvoshoz megy.",
+          "score": 0.8902,
+          "base_score": 0.8527,
+          "time_boost": false,
+          "observed_at": "2026-09-10",
+          "attributed_to": "user",
+          "metadata_keys": [
+            "metadata",
+            "role"
+          ],
+          "metadata": {
+            "metadata": "{'turn_id': 'utt_d188453f', 'voice_id': 'utt_d188453f', 'time_start': '2026-09-10', 'time_end': '2026-09-10', 'voice_slo",
+            "role": "user"
+          }
+        },
+        {
+          "memory_id": "e2cc677b-9001-4ffb-8fa7-41b7c8ee2c5d",
+          "text": "A felhasználó tegnap este moziba ment Annával.",
+          "score": 0.8356,
+          "base_score": 0.8356,
+          "time_boost": false,
+          "observed_at": "2026-09-09",
+          "attributed_to": "user",
+          "metadata_keys": [
+            "metadata",
+            "role"
+          ],
+          "metadata": {
+            "metadata": "{'turn_id': 'utt_4c542707', 'voice_id': 'utt_4c542707', 'time_start': '2026-09-09', 'time_end': '2026-09-09', 'voice_slo",
+            "role": "user"
+          }
+        },
+        {
+          "memory_id": "91ff873a-2339-4a34-a476-6b60064c9e09",
+          "text": "A felhasználó múlt héten 10 kilométert futott.",
+          "score": 0.8235,
+          "base_score": 0.8235,
+          "time_boost": false,
+          "observed_at": "2026-08-31",
+          "attributed_to": "user",
+          "metadata_keys": [
+            "metadata",
+            "role"
+          ],
+          "metadata": {
+            "metadata": "{'turn_id': 'utt_935b6a9a', 'voice_id': 'utt_935b6a9a', 'time_start': '2026-08-31', 'time_end': '2026-08-31', 'voice_slo",
+            "role": "user"
+          }
+        }
+      ],
+      "rb_fields": [],
+      "query": "Mit csináltam ma reggel?",
+      "tag": "HU-temporal-recognition"
+    },
+    {
+      "latency": {
+        "mean_ms": 62.1,
+        "median_ms": 58.5,
+        "min_ms": 54.1,
+        "max_ms": 71.8
+      },
+      "hits": 5,
+      "rb_hits": 0,
+      "rank_of_expected": 1,
+      "hit_texts": [
+        "The user dislikes long meetings",
+        "A felhasználó múlt héten 10 kilométert futott.",
+        "A felhasználó kedvenc kávéja a hosszú kávé, minden reggel iszik egyet Budapesten.",
+        "A felhasználó tegnap este moziba ment Annával.",
+        "A felhasználó holnap reggel 8-kor fogorvoshoz megy."
+      ],
+      "search_mode": "fallback",
+      "slots": [],
+      "entities": [],
+      "slot_mem_ids": 0,
+      "final_candidate_ids": 0,
+      "timing": {
+        "slot_filter_ms": 0.0,
+        "entity_narrow_ms": 0.0,
+        "rank_ms": 62.9,
+        "rb_ms": 63.4,
+        "total_ms": 63.4
+      },
+      "hit_fields": [
+        {
+          "memory_id": "2e957f67-7a1c-483f-8f04-44cb9da44598",
+          "text": "The user dislikes long meetings",
+          "score": 0.8192,
+          "base_score": 0.8192,
+          "time_boost": false,
+          "observed_at": "2026-09-10",
+          "attributed_to": "user",
+          "metadata_keys": [
+            "metadata",
+            "role"
+          ],
+          "metadata": {
+            "metadata": "{'turn_id': 'utt_2ac6f85b', 'voice_id': 'utt_2ac6f85b', 'time_start': '2026-09-10', 'time_end': '2026-09-10', 'voice_slo",
+            "role": "user"
+          }
+        },
+        {
+          "memory_id": "91ff873a-2339-4a34-a476-6b60064c9e09",
+          "text": "A felhasználó múlt héten 10 kilométert futott.",
+          "score": 0.8161,
+          "base_score": 0.8161,
+          "time_boost": false,
+          "observed_at": "2026-08-31",
+          "attributed_to": "user",
+          "metadata_keys": [
+            "metadata",
+            "role"
+          ],
+          "metadata": {
+            "metadata": "{'turn_id': 'utt_935b6a9a', 'voice_id': 'utt_935b6a9a', 'time_start': '2026-08-31', 'time_end': '2026-08-31', 'voice_slo",
+            "role": "user"
+          }
+        },
+        {
+          "memory_id": "7e87239b-d139-4170-aca4-db72a6f70da7",
+          "text": "A felhasználó kedvenc kávéja a hosszú kávé, minden reggel iszik egyet Budapesten.",
+          "score": 0.8424,
+          "base_score": 0.8124,
+          "time_boost": false,
+          "observed_at": "2026-09-10",
+          "attributed_to": "user",
+          "metadata_keys": [
+            "metadata",
+            "role"
+          ],
+          "metadata": {
+            "metadata": "{'turn_id': 'utt_da75ecbc', 'voice_id': 'utt_da75ecbc', 'time_start': '2026-09-10', 'time_end': '2026-09-10', 'voice_slo",
+            "role": "user"
+          }
+        }
+      ],
+      "rb_fields": [],
+      "query": "Milyen hosszú értekezleteket nem szeretek?",
+      "tag": "HU->EN-simple"
+    },
+    {
+      "latency": {
+        "mean_ms": 79.3,
+        "median_ms": 72.7,
+        "min_ms": 63.7,
+        "max_ms": 108.9
+      },
+      "hits": 5,
+      "rb_hits": 0,
+      "rank_of_expected": 1,
+      "hit_texts": [
+        "A felhasználó tegnap este moziba ment Annával.",
+        "A felhasználó múlt héten 10 kilométert futott.",
+        "A felhasználó holnap reggel 8-kor fogorvoshoz megy.",
+        "A felhasználó jövő héten Párizsba utazik a családjával.",
+        "A felhasználó kedvenc kávéja a hosszú kávé, minden reggel iszik egyet Budapesten."
+      ],
+      "search_mode": "fallback",
+      "slots": [],
+      "entities": [],
+      "slot_mem_ids": 0,
+      "final_candidate_ids": 0,
+      "timing": {
+        "slot_filter_ms": 0.0,
+        "entity_narrow_ms": 0.0,
+        "rank_ms": 74.5,
+        "rb_ms": 76.4,
+        "total_ms": 76.4
+      },
+      "hit_fields": [
+        {
+          "memory_id": "e2cc677b-9001-4ffb-8fa7-41b7c8ee2c5d",
+          "text": "A felhasználó tegnap este moziba ment Annával.",
+          "score": 0.9711,
+          "base_score": 0.8854,
+          "time_boost": false,
+          "observed_at": "2026-09-09",
+          "attributed_to": "user",
+          "metadata_keys": [
+            "metadata",
+            "role"
+          ],
+          "metadata": {
+            "metadata": "{'turn_id': 'utt_4c542707', 'voice_id': 'utt_4c542707', 'time_start': '2026-09-09', 'time_end': '2026-09-09', 'voice_slo",
+            "role": "user"
+          }
+        },
+        {
+          "memory_id": "91ff873a-2339-4a34-a476-6b60064c9e09",
+          "text": "A felhasználó múlt héten 10 kilométert futott.",
+          "score": 0.8288,
+          "base_score": 0.8288,
+          "time_boost": false,
+          "observed_at": "2026-08-31",
+          "attributed_to": "user",
+          "metadata_keys": [
+            "metadata",
+            "role"
+          ],
+          "metadata": {
+            "metadata": "{'turn_id': 'utt_935b6a9a', 'voice_id': 'utt_935b6a9a', 'time_start': '2026-08-31', 'time_end': '2026-08-31', 'voice_slo",
+            "role": "user"
+          }
+        },
+        {
+          "memory_id": "ea314dbd-2f96-421d-8d4b-9c5807d895ef",
+          "text": "A felhasználó holnap reggel 8-kor fogorvoshoz megy.",
+          "score": 0.8268,
+          "base_score": 0.8268,
+          "time_boost": false,
+          "observed_at": "2026-09-10",
+          "attributed_to": "user",
+          "metadata_keys": [
+            "metadata",
+            "role"
+          ],
+          "metadata": {
+            "metadata": "{'turn_id': 'utt_d188453f', 'voice_id': 'utt_d188453f', 'time_start': '2026-09-10', 'time_end': '2026-09-10', 'voice_slo",
+            "role": "user"
+          }
+        }
+      ],
+      "rb_fields": [],
+      "query": "Mit csináltam tegnap este Annával?",
+      "tag": "HU-multi-entity"
+    },
+    {
+      "latency": {
+        "mean_ms": 64.1,
+        "median_ms": 67.8,
+        "min_ms": 50.0,
+        "max_ms": 76.6
+      },
+      "hits": 5,
+      "rb_hits": 0,
+      "rank_of_expected": null,
+      "hit_texts": [
+        "A felhasználó tegnap este moziba ment Annával.",
+        "A felhasználó holnap reggel 8-kor fogorvoshoz megy.",
+        "A felhasználó múlt héten 10 kilométert futott.",
+        "The user finished the quarterly report for the Q3 audit last week",
+        "A felhasználó jövő héten Párizsba utazik a családjával."
+      ],
+      "search_mode": "fallback",
+      "slots": [],
+      "entities": [],
+      "slot_mem_ids": 0,
+      "final_candidate_ids": 0,
+      "timing": {
+        "slot_filter_ms": 0.0,
+        "entity_narrow_ms": 0.0,
+        "rank_ms": 64.1,
+        "rb_ms": 64.1,
+        "total_ms": 64.1
+      },
+      "hit_fields": [
+        {
+          "memory_id": "e2cc677b-9001-4ffb-8fa7-41b7c8ee2c5d",
+          "text": "A felhasználó tegnap este moziba ment Annával.",
+          "score": 0.8086,
+          "base_score": 0.8086,
+          "time_boost": false,
+          "observed_at": "2026-09-09",
+          "attributed_to": "user",
+          "metadata_keys": [
+            "metadata",
+            "role"
+          ],
+          "metadata": {
+            "metadata": "{'turn_id': 'utt_4c542707', 'voice_id': 'utt_4c542707', 'time_start': '2026-09-09', 'time_end': '2026-09-09', 'voice_slo",
+            "role": "user"
+          }
+        },
+        {
+          "memory_id": "ea314dbd-2f96-421d-8d4b-9c5807d895ef",
+          "text": "A felhasználó holnap reggel 8-kor fogorvoshoz megy.",
+          "score": 0.8021,
+          "base_score": 0.8021,
+          "time_boost": false,
+          "observed_at": "2026-09-10",
+          "attributed_to": "user",
+          "metadata_keys": [
+            "metadata",
+            "role"
+          ],
+          "metadata": {
+            "metadata": "{'turn_id': 'utt_d188453f', 'voice_id': 'utt_d188453f', 'time_start': '2026-09-10', 'time_end': '2026-09-10', 'voice_slo",
+            "role": "user"
+          }
+        },
+        {
+          "memory_id": "91ff873a-2339-4a34-a476-6b60064c9e09",
+          "text": "A felhasználó múlt héten 10 kilométert futott.",
+          "score": 0.7917,
+          "base_score": 0.7917,
+          "time_boost": false,
+          "observed_at": "2026-08-31",
+          "attributed_to": "user",
+          "metadata_keys": [
+            "metadata",
+            "role"
+          ],
+          "metadata": {
+            "metadata": "{'turn_id': 'utt_935b6a9a', 'voice_id': 'utt_935b6a9a', 'time_start': '2026-08-31', 'time_end': '2026-08-31', 'voice_slo",
+            "role": "user"
+          }
+        }
+      ],
+      "rb_fields": [],
+      "query": "qwertyuiop asdfgh zxcvbn",
+      "tag": "EMPTY-control"
+    }
+  ],
+  "path_b": [
+    {
+      "latency": {
+        "mean_ms": 77.2,
+        "median_ms": 72.5,
+        "min_ms": 55.1,
+        "max_ms": 114.4
+      },
+      "classified_slots": [
+        "daily_life"
+      ],
+      "classified_entities": [
+        "hosszú kávé"
+      ],
+      "hits": 5,
+      "rb_hits": 0,
+      "rank_of_expected": 1,
+      "hit_texts": [
+        "A felhasználó kedvenc kávéja a hosszú kávé, minden reggel iszik egyet Budapesten.",
+        "A felhasználó holnap reggel 8-kor fogorvoshoz megy.",
+        "A felhasználó tegnap este moziba ment Annával.",
+        "A felhasználó múlt héten 10 kilométert futott.",
+        "A felhasználó jövő héten Párizsba utazik a családjával."
+      ],
+      "search_mode": "slot-only",
+      "slots": [
+        "daily_life"
+      ],
+      "entities": [
+        "hosszú kávé"
+      ],
+      "slot_mem_ids": 8,
+      "final_candidate_ids": 8,
+      "timing": {
+        "slot_filter_ms": 0.3,
+        "entity_narrow_ms": 0.9,
+        "rank_ms": 43.7,
+        "rb_ms": 49.7,
+        "total_ms": 50.9
+      },
+      "hit_fields": [
+        {
+          "memory_id": "7e87239b-d139-4170-aca4-db72a6f70da7",
+          "text": "A felhasználó kedvenc kávéja a hosszú kávé, minden reggel iszik egyet Budapesten.",
+          "score": 0.9373,
+          "base_score": 0.8873,
+          "time_boost": false,
+          "observed_at": "2026-09-10",
+          "attributed_to": "user",
+          "metadata_keys": [
+            "metadata",
+            "role"
+          ],
+          "metadata": {
+            "metadata": "{'turn_id': 'utt_da75ecbc', 'voice_id': 'utt_da75ecbc', 'time_start': '2026-09-10', 'time_end': '2026-09-10', 'voice_slo",
+            "role": "user"
+          }
+        },
+        {
+          "memory_id": "ea314dbd-2f96-421d-8d4b-9c5807d895ef",
+          "text": "A felhasználó holnap reggel 8-kor fogorvoshoz megy.",
+          "score": 0.88,
+          "base_score": 0.83,
+          "time_boost": false,
+          "observed_at": "2026-09-10",
+          "attributed_to": "user",
+          "metadata_keys": [
+            "metadata",
+            "role"
+          ],
+          "metadata": {
+            "metadata": "{'turn_id': 'utt_d188453f', 'voice_id': 'utt_d188453f', 'time_start': '2026-09-10', 'time_end': '2026-09-10', 'voice_slo",
+            "role": "user"
+          }
+        },
+        {
+          "memory_id": "e2cc677b-9001-4ffb-8fa7-41b7c8ee2c5d",
+          "text": "A felhasználó tegnap este moziba ment Annával.",
+          "score": 0.7915,
+          "base_score": 0.7915,
+          "time_boost": false,
+          "observed_at": "2026-09-09",
+          "attributed_to": "user",
+          "metadata_keys": [
+            "metadata",
+            "role"
+          ],
+          "metadata": {
+            "metadata": "{'turn_id': 'utt_4c542707', 'voice_id': 'utt_4c542707', 'time_start': '2026-09-09', 'time_end': '2026-09-09', 'voice_slo",
+            "role": "user"
+          }
+        }
+      ],
+      "rb_fields": [],
+      "query": "Milyen kávét iszom reggel?",
+      "tag": "HU-simple"
+    },
+    {
+      "latency": {
+        "mean_ms": 77.2,
+        "median_ms": 70.9,
+        "min_ms": 57.1,
+        "max_ms": 106.9
+      },
+      "classified_slots": [
+        "work"
+      ],
+      "classified_entities": [
+        "presentations"
+      ],
+      "hits": 5,
+      "rb_hits": 4,
+      "rank_of_expected": 1,
+      "hit_texts": [
+        "The user always gets nervous before presentations",
+        "A felhasználó tegnap este moziba ment Annával.",
+        "A felhasználó holnap reggel 8-kor fogorvoshoz megy.",
+        "A felhasználó múlt héten 10 kilométert futott.",
+        "A felhasználó jövő héten Párizsba utazik a családjával."
+      ],
+      "search_mode": "slot-only",
+      "slots": [
+        "work"
+      ],
+      "entities": [
+        "presentations"
+      ],
+      "slot_mem_ids": 8,
+      "final_candidate_ids": 8,
+      "timing": {
+        "slot_filter_ms": 0.3,
+        "entity_narrow_ms": 0.9,
+        "rank_ms": 50.8,
+        "rb_ms": 54.7,
+        "total_ms": 55.9
+      },
+      "hit_fields": [
+        {
+          "memory_id": "8c6a03b2-123b-47dc-97c6-52e7c388afbb",
+          "text": "The user always gets nervous before presentations",
+          "score": 0.9354,
+          "base_score": 0.8354,
+          "time_boost": false,
+          "observed_at": "2026-09-10",
+          "attributed_to": "user",
+          "metadata_keys": [
+            "metadata",
+            "role"
+          ],
+          "metadata": {
+            "metadata": "{'turn_id': 'utt_928208bf', 'voice_id': 'utt_928208bf', 'time_start': '2026-09-10', 'time_end': '2026-09-10', 'voice_slo",
+            "role": "user"
+          }
+        },
+        {
+          "memory_id": "e2cc677b-9001-4ffb-8fa7-41b7c8ee2c5d",
+          "text": "A felhasználó tegnap este moziba ment Annával.",
+          "score": 0.7763,
+          "base_score": 0.7763,
+          "time_boost": false,
+          "observed_at": "2026-09-09",
+          "attributed_to": "user",
+          "metadata_keys": [
+            "metadata",
+            "role"
+          ],
+          "metadata": {
+            "metadata": "{'turn_id': 'utt_4c542707', 'voice_id': 'utt_4c542707', 'time_start': '2026-09-09', 'time_end': '2026-09-09', 'voice_slo",
+            "role": "user"
+          }
+        },
+        {
+          "memory_id": "ea314dbd-2f96-421d-8d4b-9c5807d895ef",
+          "text": "A felhasználó holnap reggel 8-kor fogorvoshoz megy.",
+          "score": 0.7694,
+          "base_score": 0.7694,
+          "time_boost": false,
+          "observed_at": "2026-09-10",
+          "attributed_to": "user",
+          "metadata_keys": [
+            "metadata",
+            "role"
+          ],
+          "metadata": {
+            "metadata": "{'turn_id': 'utt_d188453f', 'voice_id': 'utt_d188453f', 'time_start': '2026-09-10', 'time_end': '2026-09-10', 'voice_slo",
+            "role": "user"
+          }
+        }
+      ],
+      "rb_fields": [
+        {
+          "source": "profile",
+          "priority": 0.932,
+          "content": "gets nervous before presentations（情绪）｜他说过：I always get nervous before presentations",
+          "metadata_keys": [
+            "claim",
+            "slot_name",
+            "trait_id"
+          ]
+        },
+        {
+          "source": "situation_pattern",
+          "priority": 0.7436,
+          "content": "[2026-09-10] Emotional note: I dislike long meetings (inner note: {\"text\": \"[curious] A felhasználó most osztott meg valamit, ami láthatóan fontos neki.\"})",
+          "metadata_keys": [
+            "anchor_score",
+            "emotion"
+          ]
+        }
+      ],
+      "query": "how do I feel before presentations?",
+      "tag": "EN-simple"
+    },
+    {
+      "latency": {
+        "mean_ms": 65.2,
+        "median_ms": 66.2,
+        "min_ms": 55.3,
+        "max_ms": 77.1
+      },
+      "classified_slots": [
+        "work"
+      ],
+      "classified_entities": [
+        "long meetings"
+      ],
+      "hits": 5,
+      "rb_hits": 0,
+      "rank_of_expected": 1,
+      "hit_texts": [
+        "The user dislikes long meetings",
+        "A felhasználó holnap reggel 8-kor fogorvoshoz megy.",
+        "The user always gets nervous before presentations",
+        "A felhasználó tegnap este moziba ment Annával.",
+        "A felhasználó kedvenc kávéja a hosszú kávé, minden reggel iszik egyet Budapesten."
+      ],
+      "search_mode": "slot-only",
+      "slots": [
+        "work"
+      ],
+      "entities": [
+        "long meetings"
+      ],
+      "slot_mem_ids": 8,
+      "final_candidate_ids": 8,
+      "timing": {
+        "slot_filter_ms": 0.3,
+        "entity_narrow_ms": 0.5,
+        "rank_ms": 40.7,
+        "rb_ms": 44.6,
+        "total_ms": 45.4
+      },
+      "hit_fields": [
+        {
+          "memory_id": "2e957f67-7a1c-483f-8f04-44cb9da44598",
+          "text": "The user dislikes long meetings",
+          "score": 0.807,
+          "base_score": 0.807,
+          "time_boost": false,
+          "observed_at": "2026-09-10",
+          "attributed_to": "user",
+          "metadata_keys": [
+            "metadata",
+            "role"
+          ],
+          "metadata": {
+            "metadata": "{'turn_id': 'utt_2ac6f85b', 'voice_id': 'utt_2ac6f85b', 'time_start': '2026-09-10', 'time_end': '2026-09-10', 'voice_slo",
+            "role": "user"
+          }
+        },
+        {
+          "memory_id": "ea314dbd-2f96-421d-8d4b-9c5807d895ef",
+          "text": "A felhasználó holnap reggel 8-kor fogorvoshoz megy.",
+          "score": 0.7561,
+          "base_score": 0.7561,
+          "time_boost": false,
+          "observed_at": "2026-09-10",
+          "attributed_to": "user",
+          "metadata_keys": [
+            "metadata",
+            "role"
+          ],
+          "metadata": {
+            "metadata": "{'turn_id': 'utt_d188453f', 'voice_id': 'utt_d188453f', 'time_start': '2026-09-10', 'time_end': '2026-09-10', 'voice_slo",
+            "role": "user"
+          }
+        },
+        {
+          "memory_id": "8c6a03b2-123b-47dc-97c6-52e7c388afbb",
+          "text": "The user always gets nervous before presentations",
+          "score": 0.75,
+          "base_score": 0.75,
+          "time_boost": false,
+          "observed_at": "2026-09-10",
+          "attributed_to": "user",
+          "metadata_keys": [
+            "metadata",
+            "role"
+          ],
+          "metadata": {
+            "metadata": "{'turn_id': 'utt_928208bf', 'voice_id': 'utt_928208bf', 'time_start': '2026-09-10', 'time_end': '2026-09-10', 'voice_slo",
+            "role": "user"
+          }
+        }
+      ],
+      "rb_fields": [],
+      "query": "what do I dislike at work?",
+      "tag": "EN-simple"
+    },
+    {
+      "latency": {
+        "mean_ms": 63.2,
+        "median_ms": 66.5,
+        "min_ms": 57.2,
+        "max_ms": 67.0
+      },
+      "classified_slots": [
+        "daily_life"
+      ],
+      "classified_entities": [
+        "hosszú kávé"
+      ],
+      "hits": 5,
+      "rb_hits": 0,
+      "rank_of_expected": 1,
+      "hit_texts": [
+        "A felhasználó kedvenc kávéja a hosszú kávé, minden reggel iszik egyet Budapesten.",
+        "A felhasználó holnap reggel 8-kor fogorvoshoz megy.",
+        "A felhasználó tegnap este moziba ment Annával.",
+        "A felhasználó múlt héten 10 kilométert futott.",
+        "A felhasználó jövő héten Párizsba utazik a családjával."
+      ],
+      "search_mode": "slot-only",
+      "slots": [
+        "daily_life"
+      ],
+      "entities": [
+        "hosszú kávé"
+      ],
+      "slot_mem_ids": 8,
+      "final_candidate_ids": 8,
+      "timing": {
+        "slot_filter_ms": 0.3,
+        "entity_narrow_ms": 0.8,
+        "rank_ms": 47.2,
+        "rb_ms": 56.2,
+        "total_ms": 57.2
+      },
+      "hit_fields": [
+        {
+          "memory_id": "7e87239b-d139-4170-aca4-db72a6f70da7",
+          "text": "A felhasználó kedvenc kávéja a hosszú kávé, minden reggel iszik egyet Budapesten.",
+          "score": 1.0688,
+          "base_score": 0.9188,
+          "time_boost": false,
+          "observed_at": "2026-09-10",
+          "attributed_to": "user",
+          "metadata_keys": [
+            "metadata",
+            "role"
+          ],
+          "metadata": {
+            "metadata": "{'turn_id': 'utt_da75ecbc', 'voice_id': 'utt_da75ecbc', 'time_start': '2026-09-10', 'time_end': '2026-09-10', 'voice_slo",
+            "role": "user"
+          }
+        },
+        {
+          "memory_id": "ea314dbd-2f96-421d-8d4b-9c5807d895ef",
+          "text": "A felhasználó holnap reggel 8-kor fogorvoshoz megy.",
+          "score": 0.9025,
+          "base_score": 0.8525,
+          "time_boost": false,
+          "observed_at": "2026-09-10",
+          "attributed_to": "user",
+          "metadata_keys": [
+            "metadata",
+            "role"
+          ],
+          "metadata": {
+            "metadata": "{'turn_id': 'utt_d188453f', 'voice_id': 'utt_d188453f', 'time_start': '2026-09-10', 'time_end': '2026-09-10', 'voice_slo",
+            "role": "user"
+          }
+        },
+        {
+          "memory_id": "e2cc677b-9001-4ffb-8fa7-41b7c8ee2c5d",
+          "text": "A felhasználó tegnap este moziba ment Annával.",
+          "score": 0.8236,
+          "base_score": 0.8236,
+          "time_boost": false,
+          "observed_at": "2026-09-09",
+          "attributed_to": "user",
+          "metadata_keys": [
+            "metadata",
+            "role"
+          ],
+          "metadata": {
+            "metadata": "{'turn_id': 'utt_4c542707', 'voice_id': 'utt_4c542707', 'time_start': '2026-09-09', 'time_end': '2026-09-09', 'voice_slo",
+            "role": "user"
+          }
+        }
+      ],
+      "rb_fields": [],
+      "query": "kedvenc kávé minden reggel",
+      "tag": "HU-simple-keywords"
+    },
+    {
+      "latency": {
+        "mean_ms": 70.1,
+        "median_ms": 75.3,
+        "min_ms": 51.6,
+        "max_ms": 81.7
+      },
+      "classified_slots": [
+        "relationships"
+      ],
+      "classified_entities": [],
+      "hits": 5,
+      "rb_hits": 0,
+      "rank_of_expected": 1,
+      "hit_texts": [
+        "A felhasználó tegnap este moziba ment Annával.",
+        "A felhasználó holnap reggel 8-kor fogorvoshoz megy.",
+        "A felhasználó múlt héten 10 kilométert futott.",
+        "A felhasználó jövő héten Párizsba utazik a családjával.",
+        "A felhasználó kedvenc kávéja a hosszú kávé, minden reggel iszik egyet Budapesten."
+      ],
+      "search_mode": "slot-only",
+      "slots": [
+        "relationships"
+      ],
+      "entities": [],
+      "slot_mem_ids": 8,
+      "final_candidate_ids": 8,
+      "timing": {
+        "slot_filter_ms": 0.3,
+        "entity_narrow_ms": 0.0,
+        "rank_ms": 41.6,
+        "rb_ms": 41.6,
+        "total_ms": 41.9
+      },
+      "hit_fields": [
+        {
+          "memory_id": "e2cc677b-9001-4ffb-8fa7-41b7c8ee2c5d",
+          "text": "A felhasználó tegnap este moziba ment Annával.",
+          "score": 0.9148,
+          "base_score": 0.8548,
+          "time_boost": false,
+          "observed_at": "2026-09-09",
+          "attributed_to": "user",
+          "metadata_keys": [
+            "metadata",
+            "role"
+          ],
+          "metadata": {
+            "metadata": "{'turn_id': 'utt_4c542707', 'voice_id': 'utt_4c542707', 'time_start': '2026-09-09', 'time_end': '2026-09-09', 'voice_slo",
+            "role": "user"
+          }
+        },
+        {
+          "memory_id": "ea314dbd-2f96-421d-8d4b-9c5807d895ef",
+          "text": "A felhasználó holnap reggel 8-kor fogorvoshoz megy.",
+          "score": 0.8402,
+          "base_score": 0.8402,
+          "time_boost": false,
+          "observed_at": "2026-09-10",
+          "attributed_to": "user",
+          "metadata_keys": [
+            "metadata",
+            "role"
+          ],
+          "metadata": {
+            "metadata": "{'turn_id': 'utt_d188453f', 'voice_id': 'utt_d188453f', 'time_start': '2026-09-10', 'time_end': '2026-09-10', 'voice_slo",
+            "role": "user"
+          }
+        },
+        {
+          "memory_id": "91ff873a-2339-4a34-a476-6b60064c9e09",
+          "text": "A felhasználó múlt héten 10 kilométert futott.",
+          "score": 0.8376,
+          "base_score": 0.8376,
+          "time_boost": false,
+          "observed_at": "2026-08-31",
+          "attributed_to": "user",
+          "metadata_keys": [
+            "metadata",
+            "role"
+          ],
+          "metadata": {
+            "metadata": "{'turn_id': 'utt_935b6a9a', 'voice_id': 'utt_935b6a9a', 'time_start': '2026-08-31', 'time_end': '2026-08-31', 'voice_slo",
+            "role": "user"
+          }
+        }
+      ],
+      "rb_fields": [],
+      "query": "Mit csináltam tegnap este?",
+      "tag": "HU-temporal"
+    },
+    {
+      "latency": {
+        "mean_ms": 62.6,
+        "median_ms": 64.2,
+        "min_ms": 48.7,
+        "max_ms": 74.8
+      },
+      "classified_slots": [
+        "relationships"
+      ],
+      "classified_entities": [],
+      "hits": 5,
+      "rb_hits": 0,
+      "rank_of_expected": 1,
+      "hit_texts": [
+        "A felhasználó tegnap este moziba ment Annával.",
+        "A felhasználó holnap reggel 8-kor fogorvoshoz megy.",
+        "A felhasználó múlt héten 10 kilométert futott.",
+        "The user finished the quarterly report for the Q3 audit last week",
+        "A felhasználó jövő héten Párizsba utazik a családjával."
+      ],
+      "search_mode": "slot-only",
+      "slots": [
+        "relationships"
+      ],
+      "entities": [],
+      "slot_mem_ids": 8,
+      "final_candidate_ids": 8,
+      "timing": {
+        "slot_filter_ms": 0.3,
+        "entity_narrow_ms": 0.0,
+        "rank_ms": 45.7,
+        "rb_ms": 45.7,
+        "total_ms": 45.9
+      },
+      "hit_fields": [
+        {
+          "memory_id": "e2cc677b-9001-4ffb-8fa7-41b7c8ee2c5d",
+          "text": "A felhasználó tegnap este moziba ment Annával.",
+          "score": 0.8304,
+          "base_score": 0.8304,
+          "time_boost": false,
+          "observed_at": "2026-09-09",
+          "attributed_to": "user",
+          "metadata_keys": [
+            "metadata",
+            "role"
+          ],
+          "metadata": {
+            "metadata": "{'turn_id': 'utt_4c542707', 'voice_id': 'utt_4c542707', 'time_start': '2026-09-09', 'time_end': '2026-09-09', 'voice_slo",
+            "role": "user"
+          }
+        },
+        {
+          "memory_id": "ea314dbd-2f96-421d-8d4b-9c5807d895ef",
+          "text": "A felhasználó holnap reggel 8-kor fogorvoshoz megy.",
+          "score": 0.7905,
+          "base_score": 0.7905,
+          "time_boost": false,
+          "observed_at": "2026-09-10",
+          "attributed_to": "user",
+          "metadata_keys": [
+            "metadata",
+            "role"
+          ],
+          "metadata": {
+            "metadata": "{'turn_id': 'utt_d188453f', 'voice_id': 'utt_d188453f', 'time_start': '2026-09-10', 'time_end': '2026-09-10', 'voice_slo",
+            "role": "user"
+          }
+        },
+        {
+          "memory_id": "91ff873a-2339-4a34-a476-6b60064c9e09",
+          "text": "A felhasználó múlt héten 10 kilométert futott.",
+          "score": 0.7899,
+          "base_score": 0.7899,
+          "time_boost": false,
+          "observed_at": "2026-08-31",
+          "attributed_to": "user",
+          "metadata_keys": [
+            "metadata",
+            "role"
+          ],
+          "metadata": {
+            "metadata": "{'turn_id': 'utt_935b6a9a', 'voice_id': 'utt_935b6a9a', 'time_start': '2026-08-31', 'time_end': '2026-08-31', 'voice_slo",
+            "role": "user"
+          }
+        }
+      ],
+      "rb_fields": [],
+      "query": "What did I do yesterday evening?",
+      "tag": "EN->HU-temporal"
+    },
+    {
+      "latency": {
+        "mean_ms": 65.3,
+        "median_ms": 64.1,
+        "min_ms": 54.3,
+        "max_ms": 78.6
+      },
+      "classified_slots": [
+        "health"
+      ],
+      "classified_entities": [
+        "fogorvos"
+      ],
+      "hits": 5,
+      "rb_hits": 0,
+      "rank_of_expected": 1,
+      "hit_texts": [
+        "A felhasználó holnap reggel 8-kor fogorvoshoz megy.",
+        "A felhasználó tegnap este moziba ment Annával.",
+        "A felhasználó jövő héten Párizsba utazik a családjával.",
+        "A felhasználó kedvenc kávéja a hosszú kávé, minden reggel iszik egyet Budapesten.",
+        "A felhasználó múlt héten 10 kilométert futott."
+      ],
+      "search_mode": "slot-only",
+      "slots": [
+        "health"
+      ],
+      "entities": [
+        "fogorvos"
+      ],
+      "slot_mem_ids": 8,
+      "final_candidate_ids": 8,
+      "timing": {
+        "slot_filter_ms": 0.3,
+        "entity_narrow_ms": 0.8,
+        "rank_ms": 49.9,
+        "rb_ms": 53.5,
+        "total_ms": 54.6
+      },
+      "hit_fields": [
+        {
+          "memory_id": "ea314dbd-2f96-421d-8d4b-9c5807d895ef",
+          "text": "A felhasználó holnap reggel 8-kor fogorvoshoz megy.",
+          "score": 0.9651,
+          "base_score": 0.8651,
+          "time_boost": false,
+          "observed_at": "2026-09-10",
+          "attributed_to": "user",
+          "metadata_keys": [
+            "metadata",
+            "role"
+          ],
+          "metadata": {
+            "metadata": "{'turn_id': 'utt_d188453f', 'voice_id': 'utt_d188453f', 'time_start': '2026-09-10', 'time_end': '2026-09-10', 'voice_slo",
+            "role": "user"
+          }
+        },
+        {
+          "memory_id": "e2cc677b-9001-4ffb-8fa7-41b7c8ee2c5d",
+          "text": "A felhasználó tegnap este moziba ment Annával.",
+          "score": 0.8452,
+          "base_score": 0.8452,
+          "time_boost": false,
+          "observed_at": "2026-09-09",
+          "attributed_to": "user",
+          "metadata_keys": [
+            "metadata",
+            "role"
+          ],
+          "metadata": {
+            "metadata": "{'turn_id': 'utt_4c542707', 'voice_id': 'utt_4c542707', 'time_start': '2026-09-09', 'time_end': '2026-09-09', 'voice_slo",
+            "role": "user"
+          }
+        },
+        {
+          "memory_id": "64e917ba-d892-4697-8a63-160015dcb127",
+          "text": "A felhasználó jövő héten Párizsba utazik a családjával.",
+          "score": 0.8334,
+          "base_score": 0.8334,
+          "time_boost": false,
+          "observed_at": "2026-09-10",
+          "attributed_to": "user",
+          "metadata_keys": [
+            "metadata",
+            "role"
+          ],
+          "metadata": {
+            "metadata": "{'turn_id': 'utt_5c834935', 'voice_id': 'utt_5c834935', 'time_start': '2026-09-10', 'time_end': '2026-09-10', 'voice_slo",
+            "role": "user"
+          }
+        }
+      ],
+      "rb_fields": [],
+      "query": "Mi a programom holnap reggel?",
+      "tag": "HU-temporal"
+    },
+    {
+      "latency": {
+        "mean_ms": 63.5,
+        "median_ms": 67.7,
+        "min_ms": 52.1,
+        "max_ms": 72.5
+      },
+      "classified_slots": [
+        "health"
+      ],
+      "classified_entities": [
+        "fogorvos"
+      ],
+      "hits": 5,
+      "rb_hits": 0,
+      "rank_of_expected": 1,
+      "hit_texts": [
+        "A felhasználó holnap reggel 8-kor fogorvoshoz megy.",
+        "A felhasználó tegnap este moziba ment Annával.",
+        "A felhasználó jövő héten Párizsba utazik a családjával.",
+        "A felhasználó kedvenc kávéja a hosszú kávé, minden reggel iszik egyet Budapesten.",
+        "A felhasználó múlt héten 10 kilométert futott."
+      ],
+      "search_mode": "slot-only",
+      "slots": [
+        "health"
+      ],
+      "entities": [
+        "fogorvos"
+      ],
+      "slot_mem_ids": 8,
+      "final_candidate_ids": 8,
+      "timing": {
+        "slot_filter_ms": 0.3,
+        "entity_narrow_ms": 0.9,
+        "rank_ms": 53.0,
+        "rb_ms": 61.7,
+        "total_ms": 62.9
+      },
+      "hit_fields": [
+        {
+          "memory_id": "ea314dbd-2f96-421d-8d4b-9c5807d895ef",
+          "text": "A felhasználó holnap reggel 8-kor fogorvoshoz megy.",
+          "score": 0.8122,
+          "base_score": 0.8122,
+          "time_boost": false,
+          "observed_at": "2026-09-10",
+          "attributed_to": "user",
+          "metadata_keys": [
+            "metadata",
+            "role"
+          ],
+          "metadata": {
+            "metadata": "{'turn_id': 'utt_d188453f', 'voice_id': 'utt_d188453f', 'time_start': '2026-09-10', 'time_end': '2026-09-10', 'voice_slo",
+            "role": "user"
+          }
+        },
+        {
+          "memory_id": "e2cc677b-9001-4ffb-8fa7-41b7c8ee2c5d",
+          "text": "A felhasználó tegnap este moziba ment Annával.",
+          "score": 0.7963,
+          "base_score": 0.7963,
+          "time_boost": false,
+          "observed_at": "2026-09-09",
+          "attributed_to": "user",
+          "metadata_keys": [
+            "metadata",
+            "role"
+          ],
+          "metadata": {
+            "metadata": "{'turn_id': 'utt_4c542707', 'voice_id': 'utt_4c542707', 'time_start': '2026-09-09', 'time_end': '2026-09-09', 'voice_slo",
+            "role": "user"
+          }
+        },
+        {
+          "memory_id": "64e917ba-d892-4697-8a63-160015dcb127",
+          "text": "A felhasználó jövő héten Párizsba utazik a családjával.",
+          "score": 0.7854,
+          "base_score": 0.7854,
+          "time_boost": false,
+          "observed_at": "2026-09-10",
+          "attributed_to": "user",
+          "metadata_keys": [
+            "metadata",
+            "role"
+          ],
+          "metadata": {
+            "metadata": "{'turn_id': 'utt_5c834935', 'voice_id': 'utt_5c834935', 'time_start': '2026-09-10', 'time_end': '2026-09-10', 'voice_slo",
+            "role": "user"
+          }
+        }
+      ],
+      "rb_fields": [],
+      "query": "What are my plans for tomorrow morning?",
+      "tag": "EN->HU-temporal"
+    },
+    {
+      "latency": {
+        "mean_ms": 76.4,
+        "median_ms": 71.9,
+        "min_ms": 54.6,
+        "max_ms": 99.9
+      },
+      "classified_slots": [
+        "health"
+      ],
+      "classified_entities": [],
+      "hits": 5,
+      "rb_hits": 0,
+      "rank_of_expected": 1,
+      "hit_texts": [
+        "A felhasználó múlt héten 10 kilométert futott.",
+        "A felhasználó tegnap este moziba ment Annával.",
+        "A felhasználó holnap reggel 8-kor fogorvoshoz megy.",
+        "A felhasználó jövő héten Párizsba utazik a családjával.",
+        "A felhasználó kedvenc kávéja a hosszú kávé, minden reggel iszik egyet Budapesten."
+      ],
+      "search_mode": "slot-only",
+      "slots": [
+        "health"
+      ],
+      "entities": [],
+      "slot_mem_ids": 8,
+      "final_candidate_ids": 8,
+      "timing": {
+        "slot_filter_ms": 0.3,
+        "entity_narrow_ms": 0.0,
+        "rank_ms": 83.2,
+        "rb_ms": 90.4,
+        "total_ms": 90.7
+      },
+      "hit_fields": [
+        {
+          "memory_id": "91ff873a-2339-4a34-a476-6b60064c9e09",
+          "text": "A felhasználó múlt héten 10 kilométert futott.",
+          "score": 0.917,
+          "base_score": 0.867,
+          "time_boost": false,
+          "observed_at": "2026-08-31",
+          "attributed_to": "user",
+          "metadata_keys": [
+            "metadata",
+            "role"
+          ],
+          "metadata": {
+            "metadata": "{'turn_id': 'utt_935b6a9a', 'voice_id': 'utt_935b6a9a', 'time_start': '2026-08-31', 'time_end': '2026-08-31', 'voice_slo",
+            "role": "user"
+          }
+        },
+        {
+          "memory_id": "e2cc677b-9001-4ffb-8fa7-41b7c8ee2c5d",
+          "text": "A felhasználó tegnap este moziba ment Annával.",
+          "score": 0.8225,
+          "base_score": 0.8225,
+          "time_boost": false,
+          "observed_at": "2026-09-09",
+          "attributed_to": "user",
+          "metadata_keys": [
+            "metadata",
+            "role"
+          ],
+          "metadata": {
+            "metadata": "{'turn_id': 'utt_4c542707', 'voice_id': 'utt_4c542707', 'time_start': '2026-09-09', 'time_end': '2026-09-09', 'voice_slo",
+            "role": "user"
+          }
+        },
+        {
+          "memory_id": "ea314dbd-2f96-421d-8d4b-9c5807d895ef",
+          "text": "A felhasználó holnap reggel 8-kor fogorvoshoz megy.",
+          "score": 0.8178,
+          "base_score": 0.8178,
+          "time_boost": false,
+          "observed_at": "2026-09-10",
+          "attributed_to": "user",
+          "metadata_keys": [
+            "metadata",
+            "role"
+          ],
+          "metadata": {
+            "metadata": "{'turn_id': 'utt_d188453f', 'voice_id': 'utt_d188453f', 'time_start': '2026-09-10', 'time_end': '2026-09-10', 'voice_slo",
+            "role": "user"
+          }
+        }
+      ],
+      "rb_fields": [],
+      "query": "Múlt héten mit futottam?",
+      "tag": "HU-temporal"
+    },
+    {
+      "latency": {
+        "mean_ms": 69.3,
+        "median_ms": 72.5,
+        "min_ms": 58.9,
+        "max_ms": 79.4
+      },
+      "classified_slots": [
+        "work"
+      ],
+      "classified_entities": [
+        "Q3 audit"
+      ],
+      "hits": 5,
+      "rb_hits": 0,
+      "rank_of_expected": 2,
+      "hit_texts": [
+        "A felhasználó múlt héten 10 kilométert futott.",
+        "The user finished the quarterly report for the Q3 audit last week",
+        "A felhasználó jövő héten Párizsba utazik a családjával.",
+        "A felhasználó tegnap este moziba ment Annával.",
+        "A felhasználó holnap reggel 8-kor fogorvoshoz megy."
+      ],
+      "search_mode": "slot-only",
+      "slots": [
+        "work"
+      ],
+      "entities": [
+        "Q3 audit"
+      ],
+      "slot_mem_ids": 8,
+      "final_candidate_ids": 8,
+      "timing": {
+        "slot_filter_ms": 0.3,
+        "entity_narrow_ms": 0.6,
+        "rank_ms": 48.1,
+        "rb_ms": 48.7,
+        "total_ms": 49.5
+      },
+      "hit_fields": [
+        {
+          "memory_id": "91ff873a-2339-4a34-a476-6b60064c9e09",
+          "text": "A felhasználó múlt héten 10 kilométert futott.",
+          "score": 0.8587,
+          "base_score": 0.8337,
+          "time_boost": false,
+          "observed_at": "2026-08-31",
+          "attributed_to": "user",
+          "metadata_keys": [
+            "metadata",
+            "role"
+          ],
+          "metadata": {
+            "metadata": "{'turn_id': 'utt_935b6a9a', 'voice_id': 'utt_935b6a9a', 'time_start': '2026-08-31', 'time_end': '2026-08-31', 'voice_slo",
+            "role": "user"
+          }
+        },
+        {
+          "memory_id": "84630b95-da46-4305-b1d8-6e8a60aee42b",
+          "text": "The user finished the quarterly report for the Q3 audit last week",
+          "score": 0.8539,
+          "base_score": 0.8289,
+          "time_boost": false,
+          "observed_at": "2026-08-31",
+          "attributed_to": "user",
+          "metadata_keys": [
+            "metadata",
+            "role"
+          ],
+          "metadata": {
+            "metadata": "{'turn_id': 'utt_50e2b3a8', 'voice_id': 'utt_50e2b3a8', 'time_start': '2026-08-31', 'time_end': '2026-08-31', 'voice_slo",
+            "role": "user"
+          }
+        },
+        {
+          "memory_id": "64e917ba-d892-4697-8a63-160015dcb127",
+          "text": "A felhasználó jövő héten Párizsba utazik a családjával.",
+          "score": 0.8475,
+          "base_score": 0.8225,
+          "time_boost": false,
+          "observed_at": "2026-09-10",
+          "attributed_to": "user",
+          "metadata_keys": [
+            "metadata",
+            "role"
+          ],
+          "metadata": {
+            "metadata": "{'turn_id': 'utt_5c834935', 'voice_id': 'utt_5c834935', 'time_start': '2026-09-10', 'time_end': '2026-09-10', 'voice_slo",
+            "role": "user"
+          }
+        }
+      ],
+      "rb_fields": [],
+      "query": "Mit csináltam múlt héten a Q3 audit kapcsán?",
+      "tag": "HU->EN-multi"
+    },
+    {
+      "latency": {
+        "mean_ms": 64.0,
+        "median_ms": 64.6,
+        "min_ms": 54.6,
+        "max_ms": 73.1
+      },
+      "classified_slots": [
+        "work"
+      ],
+      "classified_entities": [
+        "quarterly report"
+      ],
+      "hits": 5,
+      "rb_hits": 0,
+      "rank_of_expected": 1,
+      "hit_texts": [
+        "The user finished the quarterly report for the Q3 audit last week",
+        "A felhasználó tegnap este moziba ment Annával.",
+        "A felhasználó múlt héten 10 kilométert futott.",
+        "A felhasználó holnap reggel 8-kor fogorvoshoz megy.",
+        "A felhasználó jövő héten Párizsba utazik a családjával."
+      ],
+      "search_mode": "slot-only",
+      "slots": [
+        "work"
+      ],
+      "entities": [
+        "quarterly report"
+      ],
+      "slot_mem_ids": 8,
+      "final_candidate_ids": 8,
+      "timing": {
+        "slot_filter_ms": 0.3,
+        "entity_narrow_ms": 0.6,
+        "rank_ms": 34.9,
+        "rb_ms": 48.2,
+        "total_ms": 49.2
+      },
+      "hit_fields": [
+        {
+          "memory_id": "84630b95-da46-4305-b1d8-6e8a60aee42b",
+          "text": "The user finished the quarterly report for the Q3 audit last week",
+          "score": 0.9448,
+          "base_score": 0.8323,
+          "time_boost": false,
+          "observed_at": "2026-08-31",
+          "attributed_to": "user",
+          "metadata_keys": [
+            "metadata",
+            "role"
+          ],
+          "metadata": {
+            "metadata": "{'turn_id': 'utt_50e2b3a8', 'voice_id': 'utt_50e2b3a8', 'time_start': '2026-08-31', 'time_end': '2026-08-31', 'voice_slo",
+            "role": "user"
+          }
+        },
+        {
+          "memory_id": "e2cc677b-9001-4ffb-8fa7-41b7c8ee2c5d",
+          "text": "A felhasználó tegnap este moziba ment Annával.",
+          "score": 0.7933,
+          "base_score": 0.7933,
+          "time_boost": false,
+          "observed_at": "2026-09-09",
+          "attributed_to": "user",
+          "metadata_keys": [
+            "metadata",
+            "role"
+          ],
+          "metadata": {
+            "metadata": "{'turn_id': 'utt_4c542707', 'voice_id': 'utt_4c542707', 'time_start': '2026-09-09', 'time_end': '2026-09-09', 'voice_slo",
+            "role": "user"
+          }
+        },
+        {
+          "memory_id": "91ff873a-2339-4a34-a476-6b60064c9e09",
+          "text": "A felhasználó múlt héten 10 kilométert futott.",
+          "score": 0.7926,
+          "base_score": 0.7926,
+          "time_boost": false,
+          "observed_at": "2026-08-31",
+          "attributed_to": "user",
+          "metadata_keys": [
+            "metadata",
+            "role"
+          ],
+          "metadata": {
+            "metadata": "{'turn_id': 'utt_935b6a9a', 'voice_id': 'utt_935b6a9a', 'time_start': '2026-08-31', 'time_end': '2026-08-31', 'voice_slo",
+            "role": "user"
+          }
+        }
+      ],
+      "rb_fields": [],
+      "query": "Which report did I finish last week?",
+      "tag": "EN-multi"
+    },
+    {
+      "latency": {
+        "mean_ms": 77.0,
+        "median_ms": 77.1,
+        "min_ms": 57.3,
+        "max_ms": 93.1
+      },
+      "classified_slots": [
+        "goals"
+      ],
+      "classified_entities": [
+        "Párizs"
+      ],
+      "hits": 5,
+      "rb_hits": 0,
+      "rank_of_expected": 1,
+      "hit_texts": [
+        "A felhasználó jövő héten Párizsba utazik a családjával.",
+        "A felhasználó múlt héten 10 kilométert futott.",
+        "A felhasználó holnap reggel 8-kor fogorvoshoz megy.",
+        "A felhasználó tegnap este moziba ment Annával.",
+        "A felhasználó kedvenc kávéja a hosszú kávé, minden reggel iszik egyet Budapesten."
+      ],
+      "search_mode": "slot-only",
+      "slots": [
+        "goals"
+      ],
+      "entities": [
+        "Párizs"
+      ],
+      "slot_mem_ids": 8,
+      "final_candidate_ids": 8,
+      "timing": {
+        "slot_filter_ms": 0.3,
+        "entity_narrow_ms": 0.5,
+        "rank_ms": 58.7,
+        "rb_ms": 58.7,
+        "total_ms": 59.5
+      },
+      "hit_fields": [
+        {
+          "memory_id": "64e917ba-d892-4697-8a63-160015dcb127",
+          "text": "A felhasználó jövő héten Párizsba utazik a családjával.",
+          "score": 0.91,
+          "base_score": 0.86,
+          "time_boost": false,
+          "observed_at": "2026-09-10",
+          "attributed_to": "user",
+          "metadata_keys": [
+            "metadata",
+            "role"
+          ],
+          "metadata": {
+            "metadata": "{'turn_id': 'utt_5c834935', 'voice_id': 'utt_5c834935', 'time_start': '2026-09-10', 'time_end': '2026-09-10', 'voice_slo",
+            "role": "user"
+          }
+        },
+        {
+          "memory_id": "91ff873a-2339-4a34-a476-6b60064c9e09",
+          "text": "A felhasználó múlt héten 10 kilométert futott.",
+          "score": 0.8931,
+          "base_score": 0.8431,
+          "time_boost": false,
+          "observed_at": "2026-08-31",
+          "attributed_to": "user",
+          "metadata_keys": [
+            "metadata",
+            "role"
+          ],
+          "metadata": {
+            "metadata": "{'turn_id': 'utt_935b6a9a', 'voice_id': 'utt_935b6a9a', 'time_start': '2026-08-31', 'time_end': '2026-08-31', 'voice_slo",
+            "role": "user"
+          }
+        },
+        {
+          "memory_id": "ea314dbd-2f96-421d-8d4b-9c5807d895ef",
+          "text": "A felhasználó holnap reggel 8-kor fogorvoshoz megy.",
+          "score": 0.8291,
+          "base_score": 0.8291,
+          "time_boost": false,
+          "observed_at": "2026-09-10",
+          "attributed_to": "user",
+          "metadata_keys": [
+            "metadata",
+            "role"
+          ],
+          "metadata": {
+            "metadata": "{'turn_id': 'utt_d188453f', 'voice_id': 'utt_d188453f', 'time_start': '2026-09-10', 'time_end': '2026-09-10', 'voice_slo",
+            "role": "user"
+          }
+        }
+      ],
+      "rb_fields": [],
+      "query": "Jövő héten hová utazom?",
+      "tag": "HU-temporal"
+    },
+    {
+      "latency": {
+        "mean_ms": 67.6,
+        "median_ms": 70.2,
+        "min_ms": 54.8,
+        "max_ms": 75.3
+      },
+      "classified_slots": [
+        "daily_life"
+      ],
+      "classified_entities": [],
+      "hits": 5,
+      "rb_hits": 0,
+      "rank_of_expected": null,
+      "hit_texts": [
+        "A felhasználó holnap reggel 8-kor fogorvoshoz megy.",
+        "A felhasználó tegnap este moziba ment Annával.",
+        "A felhasználó múlt héten 10 kilométert futott.",
+        "A felhasználó kedvenc kávéja a hosszú kávé, minden reggel iszik egyet Budapesten.",
+        "A felhasználó jövő héten Párizsba utazik a családjával."
+      ],
+      "search_mode": "slot-only",
+      "slots": [
+        "daily_life"
+      ],
+      "entities": [],
+      "slot_mem_ids": 8,
+      "final_candidate_ids": 8,
+      "timing": {
+        "slot_filter_ms": 0.3,
+        "entity_narrow_ms": 0.0,
+        "rank_ms": 60.8,
+        "rb_ms": 60.8,
+        "total_ms": 61.1
+      },
+      "hit_fields": [
+        {
+          "memory_id": "ea314dbd-2f96-421d-8d4b-9c5807d895ef",
+          "text": "A felhasználó holnap reggel 8-kor fogorvoshoz megy.",
+          "score": 0.8902,
+          "base_score": 0.8527,
+          "time_boost": false,
+          "observed_at": "2026-09-10",
+          "attributed_to": "user",
+          "metadata_keys": [
+            "metadata",
+            "role"
+          ],
+          "metadata": {
+            "metadata": "{'turn_id': 'utt_d188453f', 'voice_id': 'utt_d188453f', 'time_start': '2026-09-10', 'time_end': '2026-09-10', 'voice_slo",
+            "role": "user"
+          }
+        },
+        {
+          "memory_id": "e2cc677b-9001-4ffb-8fa7-41b7c8ee2c5d",
+          "text": "A felhasználó tegnap este moziba ment Annával.",
+          "score": 0.8356,
+          "base_score": 0.8356,
+          "time_boost": false,
+          "observed_at": "2026-09-09",
+          "attributed_to": "user",
+          "metadata_keys": [
+            "metadata",
+            "role"
+          ],
+          "metadata": {
+            "metadata": "{'turn_id': 'utt_4c542707', 'voice_id': 'utt_4c542707', 'time_start': '2026-09-09', 'time_end': '2026-09-09', 'voice_slo",
+            "role": "user"
+          }
+        },
+        {
+          "memory_id": "91ff873a-2339-4a34-a476-6b60064c9e09",
+          "text": "A felhasználó múlt héten 10 kilométert futott.",
+          "score": 0.8235,
+          "base_score": 0.8235,
+          "time_boost": false,
+          "observed_at": "2026-08-31",
+          "attributed_to": "user",
+          "metadata_keys": [
+            "metadata",
+            "role"
+          ],
+          "metadata": {
+            "metadata": "{'turn_id': 'utt_935b6a9a', 'voice_id': 'utt_935b6a9a', 'time_start': '2026-08-31', 'time_end': '2026-08-31', 'voice_slo",
+            "role": "user"
+          }
+        }
+      ],
+      "rb_fields": [],
+      "query": "Mit csináltam ma reggel?",
+      "tag": "HU-temporal-recognition"
+    },
+    {
+      "latency": {
+        "mean_ms": 68.3,
+        "median_ms": 67.9,
+        "min_ms": 57.6,
+        "max_ms": 79.0
+      },
+      "classified_slots": [
+        "work"
+      ],
+      "classified_entities": [
+        "long meetings"
+      ],
+      "hits": 5,
+      "rb_hits": 0,
+      "rank_of_expected": 1,
+      "hit_texts": [
+        "The user dislikes long meetings",
+        "A felhasználó múlt héten 10 kilométert futott.",
+        "A felhasználó kedvenc kávéja a hosszú kávé, minden reggel iszik egyet Budapesten.",
+        "A felhasználó tegnap este moziba ment Annával.",
+        "A felhasználó holnap reggel 8-kor fogorvoshoz megy."
+      ],
+      "search_mode": "slot-only",
+      "slots": [
+        "work"
+      ],
+      "entities": [
+        "long meetings"
+      ],
+      "slot_mem_ids": 8,
+      "final_candidate_ids": 8,
+      "timing": {
+        "slot_filter_ms": 0.3,
+        "entity_narrow_ms": 0.6,
+        "rank_ms": 42.1,
+        "rb_ms": 44.1,
+        "total_ms": 44.9
+      },
+      "hit_fields": [
+        {
+          "memory_id": "2e957f67-7a1c-483f-8f04-44cb9da44598",
+          "text": "The user dislikes long meetings",
+          "score": 0.8192,
+          "base_score": 0.8192,
+          "time_boost": false,
+          "observed_at": "2026-09-10",
+          "attributed_to": "user",
+          "metadata_keys": [
+            "metadata",
+            "role"
+          ],
+          "metadata": {
+            "metadata": "{'turn_id': 'utt_2ac6f85b', 'voice_id': 'utt_2ac6f85b', 'time_start': '2026-09-10', 'time_end': '2026-09-10', 'voice_slo",
+            "role": "user"
+          }
+        },
+        {
+          "memory_id": "91ff873a-2339-4a34-a476-6b60064c9e09",
+          "text": "A felhasználó múlt héten 10 kilométert futott.",
+          "score": 0.8161,
+          "base_score": 0.8161,
+          "time_boost": false,
+          "observed_at": "2026-08-31",
+          "attributed_to": "user",
+          "metadata_keys": [
+            "metadata",
+            "role"
+          ],
+          "metadata": {
+            "metadata": "{'turn_id': 'utt_935b6a9a', 'voice_id': 'utt_935b6a9a', 'time_start': '2026-08-31', 'time_end': '2026-08-31', 'voice_slo",
+            "role": "user"
+          }
+        },
+        {
+          "memory_id": "7e87239b-d139-4170-aca4-db72a6f70da7",
+          "text": "A felhasználó kedvenc kávéja a hosszú kávé, minden reggel iszik egyet Budapesten.",
+          "score": 0.8424,
+          "base_score": 0.8124,
+          "time_boost": false,
+          "observed_at": "2026-09-10",
+          "attributed_to": "user",
+          "metadata_keys": [
+            "metadata",
+            "role"
+          ],
+          "metadata": {
+            "metadata": "{'turn_id': 'utt_da75ecbc', 'voice_id': 'utt_da75ecbc', 'time_start': '2026-09-10', 'time_end': '2026-09-10', 'voice_slo",
+            "role": "user"
+          }
+        }
+      ],
+      "rb_fields": [],
+      "query": "Milyen hosszú értekezleteket nem szeretek?",
+      "tag": "HU->EN-simple"
+    },
+    {
+      "latency": {
+        "mean_ms": 70.0,
+        "median_ms": 69.6,
+        "min_ms": 64.0,
+        "max_ms": 79.0
+      },
+      "classified_slots": [
+        "relationships"
+      ],
+      "classified_entities": [
+        "Anna"
+      ],
+      "hits": 5,
+      "rb_hits": 0,
+      "rank_of_expected": 1,
+      "hit_texts": [
+        "A felhasználó tegnap este moziba ment Annával.",
+        "A felhasználó múlt héten 10 kilométert futott.",
+        "A felhasználó holnap reggel 8-kor fogorvoshoz megy.",
+        "A felhasználó jövő héten Párizsba utazik a családjával.",
+        "A felhasználó kedvenc kávéja a hosszú kávé, minden reggel iszik egyet Budapesten."
+      ],
+      "search_mode": "slot-only",
+      "slots": [
+        "relationships"
+      ],
+      "entities": [
+        "Anna"
+      ],
+      "slot_mem_ids": 8,
+      "final_candidate_ids": 8,
+      "timing": {
+        "slot_filter_ms": 0.4,
+        "entity_narrow_ms": 1.3,
+        "rank_ms": 46.5,
+        "rb_ms": 47.1,
+        "total_ms": 48.7
+      },
+      "hit_fields": [
+        {
+          "memory_id": "e2cc677b-9001-4ffb-8fa7-41b7c8ee2c5d",
+          "text": "A felhasználó tegnap este moziba ment Annával.",
+          "score": 0.9711,
+          "base_score": 0.8854,
+          "time_boost": false,
+          "observed_at": "2026-09-09",
+          "attributed_to": "user",
+          "metadata_keys": [
+            "metadata",
+            "role"
+          ],
+          "metadata": {
+            "metadata": "{'turn_id': 'utt_4c542707', 'voice_id': 'utt_4c542707', 'time_start': '2026-09-09', 'time_end': '2026-09-09', 'voice_slo",
+            "role": "user"
+          }
+        },
+        {
+          "memory_id": "91ff873a-2339-4a34-a476-6b60064c9e09",
+          "text": "A felhasználó múlt héten 10 kilométert futott.",
+          "score": 0.8288,
+          "base_score": 0.8288,
+          "time_boost": false,
+          "observed_at": "2026-08-31",
+          "attributed_to": "user",
+          "metadata_keys": [
+            "metadata",
+            "role"
+          ],
+          "metadata": {
+            "metadata": "{'turn_id': 'utt_935b6a9a', 'voice_id': 'utt_935b6a9a', 'time_start': '2026-08-31', 'time_end': '2026-08-31', 'voice_slo",
+            "role": "user"
+          }
+        },
+        {
+          "memory_id": "ea314dbd-2f96-421d-8d4b-9c5807d895ef",
+          "text": "A felhasználó holnap reggel 8-kor fogorvoshoz megy.",
+          "score": 0.8268,
+          "base_score": 0.8268,
+          "time_boost": false,
+          "observed_at": "2026-09-10",
+          "attributed_to": "user",
+          "metadata_keys": [
+            "metadata",
+            "role"
+          ],
+          "metadata": {
+            "metadata": "{'turn_id': 'utt_d188453f', 'voice_id': 'utt_d188453f', 'time_start': '2026-09-10', 'time_end': '2026-09-10', 'voice_slo",
+            "role": "user"
+          }
+        }
+      ],
+      "rb_fields": [],
+      "query": "Mit csináltam tegnap este Annával?",
+      "tag": "HU-multi-entity"
+    },
+    {
+      "latency": {
+        "mean_ms": 80.3,
+        "median_ms": 76.9,
+        "min_ms": 65.9,
+        "max_ms": 93.6
+      },
+      "classified_slots": [
+        "daily_life"
+      ],
+      "classified_entities": [],
+      "hits": 5,
+      "rb_hits": 0,
+      "rank_of_expected": null,
+      "hit_texts": [
+        "A felhasználó tegnap este moziba ment Annával.",
+        "A felhasználó holnap reggel 8-kor fogorvoshoz megy.",
+        "A felhasználó múlt héten 10 kilométert futott.",
+        "The user finished the quarterly report for the Q3 audit last week",
+        "A felhasználó jövő héten Párizsba utazik a családjával."
+      ],
+      "search_mode": "slot-only",
+      "slots": [
+        "daily_life"
+      ],
+      "entities": [],
+      "slot_mem_ids": 8,
+      "final_candidate_ids": 8,
+      "timing": {
+        "slot_filter_ms": 0.3,
+        "entity_narrow_ms": 0.0,
+        "rank_ms": 62.5,
+        "rb_ms": 63.6,
+        "total_ms": 63.9
+      },
+      "hit_fields": [
+        {
+          "memory_id": "e2cc677b-9001-4ffb-8fa7-41b7c8ee2c5d",
+          "text": "A felhasználó tegnap este moziba ment Annával.",
+          "score": 0.8086,
+          "base_score": 0.8086,
+          "time_boost": false,
+          "observed_at": "2026-09-09",
+          "attributed_to": "user",
+          "metadata_keys": [
+            "metadata",
+            "role"
+          ],
+          "metadata": {
+            "metadata": "{'turn_id': 'utt_4c542707', 'voice_id': 'utt_4c542707', 'time_start': '2026-09-09', 'time_end': '2026-09-09', 'voice_slo",
+            "role": "user"
+          }
+        },
+        {
+          "memory_id": "ea314dbd-2f96-421d-8d4b-9c5807d895ef",
+          "text": "A felhasználó holnap reggel 8-kor fogorvoshoz megy.",
+          "score": 0.8021,
+          "base_score": 0.8021,
+          "time_boost": false,
+          "observed_at": "2026-09-10",
+          "attributed_to": "user",
+          "metadata_keys": [
+            "metadata",
+            "role"
+          ],
+          "metadata": {
+            "metadata": "{'turn_id': 'utt_d188453f', 'voice_id': 'utt_d188453f', 'time_start': '2026-09-10', 'time_end': '2026-09-10', 'voice_slo",
+            "role": "user"
+          }
+        },
+        {
+          "memory_id": "91ff873a-2339-4a34-a476-6b60064c9e09",
+          "text": "A felhasználó múlt héten 10 kilométert futott.",
+          "score": 0.7917,
+          "base_score": 0.7917,
+          "time_boost": false,
+          "observed_at": "2026-08-31",
+          "attributed_to": "user",
+          "metadata_keys": [
+            "metadata",
+            "role"
+          ],
+          "metadata": {
+            "metadata": "{'turn_id': 'utt_935b6a9a', 'voice_id': 'utt_935b6a9a', 'time_start': '2026-08-31', 'time_end': '2026-08-31', 'voice_slo",
+            "role": "user"
+          }
+        }
+      ],
+      "rb_fields": [],
+      "query": "qwertyuiop asdfgh zxcvbn",
+      "tag": "EMPTY-control"
+    }
+  ],
+  "classify_only": [
+    {
+      "query": "Milyen kávét iszom reggel?",
+      "classify_ms": 4.8
+    },
+    {
+      "query": "how do I feel before presentations?",
+      "classify_ms": 7.5
+    },
+    {
+      "query": "what do I dislike at work?",
+      "classify_ms": 5.0
+    },
+    {
+      "query": "kedvenc kávé minden reggel",
+      "classify_ms": 4.7
+    },
+    {
+      "query": "Mit csináltam tegnap este?",
+      "classify_ms": 4.9
+    },
+    {
+      "query": "What did I do yesterday evening?",
+      "classify_ms": 4.2
+    },
+    {
+      "query": "Mi a programom holnap reggel?",
+      "classify_ms": 4.7
+    },
+    {
+      "query": "What are my plans for tomorrow morning?",
+      "classify_ms": 4.7
+    },
+    {
+      "query": "Múlt héten mit futottam?",
+      "classify_ms": 4.6
+    },
+    {
+      "query": "Mit csináltam múlt héten a Q3 audit kapcsán?",
+      "classify_ms": 4.4
+    },
+    {
+      "query": "Which report did I finish last week?",
+      "classify_ms": 4.4
+    },
+    {
+      "query": "Jövő héten hová utazom?",
+      "classify_ms": 4.6
+    },
+    {
+      "query": "Mit csináltam ma reggel?",
+      "classify_ms": 4.3
+    },
+    {
+      "query": "Milyen hosszú értekezleteket nem szeretek?",
+      "classify_ms": 7.7
+    },
+    {
+      "query": "Mit csináltam tegnap este Annával?",
+      "classify_ms": 4.7
+    },
+    {
+      "query": "qwertyuiop asdfgh zxcvbn",
+      "classify_ms": 4.6
+    }
+  ],
+  "speaker_leg": {
+    "cognitive_slot_tag_counts": {
+      "speaker:user": 0,
+      "speaker:Speaker 0": 0,
+      "speaker:person_probe": 0,
+      "scene:unknown": 0,
+      "daily_life": 8,
+      "work": 8,
+      "health": 8,
+      "relationships": 8,
+      "goals": 8
+    },
+    "search_no_filter_hits": [
+      "A felhasználó kedvenc kávéja a hosszú kávé, minden reggel iszik egyet Budapesten.",
+      "A felhasználó holnap reggel 8-kor fogorvoshoz megy.",
+      "A felhasználó tegnap este moziba ment Annával.",
+      "A felhasználó múlt héten 10 kilométert futott.",
+      "A felhasználó jövő héten Párizsba utazik a családjával."
+    ],
+    "search_speaker_filter_user_hits": [
+      "A felhasználó kedvenc kávéja a hosszú kávé, minden reggel iszik egyet Budapesten.",
+      "A felhasználó holnap reggel 8-kor fogorvoshoz megy.",
+      "A felhasználó tegnap este moziba ment Annával.",
+      "A felhasználó múlt héten 10 kilométert futott.",
+      "A felhasználó jövő héten Párizsba utazik a családjával."
+    ],
+    "filter_narrowed": false,
+    "api_surface": "vm.search(query, speaker_filter=...) exists; tags are written by the AUDIO path (voiceprint) only"
+  },
+  "temporal_leg": {
+    "expand_relative_dates": {
+      "ma": "ma",
+      "tegnap": "tegnap",
+      "holnap": "holnap",
+      "tegnap este": "tegnap este",
+      "ma reggel": "ma reggel",
+      "múlt héten": "múlt héten",
+      "jövő héten": "jövő héten",
+      "yesterday": "yesterday",
+      "today": "today",
+      "tomorrow": "tomorrow",
+      "yesterday evening": "yesterday evening",
+      "last week": "last week",
+      "next week": "next week",
+      "Mit csináltam tegnap este?": "Mit csináltam tegnap este?",
+      "What did I do yesterday evening?": "What did I do yesterday evening?"
+    },
+    "time_question_kind": {
+      "ma": null,
+      "tegnap": null,
+      "holnap": null,
+      "tegnap este": null,
+      "ma reggel": null,
+      "múlt héten": null,
+      "jövő héten": null,
+      "yesterday": null,
+      "today": null,
+      "tomorrow": null,
+      "yesterday evening": null,
+      "last week": null,
+      "next week": null,
+      "Mit csináltam tegnap este?": null,
+      "What did I do yesterday evening?": null
+    },
+    "query_dates": {
+      "ma": [],
+      "tegnap": [],
+      "holnap": [],
+      "tegnap este": [],
+      "ma reggel": [],
+      "múlt héten": [],
+      "jövő héten": [],
+      "yesterday": [],
+      "today": [],
+      "tomorrow": [],
+      "yesterday evening": [],
+      "last week": [],
+      "next week": [],
+      "Mit csináltam tegnap este?": [],
+      "What did I do yesterday evening?": []
+    },
+    "note": "expand_relative_dates is called INSIDE Search() on every query; time_question_kind gates _widen_for_time_question"
+  },
+  "renderer_leg": {
+    "HU-temporal": {
+      "query": "Mit csináltam tegnap este?",
+      "vendor_build_memory_context": "MEMORY CONTEXT (things you remember about the user):\n- [2026-09-09] A felhasználó tegnap este moziba ment Annával.\n- [2026-09-10] A felhasználó holnap reggel 8-kor fogorvoshoz megy.\n- [2026-08-31] A felhasználó múlt héten 10 kilométert futott.\n- [2026-09-10] A felhasználó jövő héten Párizsba utazik a családjával.\n- [2026-09-10] A felhasználó kedvenc kávéja a hosszú kávé, minden reggel iszik egyet Budapesten.",
+      "app_bridge_render": "- A felhasználó tegnap este moziba ment Annával.\n- A felhasználó holnap reggel 8-kor fogorvoshoz megy.\n- A felhasználó múlt héten 10 kilométert futott.\n- A felhasználó jövő héten Párizsba utazik a családjával.\n- A felhasználó kedvenc kávéja a hosszú kávé, minden reggel iszik egyet Budapesten.",
+      "app_web_render": "- A felhasználó tegnap este moziba ment Annával.\n- A felhasználó holnap reggel 8-kor fogorvoshoz megy.\n- A felhasználó múlt héten 10 kilométert futott.\n- A felhasználó jövő héten Párizsba utazik a családjával.\n- A felhasználó kedvenc kávéja a hosszú kávé, minden reggel iszik egyet Budapesten."
+    },
+    "EN-multi": {
+      "query": "Which report did I finish last week?",
+      "vendor_build_memory_context": "MEMORY CONTEXT (things you remember about the user):\n- [2026-08-31] The user finished the quarterly report for the Q3 audit last week\n- [2026-09-09] A felhasználó tegnap este moziba ment Annával.\n- [2026-08-31] A felhasználó múlt héten 10 kilométert futott.\n- [2026-09-10] A felhasználó holnap reggel 8-kor fogorvoshoz megy.\n- [2026-09-10] A felhasználó jövő héten Párizsba utazik a családjával.",
+      "app_bridge_render": "- The user finished the quarterly report for the Q3 audit last week\n- A felhasználó tegnap este moziba ment Annával.\n- A felhasználó múlt héten 10 kilométert futott.\n- A felhasználó holnap reggel 8-kor fogorvoshoz megy.\n- A felhasználó jövő héten Párizsba utazik a családjával.",
+      "app_web_render": "- The user finished the quarterly report for the Q3 audit last week\n- A felhasználó tegnap este moziba ment Annával.\n- A felhasználó múlt héten 10 kilométert futott.\n- A felhasználó holnap reggel 8-kor fogorvoshoz megy.\n- A felhasználó jövő héten Párizsba utazik a családjával."
+    },
+    "EN-simple-trait": {
+      "query": "how do I feel before presentations?",
+      "vendor_build_memory_context": "MEMORY CONTEXT (things you remember about the user):\n- [2026-09-10] The user always gets nervous before presentations\n- [2026-09-09] A felhasználó tegnap este moziba ment Annával.\n- [2026-09-10] A felhasználó holnap reggel 8-kor fogorvoshoz megy.\n- [2026-08-31] A felhasználó múlt héten 10 kilométert futott.\n- [2026-09-10] A felhasználó jövő héten Párizsba utazik a családjával.\n\nHOW TO SPEAK TO THIS USER (internal — never quote or paraphrase aloud):\n- gets nervous before presentations（情绪）｜他说过：I always get nervous before presentations\n- [2026-09-10] Emotional note: I dislike long meetings (inner note: {\"text\": \"[curious] A felhasználó most osztott meg valamit, ami láthatóan fontos neki.\"})\n- [2026-08-31] Emotional note: Last week I finished the quarterly report for the Q3 audit. (inner note: {\"text\": \"[curious] A felhasználó most osztott meg valamit, ami láthatóan fontos neki.\"})\nLet these shape your tone, what you bring up, and what you leave alone. Never state them back to the user.",
+      "app_bridge_render": "- The user always gets nervous before presentations\n- A felhasználó tegnap este moziba ment Annával.\n- A felhasználó holnap reggel 8-kor fogorvoshoz megy.\n- A felhasználó múlt héten 10 kilométert futott.\n- A felhasználó jövő héten Párizsba utazik a családjával.\n- gets nervous before presentations（情绪）｜他说过：I always get nervous before presentations\n- Emotional note: I dislike long meetings\n- Emotional note: Last week I finished the quarterly report for the Q3 audit.",
+      "app_web_render": "- The user always gets nervous before presentations\n- A felhasználó tegnap este moziba ment Annával.\n- A felhasználó holnap reggel 8-kor fogorvoshoz megy.\n- A felhasználó múlt héten 10 kilométert futott.\n- A felhasználó jövő héten Párizsba utazik a családjával.\n- gets nervous before presentations（情绪）｜他说过：I always get nervous before presentations\n- Emotional note: I dislike long meetings\n- Emotional note: Last week I finished the quarterly report for the Q3 audit."
+    }
+  },
+  "ingest": {
+    "wall_ms": 19567.1,
+    "facts_expected": 8
+  }
+}

@@ -1,0 +1,85 @@
+# requirements.lock - VoiceMem M0 pinned fuggosegek (telepito hasznalja)
+# ============================================================================
+# CEL: a telepito EZT a fajlt hasznalja telepitesi-idoben, hogy a celgepen
+# pontosan ugyanaz a fuggosegi allapot alljon elo, mint amit a kutatas
+# (spec 16.2) es a sandbox-tesztek igazoltak.
+#
+# A telepito a SIKERES telepites utan a tenyleges `pip freeze` eredmennyel
+# frissiti ezt a fajlt, es az INSTALL_MANIFEST.json is rogziti a tenyleges
+# verziokat (reproduceralhatosag, spec 21.2 / M0 23).
+#
+# MEGJEGYZES: a fajl ASCII - a pip Windows-os locale-kodolast hasznalhat,
+# az ekezetes komment sorok ezt atvennek.
+# ============================================================================
+
+# --- CORE: a sandboxban igazolt verziok (known-good) -------------------------
+numpy==2.1.3
+PyYAML==6.0.3
+httpx==0.28.1
+fastapi==0.128.0        # LOCAL web backend (app/web_server.py) - sandbox-igazolt
+uvicorn==0.44.0         # ASGI szerver a web backendhez - sandbox-igazolt
+websockets==16.0        # uvicorn WS support - sandbox-igazolt
+
+# --- TARGET-ONLY (csak a celgepen; a telepito reszletezi a sorrendet) --------
+# Kutatott pin-ek a V1 spec 16.2 alapjan. A sandboxban ezek NEM telepulnek -
+# a kod guardolt/lazy importokkal kezeli hianyukat (CONTRACT.md 2. pont).
+# transformers>=5.0           # v0.4.7 FIELD FIX: a qwen3_asr modul nativan
+#                              # csak a transformers 5.x-ben letezik (4.x
+#                              # ELUTASITJA a Qwen3-ASR checkpointot, es az
+#                              # ASR pipeline hivas sem tamogatott). A
+#                              # vendor\voicemem pyproject pin-je (4.52.3) a
+#                              # 12. lepesben visszavesz - az install_m1.ps1
+#                              # 16. lepesi OR (pip install
+#                              # "transformers>=5.0" + verzio-assert) a
+#                              # funasr/speechbrain UTAN viszaallitja.
+# onnxruntime==1.23.0          # Silero VAD ONNX (CPU build) - v0.3.4: a
+#                              # telepito a 13. lepesben KULON telepiti (a
+#                              # lock aktival sorai nem viszik a venv-be, es
+#                              # a voicemem fuggosegei sherpa-onnx-ot huznak)
+# sentence-transformers>=3.0   # multilingual-e5-small embedder
+# sounddevice>=0.5.0           # PortAudio mikrofon/hangszoro
+# soundfile>=0.12              # WAV iro/olo a benchmarkokhoz
+# accelerate                   # transformers betoltesi segedo (celgep)
+# funasr==1.4.11               # M2: emotion2vec+ base futtato (CPU) - a
+#                              # telepito 13. lepesben kulon parancs (a csomag
+#                              # nehez: modelscope/librosa/oss2 fuggosegek).
+#                              # FONTOS: a funasr requires_dist NEM tartalmaz
+#                              # torch-ot, a cu128 harmas nem tolodhat el
+#                              # miatta - a telepito utana trio-guardot futtat.
+
+# --- PyTorch: KULON lepes, sajat index-szel (nem fejezheto ki lock-sorrol) --
+# A cu128 wheel a pytorch sajat indexrol erheto el, ezert a telepito kulon
+# parancsban rakja fel (M0 / README Telepites 1. lepes). A harom csomag
+# HIVATALOS PAROSITOTT verzioja, mind EXAKT pinelve (a v0.1.6 a
+# torchvision/torchaudio verziot nem pinelte, ezert kerult be torchaudio
+# 2.11.0+cu128 a torch 2.7.0 melle - inkompatibilis paros):
+#   pip install torch==2.7.0 torchvision==0.22.0 torchaudio==2.7.0 --index-url https://download.pytorch.org/whl/cu128
+# A telepito a telepites utan import-val ellenorzi mindharom verziojat, es
+# a VoiceMem telepitese utan ujra (guard a pip feluliras ellen).
+
+# --- voicemem: pinned git-commit (vendor-klonbol telepul) --------------------
+# A telepito a vendor/voicemem klonbol `pip install -e` telepiti; a pin a
+# vendor-klon commitja (a klon SHA-ja = az alabbi URL utolso szegmense):
+#   pip install git+https://github.com/xzf-thu/VoiceMem.git@<pinned-commit>
+
+# --- huggingface_hub KONYVTAR: TELEPITESI IDOBEN kell (modell-letoltes) ----
+# A scripts/download_models.ps1 a huggingface_hub PYTHON API-jat hasznalja
+# (hf_hub_download / snapshot_download a scripts/download_models_hf.py-ban)
+# a modellek models/-ba toltasere; a telepito kulon lepesben rakja fel (a
+# runtime offline env-ek miatt utana mar nem hasznalja):
+#   pip install "huggingface_hub"
+# FIGYELEM: a [cli] extra SZANDERKOS NINCS telepitve - a Hugging Face CLI
+# NEM runtime dependency (a CLI deprecation-warningjanak emoji karaktere
+# CP1252 konzolon UnicodeEncodeError-t okozott - v0.1.6 release blocker).
+
+# --- M2 allapot (v0.2.0): a funasr EMAR VALOS fuggoseg -----------------------
+# Az install_m1.ps1 13. lepesben telepiti (pinned 1.4.11), az emotion2vec+
+# base modell a MODELS.lock.json 'emotion' bejegyzese alapjan toltodik.
+#
+# --- M3 allapot (v0.3.0): a speechbrain EMAR VALOS fuggoseg -------------------
+# Az install_m1.ps1 14. lepesben telepiti (pinned 1.1.1), az ECAPA modell a
+# MODELS.lock.json 'speaker' bejegyzese alapjan toltodik (5 futtatasi fajl).
+# FONTOS: a speechbrain requires_dist torch>=2.1.0/torchaudio>=2.1.0 - a
+# pin-elt cu128 harmas elegendo, a telepito utana trio-guardot futtat.
+# Kizarva TOVABBRA IS: MOSS-TTS, Gemma audio, Qwen Omni (semmelyik sem
+# resze az M3 kornyezetnek).

@@ -1,0 +1,52 @@
+{
+  "schema": "task15-before-after/1",
+  "scenario": "12 emotional utterances ingested; run_cleanup with a deterministic LLM decision requesting deletion of ALL heartnotes; VOICEMEM_ALLOW_MEMORY_DELETE ABSENT",
+  "before": {
+    "vendor_resolved": "/tmp/vendor_before/voicemem/__init__.py",
+    "controlled_patches": [
+      "VM-LOCAL-001",
+      "VM-LOCAL-002",
+      "VM-LOCAL-003",
+      "VM-LOCAL-004",
+      "VM-LOCAL-005",
+      "VM-LOCAL-006",
+      "UPSTREAM-961efe8",
+      "UPSTREAM-91d2e42",
+      "UPSTREAM-f535f9d",
+      "UPSTREAM-e3cc965"
+    ],
+    "has_vm_local_007": false,
+    "heartnotes_before": 12,
+    "heartnotes_after_default_env": 0,
+    "deleted_with_env_absent": 12,
+    "vendor_stdout_tail": "[ingest] 入库 1 条：['A felhasználó mondta']\n[ingest] 入库 0 条：[]\n[ingest] 入库 0 条：[]\n[ingest] 入库 0 条：[]\n[ingest] 入库 0 条：[]\n[ingest] 入库 0 条：[]\n[ingest] 入库 0 条：[]\n[ingest] 入库 0 条：[]\n[ingest] 入库 0 条：[]\n[ingest] 入库 0 条：[]\n[ingest] 入库 0 条：[]\n[ingest] 入库 0 条：[]\n[Cleanup] 清洁完成，删除 12 条右脑记忆",
+    "verdict": "UNGATED DELETE (CD-1 P0 present — v0.5.1 behaviour)"
+  },
+  "after": {
+    "vendor_resolved": "/home/z/my-project/voicemem-agent/vendor/voicemem/voicemem/__init__.py",
+    "controlled_patches": [
+      "VM-LOCAL-001",
+      "VM-LOCAL-002",
+      "VM-LOCAL-003",
+      "VM-LOCAL-004",
+      "VM-LOCAL-005",
+      "VM-LOCAL-006",
+      "VM-LOCAL-007",
+      "VM-LOCAL-008",
+      "VM-LOCAL-009",
+      "UPSTREAM-961efe8",
+      "UPSTREAM-91d2e42",
+      "UPSTREAM-f535f9d",
+      "UPSTREAM-e3cc965"
+    ],
+    "has_vm_local_007": true,
+    "heartnotes_before": 12,
+    "heartnotes_after_default_env": 12,
+    "deleted_with_env_absent": 0,
+    "vendor_stdout_tail": "[ingest] 入库 1 条：['A felhasználó mondta']\n[ingest] 入库 0 条：[]\n[ingest] 入库 0 条：[]\n[ingest] 入库 0 条：[]\n[ingest] 入库 0 条：[]\n[ingest] 入库 0 条：[]\n[ingest] 入库 0 条：[]\n[ingest] 入库 0 条：[]\n[ingest] 入库 0 条：[]\n[ingest] 入库 0 条：[]\n[ingest] 入库 0 条：[]\n[ingest] 入库 0 条：[]\n[Cleanup] DELETE BLOCKED (VM-LOCAL-007): 12 条右脑记忆保留（VOICEMEM_ALLOW_MEMORY_DELETE 未开启）",
+    "verdict": "DEFAULT DENY (gated — v0.5.2 behaviour)"
+  },
+  "comparison": {
+    "cd1_fixed": true
+  }
+}

@@ -1,0 +1,350 @@
+{
+  "path_a_plain_search": [
+    {
+      "query": "Milyen kávét iszom reggel?",
+      "tag": "HU",
+      "latency_ms": 90.8,
+      "search_mode": "fallback",
+      "slots": [],
+      "classified_entities": [],
+      "hits": 3,
+      "rank_of_expected": 1,
+      "rb_hits": [],
+      "slot_mem_ids": 0,
+      "final_candidate_ids": 0,
+      "timing": {
+        "slot_filter_ms": 0.0,
+        "entity_narrow_ms": 0.0,
+        "rank_ms": 72.3,
+        "rb_ms": 81.7,
+        "total_ms": 81.7
+      },
+      "hit_texts": [
+        "The user's favourite coffee is a long coffee and they drink one every morning in Budapest",
+        "The user always gets nervous before presentations",
+        "The user dislikes long meetings"
+      ]
+    },
+    {
+      "query": "What coffee do I drink every morning?",
+      "tag": "EN",
+      "latency_ms": 105.9,
+      "search_mode": "fallback",
+      "slots": [],
+      "classified_entities": [],
+      "hits": 3,
+      "rank_of_expected": 1,
+      "rb_hits": [],
+      "slot_mem_ids": 0,
+      "final_candidate_ids": 0,
+      "timing": {
+        "slot_filter_ms": 0.0,
+        "entity_narrow_ms": 0.0,
+        "rank_ms": 87.4,
+        "rb_ms": 103.5,
+        "total_ms": 103.5
+      },
+      "hit_texts": [
+        "The user's favourite coffee is a long black and they drink one every morning",
+        "The user always gets nervous before presentations",
+        "The user dislikes long meetings"
+      ]
+    },
+    {
+      "query": "kedvenc kávé minden reggel",
+      "tag": "X-LANG",
+      "latency_ms": 76.6,
+      "search_mode": "fallback",
+      "slots": [],
+      "classified_entities": [],
+      "hits": 3,
+      "rank_of_expected": 1,
+      "rb_hits": [],
+      "slot_mem_ids": 0,
+      "final_candidate_ids": 0,
+      "timing": {
+        "slot_filter_ms": 0.0,
+        "entity_narrow_ms": 0.0,
+        "rank_ms": 74.2,
+        "rb_ms": 74.2,
+        "total_ms": 74.2
+      },
+      "hit_texts": [
+        "The user's favourite coffee is a long coffee and they drink one every morning in Budapest",
+        "The user always gets nervous before presentations",
+        "The user dislikes long meetings"
+      ]
+    },
+    {
+      "query": "my favourite morning coffee Budapest",
+      "tag": "X-LANG",
+      "latency_ms": 43.8,
+      "search_mode": "fallback",
+      "slots": [],
+      "classified_entities": [],
+      "hits": 3,
+      "rank_of_expected": 1,
+      "rb_hits": [],
+      "slot_mem_ids": 0,
+      "final_candidate_ids": 0,
+      "timing": {
+        "slot_filter_ms": 0.0,
+        "entity_narrow_ms": 0.0,
+        "rank_ms": 41.5,
+        "rb_ms": 41.5,
+        "total_ms": 41.5
+      },
+      "hit_texts": [
+        "The user's favourite coffee is a long coffee and they drink one every morning in Budapest",
+        "The user always gets nervous before presentations",
+        "The user dislikes long meetings"
+      ]
+    },
+    {
+      "query": "hogyan érzem magam prezentáció előtt?",
+      "tag": "TRAIT-HU",
+      "latency_ms": 60.4,
+      "search_mode": "fallback",
+      "slots": [],
+      "classified_entities": [],
+      "hits": 3,
+      "rank_of_expected": 1,
+      "rb_hits": [],
+      "slot_mem_ids": 0,
+      "final_candidate_ids": 0,
+      "timing": {
+        "slot_filter_ms": 0.0,
+        "entity_narrow_ms": 0.0,
+        "rank_ms": 58.2,
+        "rb_ms": 58.2,
+        "total_ms": 58.2
+      },
+      "hit_texts": [
+        "The user always gets nervous before presentations",
+        "The user dislikes long meetings",
+        "The user's favourite coffee is a long coffee and they drink one every morning in Budapest"
+      ]
+    },
+    {
+      "query": "how do I feel before presentations?",
+      "tag": "TRAIT-EN",
+      "latency_ms": 68.4,
+      "search_mode": "fallback",
+      "slots": [],
+      "classified_entities": [],
+      "hits": 3,
+      "rank_of_expected": 1,
+      "rb_hits": [
+        "gets nervous before presentations（情绪）｜他说过：Mindig ideges leszek prezentáció előtt.",
+        "[2026-09-10] Emotional note: I dislike long meetings. (inner note: {\"memory\": [{\"id\": \"en-trait-1\", \"text\": \"The user dislikes long meetings\", \"event\": \"ADD\", \"slot\": \"work\", \"confidence\": 0.9, \"entities\": [{\"name\": \"long meetings\", \"entity_type\": \"event\", \"role\": \"object\"}]}], \"emotion\": \"\", \"traits\": [{\"slot\": \"喜好与厌恶\", \"label\": \"dislikes long meetings\"}]})",
+        "[2026-09-10] Emotional note: Mindig ideges leszek prezentáció előtt. (inner note: {\"memory\": [{\"id\": \"hu-trait-1\", \"text\": \"The user always gets nervous before presentations\", \"event\": \"ADD\", \"slot\": \"work\", \"confidence\": 0.9, \"entities\": [{\"name\": \"presentations\", \"entity_type\": \"event\", \"role\": \"context\"}]}], \"emotion\": \"anxious\", \"traits\": [{\"slot\": \"情绪\", \"label\": \"gets nervous before presentations\"}]})"
+      ],
+      "slot_mem_ids": 0,
+      "final_candidate_ids": 0,
+      "timing": {
+        "slot_filter_ms": 0.0,
+        "entity_narrow_ms": 0.0,
+        "rank_ms": 66.1,
+        "rb_ms": 66.1,
+        "total_ms": 66.1
+      },
+      "hit_texts": [
+        "The user always gets nervous before presentations",
+        "The user's favourite coffee is a long black and they drink one every morning",
+        "The user dislikes long meetings"
+      ]
+    },
+    {
+      "query": "what do I dislike at work?",
+      "tag": "TRAIT-EN",
+      "latency_ms": 39.4,
+      "search_mode": "fallback",
+      "slots": [],
+      "classified_entities": [],
+      "hits": 3,
+      "rank_of_expected": 1,
+      "rb_hits": [],
+      "slot_mem_ids": 0,
+      "final_candidate_ids": 0,
+      "timing": {
+        "slot_filter_ms": 0.0,
+        "entity_narrow_ms": 0.0,
+        "rank_ms": 37.1,
+        "rb_ms": 37.2,
+        "total_ms": 37.2
+      },
+      "hit_texts": [
+        "The user dislikes long meetings",
+        "The user always gets nervous before presentations",
+        "The user's favourite coffee is a long black and they drink one every morning"
+      ]
+    }
+  ],
+  "path_b_rich": [
+    {
+      "query": "Milyen kávét iszom reggel?",
+      "tag": "HU",
+      "classify_ms": 4.3,
+      "search_ms": 84.3,
+      "search_mode": "slot-only",
+      "slots": [
+        "daily_life"
+      ],
+      "classified_entities": [
+        "long coffee"
+      ],
+      "hits": 3,
+      "rank_of_expected": 1,
+      "rb_hits": [],
+      "slot_mem_ids": 4,
+      "final_candidate_ids": 4,
+      "hit_texts": [
+        "The user's favourite coffee is a long coffee and they drink one every morning in Budapest",
+        "The user always gets nervous before presentations",
+        "The user dislikes long meetings"
+      ]
+    },
+    {
+      "query": "What coffee do I drink every morning?",
+      "tag": "EN",
+      "classify_ms": 4.2,
+      "search_ms": 80.5,
+      "search_mode": "slot-only",
+      "slots": [
+        "daily_life"
+      ],
+      "classified_entities": [
+        "long black"
+      ],
+      "hits": 3,
+      "rank_of_expected": 1,
+      "rb_hits": [],
+      "slot_mem_ids": 4,
+      "final_candidate_ids": 4,
+      "hit_texts": [
+        "The user's favourite coffee is a long black and they drink one every morning",
+        "The user always gets nervous before presentations",
+        "The user dislikes long meetings"
+      ]
+    },
+    {
+      "query": "kedvenc kávé minden reggel",
+      "tag": "X-LANG",
+      "classify_ms": 4.0,
+      "search_ms": 77.6,
+      "search_mode": "slot-only",
+      "slots": [
+        "daily_life"
+      ],
+      "classified_entities": [
+        "long coffee"
+      ],
+      "hits": 3,
+      "rank_of_expected": 1,
+      "rb_hits": [],
+      "slot_mem_ids": 4,
+      "final_candidate_ids": 4,
+      "hit_texts": [
+        "The user's favourite coffee is a long coffee and they drink one every morning in Budapest",
+        "The user always gets nervous before presentations",
+        "The user dislikes long meetings"
+      ]
+    },
+    {
+      "query": "my favourite morning coffee Budapest",
+      "tag": "X-LANG",
+      "classify_ms": 4.1,
+      "search_ms": 61.9,
+      "search_mode": "slot-only",
+      "slots": [
+        "daily_life"
+      ],
+      "classified_entities": [
+        "Budapest"
+      ],
+      "hits": 3,
+      "rank_of_expected": 1,
+      "rb_hits": [],
+      "slot_mem_ids": 4,
+      "final_candidate_ids": 4,
+      "hit_texts": [
+        "The user's favourite coffee is a long coffee and they drink one every morning in Budapest",
+        "The user always gets nervous before presentations",
+        "The user dislikes long meetings"
+      ]
+    },
+    {
+      "query": "hogyan érzem magam prezentáció előtt?",
+      "tag": "TRAIT-HU",
+      "classify_ms": 4.1,
+      "search_ms": 76.2,
+      "search_mode": "slot-only",
+      "slots": [
+        "work"
+      ],
+      "classified_entities": [
+        "presentations"
+      ],
+      "hits": 3,
+      "rank_of_expected": 1,
+      "rb_hits": [],
+      "slot_mem_ids": 4,
+      "final_candidate_ids": 4,
+      "hit_texts": [
+        "The user always gets nervous before presentations",
+        "The user dislikes long meetings",
+        "The user's favourite coffee is a long coffee and they drink one every morning in Budapest"
+      ]
+    },
+    {
+      "query": "how do I feel before presentations?",
+      "tag": "TRAIT-EN",
+      "classify_ms": 4.2,
+      "search_ms": 81.5,
+      "search_mode": "slot-only",
+      "slots": [
+        "work"
+      ],
+      "classified_entities": [
+        "presentations"
+      ],
+      "hits": 3,
+      "rank_of_expected": 1,
+      "rb_hits": [
+        "gets nervous before presentations（情绪）｜他说过：Mindig ideges leszek prezentáció előtt.",
+        "[2026-09-10] Emotional note: I dislike long meetings. (inner note: {\"memory\": [{\"id\": \"en-trait-1\", \"text\": \"The user dislikes long meetings\", \"event\": \"ADD\", \"slot\": \"work\", \"confidence\": 0.9, \"entities\": [{\"name\": \"long meetings\", \"entity_type\": \"event\", \"role\": \"object\"}]}], \"emotion\": \"\", \"traits\": [{\"slot\": \"喜好与厌恶\", \"label\": \"dislikes long meetings\"}]})",
+        "[2026-09-10] Emotional note: Mindig ideges leszek prezentáció előtt. (inner note: {\"memory\": [{\"id\": \"hu-trait-1\", \"text\": \"The user always gets nervous before presentations\", \"event\": \"ADD\", \"slot\": \"work\", \"confidence\": 0.9, \"entities\": [{\"name\": \"presentations\", \"entity_type\": \"event\", \"role\": \"context\"}]}], \"emotion\": \"anxious\", \"traits\": [{\"slot\": \"情绪\", \"label\": \"gets nervous before presentations\"}]})"
+      ],
+      "slot_mem_ids": 4,
+      "final_candidate_ids": 4,
+      "hit_texts": [
+        "The user always gets nervous before presentations",
+        "The user's favourite coffee is a long black and they drink one every morning",
+        "The user dislikes long meetings"
+      ]
+    },
+    {
+      "query": "what do I dislike at work?",
+      "tag": "TRAIT-EN",
+      "classify_ms": 4.2,
+      "search_ms": 75.3,
+      "search_mode": "slot-only",
+      "slots": [
+        "work"
+      ],
+      "classified_entities": [
+        "long meetings"
+      ],
+      "hits": 3,
+      "rank_of_expected": 1,
+      "rb_hits": [],
+      "slot_mem_ids": 4,
+      "final_candidate_ids": 4,
+      "hit_texts": [
+        "The user dislikes long meetings",
+        "The user always gets nervous before presentations",
+        "The user's favourite coffee is a long black and they drink one every morning"
+      ]
+    }
+  ]
+}

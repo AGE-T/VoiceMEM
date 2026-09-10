@@ -1,0 +1,126 @@
+{
+  "dependencies": {
+    "PyYAML": "6.0.3",
+    "anyio": "4.9.0",
+    "certifi": "2026.4.26",
+    "h11": "0.16.0",
+    "httpcore": "1.0.9",
+    "httpx": "0.28.1",
+    "idna": "3.10",
+    "numpy": "2.1.3",
+    "onnxruntime": "1.23.0",
+    "sentence-transformers": "3.4.1",
+    "sounddevice": "0.5.1",
+    "soundfile": "0.13.1",
+    "transformers": "5.0.0"
+  },
+  "generated_at": "2026-09-01T12:00:00+00:00",
+  "gpu": {
+    "compute_capability": "12.0",
+    "cuda_available": true,
+    "name": "NVIDIA GeForce RTX 5070",
+    "total_vram_gb": 12.0
+  },
+  "models": [
+    {
+      "component": "asr",
+      "hf_repo": "Qwen/Qwen3-ASR-0.6B",
+      "path": "models/asr/qwen3-asr-0.6b/config.json",
+      "sha256": "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+      "size_bytes": 1234,
+      "source_commit": null,
+      "source_repo": "Qwen/Qwen3-ASR-0.6B",
+      "source_revision": "main"
+    },
+    {
+      "component": "llm",
+      "hf_repo": "bartowski/Qwen_Qwen3.6-35B-A3B-GGUF",
+      "path": "models/llm/qwen3.6-35b-a3b/Qwen3.6-35B-A3B-IQ4_XS.gguf",
+      "sha256": "93567e57a8fe10b23569b9d9ec38cd005deedf71e29477c421a4b83f418a538b",
+      "size_bytes": 6975879296,
+      "source_commit": "29d097773436b69ff9feafd636ab4cf873786537",
+      "source_repo": "bartowski/Qwen_Qwen3.6-35B-A3B-GGUF",
+      "source_revision": "main"
+    },
+    {
+      "component": "tts",
+      "hf_repo": "rhasspy/piper-voices",
+      "path": "models/tts/piper/en_US-lessac-medium.onnx",
+      "sha256": "abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789",
+      "size_bytes": 63440935
+    },
+    {
+      "component": "tts",
+      "hf_repo": "rhasspy/piper-voices",
+      "path": "models/tts/piper/hu_HU-anna-medium.onnx",
+      "sha256": "abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456788",
+      "size_bytes": 63440934
+    },
+    {
+      "component": "vad",
+      "hf_repo": "snakers4/silero-vad",
+      "path": "models/vad/silero-vad/silero_vad.onnx",
+      "sha256": "9876543210fedcba9876543210fedcba9876543210fedcba9876543210fedcba",
+      "size_bytes": 2329153
+    },
+    {
+      "component": "embedding",
+      "hf_repo": "intfloat/multilingual-e5-small",
+      "path": "models/embedding/multilingual-e5-small/config.json",
+      "sha256": "1111111111111111111111111111111111111111111111111111111111111111",
+      "size_bytes": 567,
+      "source_commit": null,
+      "source_repo": "intfloat/multilingual-e5-small",
+      "source_revision": "main"
+    }
+  ],
+  "offline": {
+    "hf_hub_offline": true,
+    "transformers_offline": true
+  },
+  "os": {
+    "machine": "AMD64",
+    "release": "11",
+    "system": "Windows",
+    "version": "10.0.26100"
+  },
+  "project": {
+    "git_commit": "3f2c9d51a8b4e7f0aa9c1d2e3f4a5b6c7d8e9f01",
+    "name": "voicemem-agent",
+    "version": "0.5.0"
+  },
+  "python": {
+    "executable": "C:\\VoiceMemAgent\\.venv\\Scripts\\python.exe",
+    "implementation": "CPython",
+    "version": "3.11.9"
+  },
+  "torch": {
+    "cuda": "12.8",
+    "version": "2.7.0+cu128"
+  },
+  "voicemem": {
+    "commit": "e8384e087bd2f44eb05fc7ae1a3c525ea8244179",
+    "controlled": true,
+    "git_commit": "e8384e087bd2f44eb05fc7ae1a3c525ea8244179",
+    "git_tag": "v0.0.1",
+    "local_patches": [
+      "VM-LOCAL-001",
+      "VM-LOCAL-002",
+      "VM-LOCAL-003",
+      "VM-LOCAL-004",
+      "VM-LOCAL-005",
+      "VM-LOCAL-006",
+      "VM-LOCAL-EN"
+    ],
+    "package_version": "0.2.3",
+    "pin_file": "VOICEMEM_PIN.json",
+    "pin_verified": true,
+    "requested_ref": "v0.0.1",
+    "runtime_commit_attr": "e8384e087bd2f44eb05fc7ae1a3c525ea8244179",
+    "runtime_import_path": "C:\\VoiceMemAgent\\vendor\\voicemem\\voicemem\\__init__.py",
+    "upstream_commit": "e8384e087bd2f44eb05fc7ae1a3c525ea8244179",
+    "upstream_repo": "https://github.com/xzf-thu/VoiceMem.git",
+    "upstream_tag": "v0.0.1",
+    "version": "0.2.3"
+  }
+}

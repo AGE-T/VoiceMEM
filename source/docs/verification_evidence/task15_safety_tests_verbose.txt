@@ -1,0 +1,53 @@
+[ingest] 入库 1 条：['A felhasználó legjob']
+test_01_default_env_blocks_delete_and_harms_nothing (tests.integration.test_memory_safety.LeftBrainDeleteGateTests.test_01_default_env_blocks_delete_and_harms_nothing) ... delete_memory(dfb5d603-1c67-4c15-955e-6384c5118997) BLOCKED by the controlled-fork safety guard — set VOICEMEM_ALLOW_MEMORY_DELETE=1 to allow destructive memory deletion (archive_memory() is the reversible alternative)
+ok
+test_02_enabled_delete_cascades_every_graph_row (tests.integration.test_memory_safety.LeftBrainDeleteGateTests.test_02_enabled_delete_cascades_every_graph_row) ... ok
+test_03_deleting_unknown_id_is_safe (tests.integration.test_memory_safety.LeftBrainDeleteGateTests.test_03_deleting_unknown_id_is_safe) ... delete_memory(definitely-not-an-id) BLOCKED by the controlled-fork safety guard — set VOICEMEM_ALLOW_MEMORY_DELETE=1 to allow destructive memory deletion (archive_memory() is the reversible alternative)
+ok
+[ingest] 入库 1 条：['A felhasználó mondta']
+[ingest] 入库 1 条：['A felhasználó mondta']
+[ingest] 入库 1 条：['A felhasználó mondta']
+[ingest] 入库 1 条：['A felhasználó mondta']
+[ingest] 入库 1 条：['A felhasználó mondta']
+[ingest] 入库 1 条：['A felhasználó mondta']
+[ingest] 入库 1 条：['A felhasználó mondta']
+[ingest] 入库 1 条：['A felhasználó mondta']
+[ingest] 入库 1 条：['A felhasználó mondta']
+[ingest] 入库 1 条：['A felhasználó mondta']
+[ingest] 入库 1 条：['A felhasználó mondta']
+[ingest] 入库 1 条：['A felhasználó mondta']
+test_01_default_env_blocks_delete (tests.integration.test_memory_safety.RightBrainDeleteGateTests.test_01_default_env_blocks_delete)
+Default (env absent): the LLM delete decision is DENIED. ... run_cleanup: LLM requested hard-delete of 12 right-brain heartnote(s) (ids: d5625f65-b75f-49cb-97ff-ff7f4f6e8337, 5405f9c0-61a7-4c2f-8a5f-0562b0f25ed3, ab3ffbdb-c06e-4e81-aefd-c4a3ac1d2cea, 5c6a3610-6fe1-4e3e-b82c-4684a82ff7d3, b2ab3ba7-56a5-4021-ae52-2b7b54880e30, 8663c2d6-7744-4ff5-b1f7-4492dab2c855, 363e8b9b-735b-4132-b9a6-39a3f6d03918, 243c6851-feb6-424a-9029-c23dc26728ba) — BLOCKED by the controlled-fork safety guard (default deny). Set VOICEMEM_ALLOW_MEMORY_DELETE=1 to allow destructive emotional-memory deletion; the supersede branch of run_cleanup is non-destructive and unaffected.
+[Cleanup] DELETE BLOCKED (VM-LOCAL-007): 12 条右脑记忆保留（VOICEMEM_ALLOW_MEMORY_DELETE 未开启）
+ok
+test_02_explicit_zero_blocks_delete (tests.integration.test_memory_safety.RightBrainDeleteGateTests.test_02_explicit_zero_blocks_delete)
+Explicit VOICEMEM_ALLOW_MEMORY_DELETE=0: still denied. ... run_cleanup: LLM requested hard-delete of 12 right-brain heartnote(s) (ids: d5625f65-b75f-49cb-97ff-ff7f4f6e8337, 5405f9c0-61a7-4c2f-8a5f-0562b0f25ed3, ab3ffbdb-c06e-4e81-aefd-c4a3ac1d2cea, 5c6a3610-6fe1-4e3e-b82c-4684a82ff7d3, b2ab3ba7-56a5-4021-ae52-2b7b54880e30, 8663c2d6-7744-4ff5-b1f7-4492dab2c855, 363e8b9b-735b-4132-b9a6-39a3f6d03918, 243c6851-feb6-424a-9029-c23dc26728ba) — BLOCKED by the controlled-fork safety guard (default deny). Set VOICEMEM_ALLOW_MEMORY_DELETE=1 to allow destructive emotional-memory deletion; the supersede branch of run_cleanup is non-destructive and unaffected.
+[Cleanup] DELETE BLOCKED (VM-LOCAL-007): 12 条右脑记忆保留（VOICEMEM_ALLOW_MEMORY_DELETE 未开启）
+ok
+test_03_explicit_one_deletes_with_cascade (tests.integration.test_memory_safety.RightBrainDeleteGateTests.test_03_explicit_one_deletes_with_cascade)
+Explicit opt-in (=1): deletion works AND removes anchor links ... [Cleanup] 清洁完成，删除 12 条右脑记忆
+ok
+[ingest] 入库 1 条：['A felhasználó kedven']
+[ingest] 入库 0 条：[]
+test_01_update_decision_actually_fired (tests.integration.test_memory_safety.UpdateHistoryPreservationTests.test_01_update_decision_actually_fired)
+Harness check: the resolver DID emit UPDATE (else these proofs ... ok
+test_02_old_observation_text_survives (tests.integration.test_memory_safety.UpdateHistoryPreservationTests.test_02_old_observation_text_survives)
+No destructive overwrite: the old row keeps its ORIGINAL text. ... ok
+test_03_supersession_is_explicit (tests.integration.test_memory_safety.UpdateHistoryPreservationTests.test_03_supersession_is_explicit)
+Both directions of the relationship are first-class metadata. ... ok
+test_04_provenance_preserved_on_both_rows (tests.integration.test_memory_safety.UpdateHistoryPreservationTests.test_04_provenance_preserved_on_both_rows)
+Provenance survives: the new observation carries the event date ... ok
+test_05_json_mirror_is_lossless (tests.integration.test_memory_safety.UpdateHistoryPreservationTests.test_05_json_mirror_is_lossless)
+The JSON mirror keeps BOTH entries: old annotated, new appended. ... ok
+test_06_search_prefers_current_recovers_history (tests.integration.test_memory_safety.UpdateHistoryPreservationTests.test_06_search_prefers_current_recovers_history)
+Current retrieval ranks B first; the historical A survives in ... ok
+test_07_cognitive_graph_has_both_rows (tests.integration.test_memory_safety.UpdateHistoryPreservationTests.test_07_cognitive_graph_has_both_rows)
+The graph layer holds a wrapper row for the NEW fact id (the ... ok
+test_01_resolves_to_controlled_vendor_with_full_ledger (tests.integration.test_memory_safety.VendorImportResolutionTests.test_01_resolves_to_controlled_vendor_with_full_ledger) ... ok
+test_02_shadowing_is_detectable (tests.integration.test_memory_safety.VendorImportResolutionTests.test_02_shadowing_is_detectable)
+A fake ``voicemem`` placed EARLIER on the path wins the import ... ok
+
+----------------------------------------------------------------------
+Ran 15 tests in 21.743s
+
+OK

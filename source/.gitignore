@@ -1,0 +1,80 @@
+# Python bytecode / packaging
+__pycache__/
+*.py[cod]
+*.egg-info/
+build/
+dist/
+
+# Virtual environments (created by the M0 installer, never committed)
+.venv/
+venv/
+
+# Tool caches
+.pytest_cache/
+.mypy_cache/
+
+# --- M0: model assets are downloaded by the installer into models/ ----------
+# Ignore everything under models/, but keep the directory structure docs
+# (.gitkeep placeholders and the per-component README.md files).
+models/**
+!models/**/
+!models/**/*.md
+!models/**/.gitkeep
+
+# --- M0: long-term memory lives in the repo but is machine-local ------------
+# SQLite/Qdrant data and backups are runtime state, never committed.
+memory/**
+!memory/**/
+!memory/**/.gitkeep
+
+# --- M0: data (smoke-test audio written by installer; benchmark results) ----
+data/audio/**
+!data/audio/.gitkeep
+data/benchmarks/**
+!data/benchmarks/.gitkeep
+
+# --- M0: runtime logs (contents only; the empty dir is tracked) --------------
+logs/**
+!logs/.gitkeep
+
+# --- M0: downloaded binaries (llama-server.exe, piper.exe) -------------------
+bin/**
+!bin/.gitkeep
+
+# --- M0.5: CONTROLLED VoiceMem source (v0.5.0 ownership model) -----------------
+# vendor/voicemem is OUR controlled fork of xzf-thu/VoiceMem pinned at
+# e8384e087bd2f44eb05fc7ae1a3c525ea8244179 (tag v0.0.1) - it ships with the
+# repository and the release ZIP; the installer pip-installs it from here.
+# Identity: VOICEMEM_PIN.json + voicemem.CONTROLLED_UPSTREAM_COMMIT.
+# Only build/runtime junk is ignored inside it; the source is always trackable
+# (same rule as the rest of voicemem-agent since the v0.4.19 gitignore fix).
+vendor/voicemem/**/__pycache__/
+vendor/voicemem/**/*.py[cod]
+vendor/voicemem/**/*.egg-info/
+vendor/voicemem/**/.pytest_cache/
+vendor/voicemem/**/build/
+vendor/voicemem/**/dist/
+# Runtime memory roots a stray local run might create inside the vendor dir:
+vendor/voicemem/voicemem_memory*/
+vendor/voicemem/results/
+
+# --- M0: install-time artifacts -----------------------------------------------
+INSTALL_MANIFEST.json
+.install_state.json
+.env
+
+# --- M0.1: release builds (scripts/build_release.ps1 output, machine-local) ---
+# The zips, checksums and the build/index ledgers never leave this machine;
+# only releases/README.md and the .gitkeep placeholder are tracked.
+releases/**
+!releases/README.md
+!releases/.gitkeep
+
+# Legacy non-Windows VOICEMEM_HOME root (kept for older dev checkouts)
+runtime/
+.funasr_cache/
+
+# Logs and OS junk
+*.log
+.DS_Store
+Thumbs.db

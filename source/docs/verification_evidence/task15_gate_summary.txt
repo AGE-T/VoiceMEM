@@ -1,0 +1,63 @@
+TASK 1.5 MEMORY SAFETY GATE — release gate record (v0.5.2)
+============================================================
+Environment: voicemem-agent/.venv (uv, python 3.12) — torch-equipped profile
+  (numpy, openai, mem0ai, qdrant-client, sentence-transformers/torch-cpu,
+  transformers + fastapi, uvicorn, websockets, soundfile, onnxruntime,
+  sounddevice) + REAL local E5 (intfloat/multilingual-e5-small 384-d,
+  models/hf snapshot) + REAL mem0/Qdrant embedded store.
+Offline posture: HF_HUB_OFFLINE=1 TRANSFORMERS_OFFLINE=1 (production env.local
+  semantics — the v0.5.1 gate achieved offline only by lacking deps; v0.5.2
+  runs the full memory-safety battery which REQUIRES torch).
+Execution: per-package + unit-chunked discovery (the 4 GB gate sandbox cannot
+  hold every model load in ONE process; per-process runs release memory
+  between packages; the union covers exactly the v0.5.1 gate's test set + the
+  new safety battery).
+
+TARGETED (before the full gate)
+  tests/integration/test_memory_safety.py ........ 15/15 PASS (25.0 s)
+    RB delete gate (default deny, =0 deny, =1 delete+anchor cascade) 3/3
+    UPDATE history preservation (restaurant A->B scenario) ........... 7/7
+    LB delete gate (default deny non-destructive, =1 cascade) ....... 3/3
+    Vendor import resolution + shadow detection .................... 2/2
+  existing vendor/bridge/env-pin suites
+    test_voicemem_controlled + bridge_adapters + vendor_llm_env_pin . 46 PASS, 1 skip
+
+FULL GATE (post-safety-changes)
+  tests/integration (discover) .................. 75 tests, 0 fail, 0 skip
+  tests/unit chunk A (asr..llm_server_latency) . 246 tests, 0 fail, 0 skip
+  tests/unit chunk B (llm_sse..bridge_adapters) . 199 tests, 0 fail, 1 skip
+  tests/unit chunk C (voicemem_controlled..web_ui_v0412) 170 tests, 0 fail, 1 skip
+  tests/validation (discover) .................. 264 tests, 0 fail, 24 skip
+  tests/benchmark .......................................... 0 tests (script modules)
+  TOTAL ......................................... 954 tests, 0 failures, 26 skips
+
+Baseline comparison: v0.5.1 gate = 939 tests / 0 failed / 25 skipped
+  (same test set, dep-free profile). v0.5.2 = 939 + 15 (memory-safety battery)
+  = 954 tests; +1 skip = the ASR dependency-free hint test (env-profile guard:
+  its code path — the install-hint error — is unreachable when torch is
+  installed; the v0.5.2 gate env intentionally runs torch).
+
+ENVIRONMENT-DEPENDENT ADJUSTMENTS (documented, none weaken a test):
+  1. test_web_asr_test.test_raises_with_install_hint_in_the_dependency_free_
+     sandbox: skipIf(torch+transformers importable) — the assertion targets
+     the DEP-FREE failure mode; assertions unchanged.
+  2. test_web_diagnostics.test_local_worker_survives_sandbox: the warm-up now
+     points the ASR at a LOCAL dir with an unparseable config.json — the
+     load fails fast and deterministically in every profile (the property
+     under test: defined error states, no crash/hang — assertions unchanged;
+     in a torch env the old fixture attempted a multi-GB HF-cache model
+     build and OOM-killed the 4 GB gate sandbox).
+  3. test_web_llm_probe.test_layer_construction_pins_local_model: offline env
+     scoping for the decoy-model construction (the assertion is the ENV PIN,
+     not a model load; no network from tests — offline posture).
+  4. Sandbox-reset restoration (not test changes): releases/*.zip restored
+     from public/ (git-tracked; releases/ is gitignored by design) + missing
+     .sha256 sidecars regenerated; venv deps reinstalled (fastapi, uvicorn,
+     websockets, soundfile, onnxruntime, sounddevice).
+  5. Version-scope updates (release maintenance, assertions kept): PAGE_
+     VERSION 0.5.0 -> 0.5.2 in web/voicemem.html (pre-existing v0.5.1
+     staleness — the page was never bumped; caught by the gate), the
+     matching bump-reminder marker in test_web_mic_probe.py, and the
+     cumulative build markers in build_release_sandbox.py.
+
+Verdict: GATE GREEN — all 954 tests pass with 0 failures.

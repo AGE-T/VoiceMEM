@@ -1,0 +1,112 @@
+# requirements.txt - VoiceMem M0/M1 fuggosegek
+# ============================================================================
+# A lista ket reszre van bontva: a CORE a sandboxon es a celgepen is
+# telepitheto (a kod minden modulja guardolt importtal hasznalja oket);
+# a TARGET-ONLY nehez csomagok csak a celgepen kellenek (GPU/hang) -
+# a kodban mind lazy/guardolt import van, hianyuk nem torti meg a
+# sandbox-teszteket (CONTRACT.md 2. pont).
+#
+# M0 MEGJEGYZES: a TELEPITO a requirements.lock alapjan telepit (pinned
+# verziok, spec 16.2 kutatasa + sandboxban igazolt core verziok); ez a
+# fajl a tartalmi attekintest adja. A modell CSV-ken NEM esetenkent
+# telepulnek - a scripts/download_models.ps1 a repo models/ konyvtaraba
+# tolti oket (models/asr|llm|tts|vad|embedding), HF cache izolacioval
+# (HF_HOME=models/hf, lsd config/env.local.ps1).
+#
+# MEGJEGYZES: a fajl ASCII - a pip Windows-os locale-kodolast hasznalhat,
+# az ekezetes komment sorok ezt atveszne.
+# ============================================================================
+
+# --- CORE (sandbox + celgep) ---------------------------------------------
+numpy>=2.0            # PCM-tombok, hangbuffer kezeles
+PyYAML>=6.0           # config/voicemem_config.yaml betoltese (app/config.py)
+httpx>=0.27           # llama-server /v1/chat/completions SSE kliens (app/llm.py)
+fastapi>=0.115        # LOCAL web backend (app/web_server.py, port 8787)
+uvicorn>=0.32         # ASGI szerver a web backendhez
+websockets>=13        # uvicorn WS support (bongeszo <-> backend /ws)
+
+# --- TARGET-ONLY (nehez, guardolt import a kodban) --------------------------
+# Ezeket a sandboxba NEM kell telepiteni (nincs GPU / nincs hang).
+transformers>=5.0     # Qwen3-ASR-0.6B betoltese es a processor+generate
+                     # hivasi ut (app/asr.py,
+                     # models/asr/qwen3-asr-0.6b konyvtarbol).
+                     # v0.4.7 FIELD FIX: a qwen3_asr modul NATIVAN csak a
+                     # transformers 5.x-ben letezik (Qwen3ASRForConditional
+                     # Generation + Qwen3ASRProcessor) - a 4.x VALAMENNYI
+                     # verzioja elutasitja a checkpointot, es az ASR pipeline
+                     # hivas sem tamogatott ott. A 16. lepes OR-e es az
+                     # assert ezt a padlot kenyszeri.
+                     # FIGYELEM: a 12. lepes "pip install -e vendor\voicemem"
+                     # a vendored pin miatt 4.52.3-ra DOWNGRADELI - az
+                     # install_m1.ps1 16. lepeseben egy OR fut ezutan, ami
+                     # visszairanyitja 4.57+ ra (a funasr/speechbrain utan).
+                     # A spec 16.2 5.0+-a a MOSS-TTS Realtime kovetelmeny
+                     # (V2) - az M1-hez a 4.57+ elengedo.
+onnxruntime>=1.20     # CPU build (models/vad/silero-vad/silero_vad.onnx).
+                     # A Blackwell sm_120 nincs benne a prebuilt GPU
+                     # csomagokban -> a CPU futtatas SZANDERKOS
+                     # (VAD + Piper a CPU-n dolgozik, lasd spec 16.2).
+sounddevice>=0.5.0    # mikrofon/hangszoro PortAudio wrapper (app/audio_io.py)
+soundfile>=0.12       # WAV iras/olas (libsndfile) a benchmarkokhoz
+sentence-transformers>=3.0  # multilingual-e5-small embedder
+                     # (models/embedding/multilingual-e5-small, VoiceMem local)
+funasr==1.4.11        # M2: emotion2vec+ base futtato (app/emotion.py,
+                     # models/emotion/emotion2vec-plus-base, CPU).
+                     # FONTOS: a funasr requires_dist NEM tartalmaz torch-ot,
+                     # a pin-elt cu128 harmas nem tolodhat el miatta; a
+                     # telepito utanuk trio-guardot futtat. Nehez csomag
+                     # (modelscope/librosa/oss2 fuggosegek), Windows-wheel-ekkel
+                     # telepitheto. A kod LAZY importot hasznal: hianya eseten
+                     # az M2 emotion-elemzes degradalodik, az M1 pipeline fut.
+
+# --- PyTorch - NEM ide valo sor! ---------------------------------------------
+# A torch 2.7.0 cu128 wheel sajat indexet kovetel; ha ide kerulne, a sima
+# `pip install -r requirements.txt` a ROSZ CUDA-buildet huzna be.
+# Helyes ket lepes (telepito / README Telepites 1. lepes):
+#   1. pip install torch==2.7.0 torchvision==0.22.0 torchaudio==2.7.0 --index-url https://download.pytorch.org/whl/cu128
+#      (a harom csomag hivatalosan parositott verzioja - EXAKT pinelve,
+#      kulonben a pip torchaudio 2.11.0+cu128-et old fel a torch 2.7.0
+#      melle: inkompatibilis paros, v0.1.6 blocker)
+#   2. pip install -r requirements.txt
+# (a spec 16.1 a torchvision/torchaudio parost is engedi, de az M1 nem
+#  hasznalja oket - a telepito viszont mindharom verziot ellenorzi)
+
+# --- voicemem (hosszu tavra memoria) - KULON sorrol telepitendo --------------
+# v0.0.1, commit SHA-pinning (a spec 21.2 "pin mindent"): a telepito a
+# vendor/voicemem klonbol `pip install -e` telepiti (a klon commitja a pin):
+#   pip install git+https://github.com/xzf-thu/VoiceMem.git@<pinned-sha>
+# OPCIONALIS: a csomag nelkul az app DEGRADED modban fut (ures memoria-
+# kontextus, egyszer logolja; lasd app/voicemem_bridge.py).
+
+# --- piper-tts - NEM fuggoseg! -----------------------------------------------
+# A TTS a bin/piper.exe SUBPROCESS-en at fut, nem Python-API-bol.
+# Ez a GPL-3.0 engine licenc-elvalasztasa (copyleft izolacio) es a futtatas
+# stabilitasa miatt is jon (nem a venvben fut, kulon binaris).
+
+# --- speechbrain - M3 (ECAPA speaker embedding, CPU) -------------------------
+# Az M3 beszelo-azonositas futtatoja (app/speaker.py,
+# models/speaker/ecapa-voxceleb, SpeechBrain SpeakerRecognition interface).
+# A telepito (scripts\install_m1.ps1 14. lepes) kulon parancsban telepiti:
+#   pip install speechbrain==1.1.1
+# FONTOS: a speechbrain requires_dist torch>=2.1.0 + torchaudio>=2.1.0 -
+# a pin-elt cu128 harmas (2.7.0) ELEGENDONEK szamit, a pip nem csereli ki;
+# a telepito utana trio-guardot futtat (biztonsag). Kod-oldalon LAZY import,
+# hanya eseten az M3 beszelo-azonositas degradalodik (user_id="voice_user"),
+# az M1/M2 pipeline fut tovabb. Licenc: Apache-2.0 (csomag es modell is).
+
+# --- funasr / emotion2vec - M2 (emotion2vec+ base CPU futtato) --------------
+# Az M2 proszodia-elemzes futtatoja. A telepito (scripts\install_m1.ps1
+# 13. lepes) kulon parancsban telepiti, mert a funasr nehez csomag
+# (modelscope/librosa/oss2 fuggosegek). FONTOS: a funasr NEM pineli a
+# torch-ot, a cu128 harmas nem tolodhat el miatta - a telepito utana
+# trio-guardot futtat. Kod-oldalon LAZY import (app/emotion.py), hianya
+# eseten az M2 emotion-elemzes degradalodik, az M1 pipeline fut tovabb:
+#   pip install funasr==1.4.11
+# (a v0.1.x elotti allapotban a funasr kizarva volt - az M2-val VALOS
+# fuggoseg lett)  
+# --- modell (NEM pip-csomag): emotion2vec/emotion2vec_plus_base HF repo ---
+# A modellt a scripts\download_models.ps1 tolti a MODELS.lock.json
+# 'emotion' bejegyzese szerint a models/emotion/emotion2vec-plus-base
+# konyvtarba (4 futtatasi fajl: model.pt, config.yaml, tokens.txt,
+# configuration.json; >1 GB meret-padlo). Licenc: FunASR Model Open
+# Source License Agreement v1.1 (attribution - lasd LICENSES.md).
