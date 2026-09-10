@@ -5,7 +5,7 @@ voice memory agent. This repository hosts the versioned release packages
 and their verification artifacts — the canonical build source lives in
 the agent workspace.
 
-**Latest stable release: `v0.5.0`**
+**Latest stable release: `v0.5.1`**
 
 ---
 
@@ -13,33 +13,35 @@ the agent workspace.
 
 | File | What it is | Size |
 | --- | --- | --- |
-| `VoiceMemAgent_v0.5.0.zip` | **The product.** Full agent source, machine-independent (no runtime state inside: no `.venv`, models, or memory). Install = unzip + `START.bat`. | 1.8 MB |
+| `VoiceMemAgent_v0.5.1.zip` | **The product.** Full agent source, machine-independent (no runtime state inside: no `.venv`, models, or memory). Install = unzip + `START.bat`. | 1.8 MB |
 | `VoiceMemAgent_v0.5.0_GitHubSync.zip` | **First authenticated sync evidence**: token permission check, push output, fresh-clone verification of the mirror state after the sync. | 6 KB |
 | `VoiceMemAgent_v0.5.0_MirrorCheck.zip` | **The mirror check**: proof that this GitHub mirror is byte-identical to the locally produced artifacts (SHA-256 tables from both sides, git clone evidence). Verdict: `PASS`. | 8 KB |
 | `VoiceMemAgent_v0.5.0_SyncSetup.zip` | **Standing sync policy + infrastructure**: the sync script, the procedure document, and the setup-run evidence (every future update goes to the GitHub mirror). | 12 KB |
 | `VoiceMemAgent_v0.5.0_Verification.zip` | **The verification record** (not a product release): independent verification report — phases + engineering decisions, evidence files (pin verification, clean-install manifest, retrieval baseline, trait assessment, test gate), `identity.json` and `RECOVERY.md`. | 29 KB |
+| `VoiceMemAgent_v0.5.1_ForensicTrace.zip` | **TASK 1 ASR→LLM forensic trace**: the proven break point (CLI bridge adapter tables referenced non-existent vendor API — every CLI turn ran memoryless), the smallest-correct-fix patch, the post-fix trace matrix (S1–S7b green; thinking-only fails loud), and the full test-gate record. | 41 KB |
 
 ## Verify your download
 
 ```bash
-sha256sum VoiceMemAgent_v0.5.0.zip VoiceMemAgent_v0.5.0_GitHubSync.zip VoiceMemAgent_v0.5.0_MirrorCheck.zip VoiceMemAgent_v0.5.0_SyncSetup.zip VoiceMemAgent_v0.5.0_Verification.zip
+sha256sum VoiceMemAgent_v0.5.1.zip VoiceMemAgent_v0.5.0_GitHubSync.zip VoiceMemAgent_v0.5.0_MirrorCheck.zip VoiceMemAgent_v0.5.0_SyncSetup.zip VoiceMemAgent_v0.5.0_Verification.zip VoiceMemAgent_v0.5.1_ForensicTrace.zip
 ```
 
 Expected:
 
 ```text
-45c1feba29dc61492aa148b167c31e60509b7eeeede003f33348f430254ceb40  VoiceMemAgent_v0.5.0.zip
+6e4cd79b8213ced3ae7ef198092ed2cd61e9ab87f6051b760831e114ce91d565  VoiceMemAgent_v0.5.1.zip
 1b4596351d8ce45e0f750e1c21c0693366fdb0ab9ab3c0a627335e06bb353847  VoiceMemAgent_v0.5.0_GitHubSync.zip
 89bc2933843301e1317708e2c4b98083ef3129d149611c945a9ee9dd6a44bc14  VoiceMemAgent_v0.5.0_MirrorCheck.zip
 bce2979501864e54281e9615d563d5a0f3148c690b53e105060f58ff251be559  VoiceMemAgent_v0.5.0_SyncSetup.zip
 aa880796031a5ada388a75cdae26befc723d6e37988589d4a0bf6b91331db631  VoiceMemAgent_v0.5.0_Verification.zip
+68b3c0dbf751bc61ac38458e7efde739b6de7e978e3d6f990382e6ce704caedc  VoiceMemAgent_v0.5.1_ForensicTrace.zip
 ```
 
 (`.sha256` sidecar files are included next to each ZIP.)
 
 ## Install (Windows)
 
-1. Unzip `VoiceMemAgent_v0.5.0.zip` into any folder (e.g. `F:\Voicemem\VoiceMemAgent`).
+1. Unzip `VoiceMemAgent_v0.5.1.zip` into any folder (e.g. `F:\Voicemem\VoiceMemAgent`).
 2. Double-click **`START.bat`** — that is the single user entry point.
 3. Wait for the bootstrap: Python check, `.venv`, dependencies, HF tooling,
    model download (`MODELS.lock.json`), configuration, smoke tests.
@@ -48,7 +50,7 @@ aa880796031a5ada388a75cdae26befc723d6e37988589d4a0bf6b91331db631  VoiceMemAgent_
 Advanced modes: `START.bat mock` · `check` · `benchmark` · `repair` · `build`.
 At a single end-to-end failure, re-run `START.bat repair`.
 
-## The verification story (v0.5.0)
+## The verification story (v0.5.1)
 
 - **Vendor identity:** `vendor/voicemem` pinned at
   `e8384e087bd2f44eb05fc7ae1a3c525ea8244179` (= upstream tag `v0.0.1`;
@@ -76,9 +78,9 @@ At a single end-to-end failure, re-run `START.bat repair`.
 ## Magyar összefoglaló
 
 Ez a repó a **VoiceMemAgent** kiadásainak külső tükre. A legfrissebb
-stabil verzió a **v0.5.0**. Mit találhat itt:
+stabil verzió a **v0.5.1**. Mit találhat itt:
 
-- **`VoiceMemAgent_v0.5.0.zip`** — maga a termék. Gépfüggetlen forrás,
+- **`VoiceMemAgent_v0.5.1.zip`** — maga a termék. Gépfüggetlen forrás,
   telepítés: kicsomagolás + `START.bat` dupla kattintás, minden mást a
   bootstrap elintézi.
 - **Verifikációs / evidencia ZIP-ek** — a kiadások független
