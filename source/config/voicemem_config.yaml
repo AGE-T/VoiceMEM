@@ -20,7 +20,8 @@
 #
 # Modell-elrendezés (M0 §7 + M2 — a scripts/download_models.ps1 ide tölt):
 #   models/
-#   ├── asr/qwen3-asr-0.6b/             Qwen3-ASR-0.6B (M1: 0.6B, NEM 1.7B)
+#   ├── asr/parakeet-tdt-0.6b-v3/       NVIDIA Parakeet TDT 0.6B v3 (termelési ASR)
+#   ├── asr/nemotron-3.5-asr-streaming-0.6b/  NVIDIA Nemotron 3.5 ASR (streaming jelölt)
 #   ├── llm/qwen3.6-35b-a3b/           BÁRMELY GGUF (v0.4.17: az EGYETLEN LLM
 #   │                                  Qwen3.6 35B A3B IQ4_XS; tetszőleges
 #   │                                  fájlnév - a GGUF magic dönt; Ollama
@@ -55,7 +56,7 @@
 
 project:
   name: "voicemem-agent"
-  version: "0.5.2"        # a VERSION fájl az egyetlen forrás — ezt kézzel szinkronban tartani
+  version: "0.6.0"        # a VERSION fájl az egyetlen forrás — ezt kézzel szinkronban tartani
   offline: true           # runtime offline mód (telepítés után)
 
 paths:
@@ -87,12 +88,11 @@ app:
   # a bemeneti lánc problémája (v0.4.9: a Chrome noiseSuppression + a
   # aliased downsample elferdítette a jelet; a v0.4.10 már mindkettőt
   # javította: noiseSuppression:false + anti-aliased downsampler).
-  vad_energy_fallback: true     # v0.4.14: energia-tartalék kapu a Silero MÖGÖTT
-                                 # (ha a Silero süket erre a csatornára - l.
-                                 # app/vad.py FusedVad - a beszédszintű jel
-                                 # akkor is nyitja a kaput: a mikrofon -> ASR
-                                 # -> agent átmenet nem halhat el a VAD
-                                 # véleményén; a Silero saját kapuja érintetlen)
+  # v0.6.0: az energia-tartalék kapu (FusedVad) ELTÁVOLÍTVA. A gyökérok a
+  # Silero OFFICIÁLIS 64-mintás context-etető kontraktusa volt (a v0.5.2-ig
+  # betölt 512-mintás ablakokra a modell ~0.003 valószínűséget adott VALÓDI
+  # beszédre — l. scripts/asr_forensics.py). A context-javítással a Silero az
+  # EGYETLEN termelési VAD döntési út; heurisztikus kapu nincs.
   vad_threshold: 0.25           # beszéd kezdetének/végének küszöbe
   vad_hangover_ms: 300          # ennyi csend után SPEECH_END -> válasz indul
   vad_frame_ms: 32              # Silero: 512 minta @ 16 kHz
@@ -101,14 +101,15 @@ app:
   barge_in_threshold: 0.30      # speech- valószínűség küszöbe TTS alatt
   barge_in_min_speech_ms: 500   # folyamatos beszéd a megszakításhoz
 
-  # --- ASR (Qwen3-ASR-0.6B, GPU) ---
-  asr_model_name: "Qwen/Qwen3-ASR-0.6B"  # M1: 0.6B (milestones 4.4), NEM 1.7B
-  asr_device: "cuda"            # cuda -> cpu fallback az app-ban kezelt
-  asr_chunk_ms: 600             # kvázi-streaming kötegméret
-  asr_language: ""              # v0.4.7: "" = automatikus nyelvfelismeres (a
-                               # modell 30 nyelven, magyarul is beszel);
-                               # erolteteshez teljes nev: "Hungarian"/"English"
-  asr_max_new_tokens: 256       # v0.4.7: generalasi plafon lehivasra
+  # --- ASR (moduláris motor-réteg, v0.6.0) ---
+  # PONTOSAN EGY motor fut futásidőben; ha az nem tud betölteni: ASR_MODEL_LOAD_ERROR,
+  # NINCS automatikus motor-váltás. Érvényes id-k: parakeet, nemotron (app.asr_core).
+  asr_engine: "parakeet"        # a kiválasztott termelési ASR motor
+  asr_device: "cuda"            # cuda | cpu — futtatási konfiguráció, NEM fallback
+  asr_language: ""              # "" = motor alapértelmezés
+  asr_max_new_tokens: 256       # generálási plafon lehívásonként
+  # ÖRÖKSÉG (nem-termelési migrációs anyag): a Qwen3-ASR modult az app/asr.py
+  # tartja vissza dokumentációként; termelési útvonal NEM importálja.
 
   # --- LLM (llama.cpp llama-server, OpenAI-kompatibilis) ---
   # v0.4.16: az EGYETLEN LLM a Qwen3.6 35B A3B IQ4_XS (a class-default itt

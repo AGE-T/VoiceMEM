@@ -9,7 +9,7 @@ reached ASR finalisation at all.
 
 These tests drive the REAL live-mic machinery (audio loop, VAD framing,
 VSM, ASR feed/flush, _start_turn) on a mock-components WebSession whose
-VAD is a FusedVad with a DEAF primary — the reporter's exact channel — and
+VAD is a healthy stand-in (speech-level frames score high — the FIXED
 pin:
 
 1. the COMPLETE stage trail: mic frame received → speech start · energy
@@ -37,21 +37,27 @@ import numpy as np  # noqa: E402
 
 from app.config import AgentConfig  # noqa: E402
 from app.web_server import WebComponents, WebSession  # noqa: E402
-from app.vad import FusedVad  # noqa: E402
 
-#: The reporter's channel: Silero peak 0.003 on speech-level line-in audio.
-DEAF_PROB = 0.003
+#: v0.6.0: the FusedVad energy fallback was REMOVED (it compensated for the
+#: Silero 64-sample context bug — fixed in app.vad). The mic dispatch tests
+#: now run with a HEALTHY VAD stand-in: speech-level audio scores high
+#: (0.95), quiet audio scores low (0.001) — the honest VAD behaviour.
+SPEECH_PROB = 0.95
+SILENCE_PROB = 0.001
 SPEECH_RMS = 0.05
 
 
-class _DeafSilero:
-    """Silero stand-in returning the field-reported ~0.003 everywhere."""
+class _HealthyVad:
+    """VAD stand-in with the FIXED Silero behaviour: high on speech-level
+    frames, ~0 on quiet frames (frame RMS decides)."""
 
     def __init__(self) -> None:
         self.reset_calls = 0
 
     def prob(self, frame: Any) -> float:
-        return DEAF_PROB
+        x = np.asarray(frame, dtype=np.float32)
+        rms = float(np.sqrt(np.mean(np.square(x)))) if x.size else 0.0
+        return SPEECH_PROB if rms >= 0.01 else SILENCE_PROB
 
     def reset(self) -> None:
         self.reset_calls += 1
@@ -81,19 +87,22 @@ def _stage_trail(components: WebComponents) -> list[str]:
 
 MIC_STAGES = (
     "mic frame received",
+    "stage mic started",
     "speech start",
-    "energy fallback",
-    "ASR feed",
+    "stage vad completed",
     "speech end",
-    "ASR flush start",
+    "stage asr started",
     "ASR flush done",
+    "stage asr completed",
     "ASR final transcript",
     "ASR turn dispatch",
     "turn received",
+    "stage voicemem started",
     "memory start",
     "emotion start",
     "emotion done",
     "memory done",
+    "stage voicemem completed",
     "llm start",
     "llm first token",
     "llm done",
@@ -103,22 +112,22 @@ MIC_STAGES = (
 )
 
 
-def _make_session() -> tuple[WebSession, WebComponents, _RecordingSock, _DeafSilero]:
+def _make_session() -> tuple[WebSession, WebComponents, _RecordingSock, _HealthyVad]:
     """Session with a one-way recording socket (frames pushed straight into
     the pending-bytes queue — the receive-loop variant is _make_feed_session)."""
     tmp = Path(__file__).parent
     cfg = AgentConfig(root=tmp)
     components = WebComponents(cfg, mock=True).build()
-    deaf = _DeafSilero()
-    components.make_vad = lambda: FusedVad(deaf, cfg)  # type: ignore[method-assign]
+    vad = _HealthyVad()
+    components.make_vad = lambda: vad  # type: ignore[method-assign]
     from app.mock_components import MockAsrEngine
 
     components.make_asr = lambda: MockAsrEngine(  # type: ignore[method-assign]
         queue=["Szia, mi újság?"]
     )
     sock = _RecordingSock()
-    session = WebSession(sock, components, vad=FusedVad(deaf, cfg))
-    return session, components, sock, deaf
+    session = WebSession(sock, components, vad=vad)
+    return session, components, sock, vad
 
 
 class _FeedSock(_RecordingSock):
@@ -139,20 +148,20 @@ class _FeedSock(_RecordingSock):
         return {"type": "websocket.disconnect"}
 
 
-def _make_feed_session() -> tuple[WebSession, WebComponents, _FeedSock, _DeafSilero]:
+def _make_feed_session() -> tuple[WebSession, WebComponents, _FeedSock, _HealthyVad]:
     tmp = Path(__file__).parent
     cfg = AgentConfig(root=tmp)
     components = WebComponents(cfg, mock=True).build()
-    deaf = _DeafSilero()
-    components.make_vad = lambda: FusedVad(deaf, cfg)  # type: ignore[method-assign]
+    vad = _HealthyVad()
+    components.make_vad = lambda: vad  # type: ignore[method-assign]
     from app.mock_components import MockAsrEngine
 
     components.make_asr = lambda: MockAsrEngine(  # type: ignore[method-assign]
         queue=["Szia, mi újság?"]
     )
     sock = _FeedSock()
-    session = WebSession(sock, components, vad=FusedVad(deaf, cfg))
-    return session, components, sock, deaf
+    session = WebSession(sock, components, vad=vad)
+    return session, components, sock, vad
 
 
 def _pcm16(rms: float, seconds: float, sr: int = 24000) -> bytes:
@@ -194,11 +203,11 @@ async def _drain_audio_loop(session: WebSession) -> None:
 
 
 class MicDispatchTests(unittest.TestCase):
-    def test_deaf_channel_auto_dispatches_full_trail(self):
-        """THE missing transition: deaf Silero + speech-level audio still
-        runs mic → VAD(energy) → ASR → flush → dispatch → LLM → TTS with
-        no user_text anywhere in sight. Frames enter through the REAL
-        receive loop (mic frame received → queue → audio loop → VAD)."""
+    def test_mic_channel_auto_dispatches_full_trail(self):
+        """THE key transition: speech-level audio through the REAL receive
+        loop runs mic → VAD → ASR(engine contract) → dispatch → LLM → TTS
+        with no user_text anywhere in sight (v0.6.0: healthy VAD, the
+        energy fallback is gone — this is the honest single path)."""
         session, components, sock, deaf = _make_feed_session()
 
         async def run() -> None:
@@ -225,7 +234,7 @@ class MicDispatchTests(unittest.TestCase):
             self.assertIn(stage, trail, f"stage {stage!r} missing: {trail}")
         # order: the mic stages precede the turn stages
         self.assertLess(trail.index("ASR turn dispatch"), trail.index("turn received"))
-        self.assertLess(trail.index("speech end"), trail.index("ASR flush start"))
+        self.assertLess(trail.index("speech end"), trail.index("stage asr started"))
         # a real answer + real audio came back
         types = [e.get("type") for e in sock.json_events]
         self.assertIn("answer_delta", types)
@@ -252,18 +261,19 @@ class MicDispatchTests(unittest.TestCase):
         self.assertTrue(sent_texts)
         self.assertEqual(sent_texts[0].get("source"), "asr")
 
-    def test_barge_in_reads_primary_not_energy(self):
-        """Line-level audio while the agent answers must NOT interrupt it:
-        barge-in consumes the primary's own (deaf) probability."""
-        session, components, sock, deaf = _make_session()
+    def test_quiet_frames_do_not_interrupt_the_answer(self):
+        """v0.6.0: barge-in reads the (single, honest) VAD probability.
+        Quiet frames during the answer must NOT interrupt it; sustained
+        SPEECH frames legitimately would (that is the feature)."""
+        session, components, sock, vad = _make_session()
 
         async def run() -> None:
             await _speak(session, 0.8, 0.8)
             await _drain_audio_loop(session)
             self.assertIsNotNone(session._turn_task)
-            # speech-level audio DURING the answer (the turn is running)
+            # QUIET audio DURING the answer (the turn is running)
             for _ in range(6):
-                session._pending_bytes.put_nowait(_pcm16(SPEECH_RMS, 0.1))
+                session._pending_bytes.put_nowait(_pcm16(0.0005, 0.1))
             await asyncio.sleep(1.0)
 
         asyncio.run(asyncio.wait_for(run(), timeout=40))

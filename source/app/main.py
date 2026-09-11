@@ -568,7 +568,7 @@ async def run_real(config: AgentConfig) -> int:
 
     import numpy as np  # local import: heavy stack comes with real mode
 
-    from app.asr import AsrEngine
+    from app.asr_core import select_engine
     from app.audio_io import MicStream, SpeakerOutput
     from app.emotion import EmotionAnalyzer, EmotionMemory
     from app.llm import LlmClient
@@ -577,7 +577,16 @@ async def run_real(config: AgentConfig) -> int:
     from app.vad import SileroVad, VadEvent, VadStateMachine
     from app.voicemem_bridge import VoiceMemBridge
 
-    asr = AsrEngine(config)
+    # v0.6.0: the ONE selected engine (ASR_ENGINE / yaml asr.engine); a
+    # failed load raises an explicit AsrError with the exact reason — there
+    # is NO fallback to another engine.
+    try:
+        asr = select_engine(config)
+    except Exception as exc:
+        print(f"HIBA: az ASR motor ({config.asr_engine}) nem elérhető: {exc}")
+        print("      Állítsd be ASR_ENGINE-t / asr.engine-t, vagy töltsd le a modellt")
+        print("      (scripts/download_models.ps1). NINCS automatikus motor-váltás.")
+        return 1
     llm = LlmClient(config)
     tts = TtsEngine(config)
     voicemem = VoiceMemBridge(config, llm)

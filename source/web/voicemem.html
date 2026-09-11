@@ -84,7 +84,15 @@ button{cursor:pointer;background:none;border:none}
   letter-spacing:.14em;color:var(--txt-3)}
 
 /* ── Centre column ────────────────────────────────────────────────── */
-.center{display:flex;flex-direction:column;gap:10px;min-width:0;min-height:0;padding:14px}
+.center{display:flex;flex-direction:column;gap:10px;min-width:0;min-height:0;padding:14px;
+  /* v0.6.0: bounded diagnostics + the column itself scrolls as the final
+     safety — the Talk/Pause controls can never be pushed off-viewport by
+     growing diagnostic content (the layout defect the task describes). */
+  overflow-y:auto}
+.center::-webkit-scrollbar{width:8px}
+.center .panel{flex-shrink:0}
+.p-in{flex:0 0 auto}
+.p-in>*{min-width:0}
 #orb{display:block;flex:0 1 15%;height:15%;min-height:0;width:auto;aspect-ratio:1/1;
   margin:0 auto;opacity:.75;pointer-events:none;border-radius:50%}
 .panel{border:1px solid var(--line);border-radius:var(--radius);background:var(--bg-panel);
@@ -300,11 +308,23 @@ button{cursor:pointer;background:none;border:none}
 .uiver.stale{color:#f0c39a;font-weight:600}
 /* v0.4.19: mic capture diagnostics panel — device/track/constraint state +
    rolling frame stats + the capture-probe result, all in one place. */
+/* v0.6.0: COLLAPSIBLE mic diagnostics — a compact header when collapsed,
+   bounded internal scrolling when expanded (the panel may never grow the
+   page; long values stay readable inside the scroll area). */
 .micdiag{font:10.5px/1.75 ui-monospace,monospace;color:var(--txt-2);margin:0 0 10px;
   padding:7px 10px;border:1px solid var(--line);border-radius:10px;
   background:rgba(127,127,127,.05);overflow-wrap:anywhere}
 .micdiag .hd{font-size:10px;color:var(--txt-3);text-transform:uppercase;
   letter-spacing:.07em;margin-bottom:2px}
+.micdiag .col-head{display:flex;align-items:center;gap:8px;cursor:pointer;
+  user-select:none;padding:1px 0}
+.micdiag .col-head .chev{margin-left:auto;color:var(--txt-3);font-size:9px;
+  transition:transform .18s}
+.micdiag.open .col-head .chev{transform:rotate(90deg)}
+.micdiag .col-body{display:none;max-height:240px;overflow-y:auto;padding-top:4px}
+.micdiag.open .col-body{display:block}
+.micdiag .col-summary{font-size:10px;color:var(--txt-3);white-space:nowrap;
+  overflow:hidden;text-overflow:ellipsis;flex:1;min-width:0}
 .micdiag .row{display:flex;gap:10px}
 .micdiag .k{flex:0 0 150px;color:var(--txt-3);text-transform:uppercase;letter-spacing:.05em}
 .micdiag .v{min-width:0;word-break:break-word}
@@ -341,6 +361,19 @@ button{cursor:pointer;background:none;border:none}
 /* v0.4.16: LLM model (GGUF) selection — native picker + portable path */
 .llmbar{display:flex;flex-direction:column;gap:6px;margin:0 0 10px;padding:8px 10px;
   border:1px solid var(--line);border-radius:10px;background:rgba(127,127,127,.05)}
+/* v0.6.0: collapsible LLM model panel — collapsed shows label + dot + a
+   one-line model summary; expanded shows everything, bounded + scrolling. */
+.llmbar .llm-col-head{display:flex;align-items:center;gap:8px;cursor:pointer;
+  user-select:none;flex-wrap:nowrap}
+.llmbar .llm-col-head .lbl{flex:0 0 118px;font-size:10.5px;color:var(--txt-3);
+  text-transform:uppercase;letter-spacing:.07em;white-space:nowrap}
+.llmbar .llm-col-head .sum{flex:1;min-width:0;font-size:11px;color:var(--txt-2);
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.llmbar .llm-col-head .chev{flex:0 0 auto;color:var(--txt-3);font-size:9px;
+  transition:transform .18s}
+.llmbar.open .llm-col-head .chev{transform:rotate(90deg)}
+.llmbar .llm-col-body{display:none;max-height:260px;overflow-y:auto}
+.llmbar.open .llm-col-body{display:flex;flex-wrap:wrap;gap:6px}
 .llmrow{display:flex;align-items:center;gap:8px;flex-wrap:wrap;min-width:0}
 .llmrow label{flex:0 0 118px;font-size:10.5px;color:var(--txt-3);text-transform:uppercase;
   letter-spacing:.07em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -373,12 +406,20 @@ button{cursor:pointer;background:none;border:none}
 .pipe-h .pipe-mode{margin-left:auto;font-size:10px;letter-spacing:.1em;color:var(--txt-3);
   text-transform:uppercase;margin-right:10px}
 .pipe-toggle{padding:2px 8px;font-size:11px}
-.pipe-strip{display:flex;gap:6px;flex-wrap:wrap}
-.pipe-chip{display:inline-flex;align-items:center;gap:6px;font-size:11.5px;padding:4px 10px;
-  border:1px solid var(--line);border-radius:99px;color:var(--txt-2);white-space:nowrap;
+/* v0.6.0 — the CHAIN: a real runtime status display. Seven stages
+   (MIC → VAD → ASR → VoiceMEM → E5 → LLM → TTS), each with a readable
+   state word (IDLE/WORKING/DONE/ERROR) driven by stage_event WS messages
+   and the /api/pipeline snapshot. Diagnostics, not decoration: state is
+   readable without hover; the error reason shows inline (short) and the
+   full detail lands in the panel tooltip + the events list. */
+.pipe-strip{display:flex;gap:5px;flex-wrap:wrap}
+.pipe-chip{display:inline-flex;align-items:center;gap:6px;font-size:12px;padding:5px 9px;
+  border:1px solid var(--line);border-radius:8px;color:var(--txt-2);white-space:nowrap;
   cursor:pointer;transition:border-color .15s}
 .pipe-chip:hover{border-color:var(--line-2)}
-.pipe-chip .dot{width:7px;height:7px;border-radius:50%;flex:0 0 7px;background:#666}
+.pipe-chip .dot{width:8px;height:8px;border-radius:50%;flex:0 0 8px;background:#666}
+.pipe-chip .st{font-size:9.5px;letter-spacing:.08em;color:var(--txt-3);
+  font-variant-numeric:tabular-nums;min-width:52px;text-align:left}
 .pipe-chip .ms{color:var(--txt-3);font-size:10px;font-variant-numeric:tabular-nums}
 .pipe-chip[data-state="ready"] .dot{background:var(--mint)}
 .pipe-chip[data-state="ready"]{color:var(--txt)}
@@ -387,6 +428,10 @@ button{cursor:pointer;background:none;border:none}
 .pipe-chip[data-state="error"]{border-color:rgba(224,107,107,.4);color:#eb9c9c}
 .pipe-chip[data-state="mocked"] .dot{background:#c9a35f}
 .pipe-chip[data-state="missing"] .dot{background:#7c7c7c}
+/* the last failure reason, one short line under the strip (never a stack) */
+.pipe-err{margin-top:6px;font-size:11px;color:#eb9c9c;line-height:1.5;display:none;
+  word-break:break-word}
+.pipe-err b{letter-spacing:.06em}
 @keyframes pipepulse{0%,100%{transform:scale(1);opacity:1}50%{transform:scale(1.35);opacity:.55}}
 .pipe-detail{margin-top:8px;border-top:1px solid var(--line);padding-top:8px;
   font:11px/1.7 ui-monospace,monospace;color:var(--txt-2);max-height:132px;overflow:auto}
@@ -397,6 +442,13 @@ button{cursor:pointer;background:none;border:none}
   color:#f0c39a;border:1px solid rgba(240,163,95,.45);border-radius:99px;padding:1px 8px;
   margin-bottom:3px}
 .chat .turn .srcbadge svg{width:10px;height:10px;stroke:currentColor;fill:none;stroke-width:1.6}
+/* v0.6.0: mic turns carry an ASR badge — WHAT THE ENGINE RECOGNISED is
+   distinct from typed text and from the LLM reply, at a glance. */
+.chat .turn .asrbadge{display:inline-flex;align-items:center;gap:5px;font-size:10.5px;
+  color:#8fd6b0;border:1px solid rgba(111,214,161,.45);border-radius:99px;padding:1px 8px;
+  margin-bottom:3px}
+.chat .turn .asrbadge svg{width:10px;height:10px;stroke:currentColor;fill:none;stroke-width:1.6}
+.chat .turn .asrbadge .eng{color:var(--txt-3);font-size:9.5px}
 
 @media (max-width:1180px){
   #app{grid-template-columns:56px minmax(320px,380px) minmax(340px,1fr)}
@@ -457,12 +509,20 @@ button{cursor:pointer;background:none;border:none}
            frame measurements (source RMS vs PCM RMS) and the capture-probe
            result. Filled by renderMicDiag()/renderABProbeResult(). -->
       <div class="micdiag" id="micDiag" hidden>
-        <div class="hd" data-i18n="micDiagTitle">Mic diagnostics</div>
-        <div id="micDiagRows"></div>
-        <div class="probe" id="micProbeOut" hidden>
-          <div class="hd" data-i18n="micProbeHeard">Capture probe</div>
-          <div id="micProbeRows"></div>
-          <div class="verdict" id="micProbeVerdict"></div>
+        <div class="col-head" id="micDiagHead" role="button" tabindex="0"
+             aria-expanded="false" data-i18n-title="micDiagToggle"
+             title="Collapse / expand the mic diagnostics">
+          <span class="hd" data-i18n="micDiagTitle">Mic diagnostics</span>
+          <span class="col-summary" id="micDiagSummary">—</span>
+          <span class="chev">▶</span>
+        </div>
+        <div class="col-body" id="micDiagBody">
+          <div id="micDiagRows"></div>
+          <div class="probe" id="micProbeOut" hidden>
+            <div class="hd" data-i18n="micProbeHeard">Capture probe</div>
+            <div id="micProbeRows"></div>
+            <div class="verdict" id="micProbeVerdict"></div>
+          </div>
         </div>
       </div>
       <div class="asrtest" id="asrTestOut" hidden>
@@ -505,24 +565,32 @@ button{cursor:pointer;background:none;border:none}
         </div>
       </div>
       <div class="llmbar" id="llmbar">
-        <div class="llmrow">
-          <label data-i18n="llmModelLabel">LLM model</label>
-          <button class="btn sm" id="llmBrowseBtn" data-i18n="llmBrowse" data-i18n-title="llmBrowseTitle" title="Open the native Windows file picker">Browse…</button>
+        <div class="llm-col-head" id="llmColHead" role="button" tabindex="0"
+             aria-expanded="false" data-i18n-title="llmColToggle"
+             title="Collapse / expand the LLM model details">
+          <span class="lbl" data-i18n="llmModelLabel">LLM model</span>
           <span class="llm-dot" id="llmDot" title="Model file status"></span>
-          <span class="llm-state" id="llmStateSummary">—</span>
+          <span class="sum" id="llmColSummary">—</span>
+          <span class="chev">▶</span>
         </div>
-        <div class="llm-state" id="llmStateDetail"></div>
-        <div class="llm-warn" id="llmWarn" hidden></div>
-        <div class="llm-manual">
-          <input id="llmManualPath" type="text" spellcheck="false"
-                 data-i18n-ph="llmManualPlaceholder" data-i18n-title="llmManualTitle"
-                 placeholder="D:\AI\Models\Qwen\Qwen3.6-35B-A3B-IQ4_XS.gguf" />
-          <button class="btn sm" id="llmCheckBtn" data-i18n="llmCheck">Check</button>
-          <button class="btn sm" id="llmUseBtn" data-i18n="llmUse" hidden>Use this model</button>
-        </div>
-        <div class="llm-actions">
-          <button class="btn sm" id="llmResetBtn" data-i18n="llmReset">Reset to profile</button>
-          <span class="hint" id="llmHint" data-i18n="llmServingNote">—</span>
+        <div class="llm-col-body" id="llmColBody">
+          <div class="llmrow">
+            <button class="btn sm" id="llmBrowseBtn" data-i18n="llmBrowse" data-i18n-title="llmBrowseTitle" title="Open the native Windows file picker">Browse…</button>
+            <span class="llm-state" id="llmStateSummary">—</span>
+          </div>
+          <div class="llm-state" id="llmStateDetail"></div>
+          <div class="llm-warn" id="llmWarn" hidden></div>
+          <div class="llm-manual">
+            <input id="llmManualPath" type="text" spellcheck="false"
+                   data-i18n-ph="llmManualPlaceholder" data-i18n-title="llmManualTitle"
+                   placeholder="D:\AI\Models\Qwen\Qwen3.6-35B-A3B-IQ4_XS.gguf" />
+            <button class="btn sm" id="llmCheckBtn" data-i18n="llmCheck">Check</button>
+            <button class="btn sm" id="llmUseBtn" data-i18n="llmUse" hidden>Use this model</button>
+          </div>
+          <div class="llm-actions">
+            <button class="btn sm" id="llmResetBtn" data-i18n="llmReset">Reset to profile</button>
+            <span class="hint" id="llmHint" data-i18n="llmServingNote">—</span>
+          </div>
         </div>
       </div>
       <div class="spk" id="spk">
@@ -542,6 +610,7 @@ button{cursor:pointer;background:none;border:none}
         <button class="btn sm pipe-toggle" id="pipeToggle" aria-label="Toggle details">▾</button>
       </div>
       <div class="pipe-strip" id="pipeStrip"></div>
+      <div class="pipe-err" id="pipeErr" role="status"></div>
       <div class="pipe-detail" id="pipeDetail" hidden></div>
     </div>
 
@@ -833,6 +902,7 @@ const I18N = {
     micSilentRetry:'The capture is digital silence — retrying once with minimal browser constraints {audio:true}…',
     micSilentFinal:'The microphone delivers digital silence even with minimal constraints. The signal is zero BEFORE any app conversion — this is a device / OS privacy / physical mute level problem, not the app. Check Windows Settings → Privacy → Microphone, the device mute, or pick another input above.',
     micDiagTitle:'Mic diagnostics',
+    micDiagToggle:'Collapse / expand the mic diagnostics',
     micDiagFrames:'frames', micDiagLive:'live',
     asrTestBrowserSrc:'browser src rms',
     asrTestBrowserPcm:'browser pcm rms',
@@ -860,6 +930,7 @@ const I18N = {
     voiceActiveSpeaking:'Voice: {0} · {1}',
     /* v0.4.16: LLM model (GGUF) selection — native picker + portable path */
     llmModelLabel:'LLM model',
+    llmColToggle:'Collapse / expand the LLM model details',
     llmBrowse:'Browse…',
     llmBrowseTitle:'Open the native Windows file picker (GGUF files first; the model stays where it is — only the path is stored)',
     llmCheck:'Check',
@@ -1640,6 +1711,24 @@ function renderChat(){
         +i18n('asrBypassed');
       w.appendChild(badge);
     }
+    if(turn.role==='user'&&turn.source!=='text'){
+      /* v0.6.0: microphone turn — WHAT THE ASR ENGINE RECOGNISED. The badge
+         consumes only the generic ASRResult contract (engine id, language,
+         duration); it never inspects engine internals. Typed vs recognised
+         vs generated is visible at a glance in the stream. */
+      const badge=document.createElement('span'); badge.className='asrbadge';
+      const asr=turn.asr||{};
+      const bits=[];
+      if(asr.engine_id) bits.push(asr.engine_id);
+      if(asr.language) bits.push(asr.language);
+      if(asr.duration_s) bits.push(asr.duration_s.toFixed(1)+'s');
+      badge.title='Recognised by the ASR engine'
+        +(asr.model_id?(' — '+asr.model_id):'')
+        +(asr.inference_ms?(' · '+Math.round(asr.inference_ms)+' ms engine time'):'');
+      badge.innerHTML='<svg viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5.5 11a6.5 6.5 0 0 0 13 0"/><path d="M12 17.5V21"/></svg>'
+        +'ASR'+(bits.length?(' <span class="eng">'+esc(bits.join(' · '))+'</span>'):'');
+      w.appendChild(badge);
+    }
     const who=document.createElement('div'); who.className='who';
     who.textContent=turn.role==='user'?(turn.speaker||'You'):'VoiceMem';
     const said=document.createElement('div'); said.className='said'; said.textContent=turn.text;
@@ -1897,8 +1986,8 @@ function orbPoint(th,t,si,R,a,sq){
 
 /* ── One question-answer turn (shared by simulation and typing) ──── */
 let busy=false, turnSess=null;
-function addTurn(s,role,text,speaker,source){
-  s.turns.push({role,text,speaker,source:source||'asr'});
+function addTurn(s,role,text,speaker,source,asr){
+  s.turns.push({role,text,speaker,source:source||'asr',asr:asr||null});
   if(role==='user'&&!s.named){ s.title=text.length>20?text.slice(0,20)+'…':text; s.named=true; }
   renderSessions(); if(s===currentSession()) renderChat();
 }
@@ -1959,7 +2048,7 @@ const SAMPLE_RATE=24000;          // must match the backend WEB_SAMPLE_RATE
    capture fixes, because the browser was still running the v0.4.9 JS).
    The page also reports itself to the backend on /api/lang, so the field log
    names the page version. Update this together with VERSION/pyproject. */
-const PAGE_VERSION='0.5.2';
+const PAGE_VERSION='0.6.0';
 let ws=null, live=false, paused=false;
 
 /* --- Playback ------------------------------------------------------ */
@@ -2191,6 +2280,14 @@ function renderMicDiag(){
   if(!micDiagEl) return;
   if(!micDiag){ micDiagEl.hidden=true; return; }
   const t=micDiag.track_settings||{};
+  /* v0.6.0: the collapsed header summary — device + track rate in one line
+     (the bounded body keeps the full diagnostics). */
+  const sum=$('micDiagSummary');
+  if(sum){
+    sum.textContent=(micDiag.device||'—')+' · '
+      +(t.sampleRate!=null?(t.sampleRate+' Hz'):'?')
+      +(micDiag.ctx_rate?(' · ctx '+micDiag.ctx_rate+' Hz'):'');
+  }
   const rows=[
     ['device', esc(micDiag.device)
       +' · '+(micDiag.ready_state||'?')
@@ -3461,8 +3558,73 @@ let liveReply='';
 /* Six component rows: vad / asr / memory / embedding / llm / tts.
    Data arrives on two paths: WS pipeline_status (real time) + polling
    /api/pipeline every 3 s (fallback). */
-const PIPE_KEYS=['vad','asr','memory','embedding','llm','tts'];
-const PIPE_LABELS={vad:'VAD',asr:'ASR',memory:'Memory',embedding:'Embedding',llm:'LLM',tts:'TTS'};
+/* v0.6.0: the CHAIN stages — MIC → VAD → ASR → VoiceMEM → E5 → LLM → TTS.
+   The keys match the backend /api/pipeline component ids; the labels are
+   the task's stage names. No engine names: the chain is engine-agnostic. */
+const PIPE_KEYS=['mic','vad','asr','memory','embedding','llm','tts'];
+const PIPE_LABELS={mic:'MIC',vad:'VAD',asr:'ASR',memory:'VoiceMEM',embedding:'E5',llm:'LLM',tts:'TTS'};
+/* component state -> the readable chain state word */
+const PIPE_STATE_WORDS={ready:'DONE',processing:'WORKING',error:'ERROR',
+  mocked:'DEMO',missing:'IDLE',init:'IDLE'};
+/* Live per-stage state kept from stage_event messages (the real runtime
+   transitions), merged over the polled snapshot in renderPipeline. */
+const CHAIN_LIVE={};   // stage -> {state:'started'|'completed'|'failed', message, error, ts}
+let chainLastError=null;  // {stage, code, reason, detail} — one short line under the strip
+
+function setChainStage(stage, status, message, error){
+  if(!(stage in PIPE_LABELS)) return;   // engine-agnostic stage names only
+  CHAIN_LIVE[stage]={state:status, message:message||'', error:error||null, ts:Date.now()/1000};
+  if(status==='failed'){
+    chainLastError={stage, code:(error&&error.code)||'', reason:(error&&error.reason)||'',
+      detail:(error&&error.detail)||message||''};
+  } else if(chainLastError && chainLastError.stage===stage && status!=='failed'){
+    chainLastError=null;  // the stage recovered on a later turn
+  }
+  renderChainFromLive();
+}
+
+function renderChainFromLive(){
+  const strip=$('pipeStrip');
+  if(!strip) return;
+  strip.innerHTML='';
+  for(const k of PIPE_KEYS){
+    const live=CHAIN_LIVE[k];
+    let state='init';
+    if(live){
+      state = live.state==='started' ? 'processing'
+        : (live.state==='completed' ? 'ready' : 'error');
+    }
+    const chip=document.createElement('span');
+    chip.className='pipe-chip';
+    chip.dataset.state=state;
+    const label=PIPE_LABELS[k]||k;
+    chip.title=(live&&live.message?live.message:'')
+      +(live&&live.error?(' — '+(live.error.reason||live.error.code||'')):'');
+    const dot=document.createElement('span'); dot.className='dot';
+    const nm=document.createElement('span'); nm.textContent=label;
+    const st=document.createElement('span'); st.className='st';
+    st.textContent=PIPE_STATE_WORDS[state]||state.toUpperCase();
+    chip.append(dot,nm,st);
+    strip.appendChild(chip);
+  }
+  renderChainErrorLine();
+}
+
+function renderChainErrorLine(){
+  /* THE rule: after a stage fails, later stages are NOT marked DONE (their
+     live state simply never arrives), and the failure itself gets one
+     readable line: stage · ERROR — reason. No stack traces in the chain;
+     the full detail stays in the tooltip + the events list. */
+  const err=$('pipeErr');
+  if(!err) return;
+  if(chainLastError){
+    err.style.display='block';
+    const short=chainLastError.reason||chainLastError.code||'error';
+    err.innerHTML='<b>'+esc(PIPE_LABELS[chainLastError.stage]||chainLastError.stage)
+      +' · ERROR</b> — '+esc(short)
+      +((chainLastError.detail)?(' · '+esc(String(chainLastError.detail).slice(0,120))):'');
+  } else { err.style.display='none'; }
+}
 let pipeDetailOpen=false, pipePollTimer=null;
 function setModeBadge(mode){
   const b=$('modeBadge'); if(!b) return;
@@ -3486,15 +3648,27 @@ function renderPipeline(p){
   /* v0.4.2: keep the "Voice: …" line in sync with the live snapshot
      (processing/ready state + the voice that last spoke). */
   updateVoiceActiveLine((comps.tts||{}).state, p.voice||null);
+  /* v0.6.0: snapshot chips carry the state WORD; a stage with a LIVE
+     (stage_event) transition this turn keeps its live colouring, so the
+     strip and the events can never disagree. */
   for(const k of PIPE_KEYS){
     const c=comps[k]||{};
+    const live=CHAIN_LIVE[k];
+    let state=c.state||'init';
+    if(live){
+      state = live.state==='started' ? 'processing'
+        : (live.state==='completed' ? 'ready' : 'error');
+    }
     const chip=document.createElement('span');
     chip.className='pipe-chip';
-    chip.dataset.state=c.state||'init';
-    chip.title=(c.detail||'')+(c.error?(' — '+c.error):'');
+    chip.dataset.state=state;
+    chip.title=(c.detail||'')+(live&&live.message?(' — '+live.message):'')
+      +(c.error?(' — '+c.error):'');
     const dot=document.createElement('span'); dot.className='dot';
     const nm=document.createElement('span'); nm.textContent=PIPE_LABELS[k]||k;
-    chip.append(dot,nm);
+    const st=document.createElement('span'); st.className='st';
+    st.textContent=PIPE_STATE_WORDS[state]||String(state).toUpperCase();
+    chip.append(dot,nm,st);
     if(c.last_ms!==null&&c.last_ms!==undefined&&c.last_ms>0){
       const ms=document.createElement('span'); ms.className='ms';
       ms.textContent=(c.last_ms>=1000?(c.last_ms/1000).toFixed(2)+' s':Math.round(c.last_ms)+' ms');
@@ -3502,6 +3676,7 @@ function renderPipeline(p){
     }
     strip.appendChild(chip);
   }
+  renderChainErrorLine();
   if(pipeDetailOpen&&det){
     det.hidden=false;
     det.innerHTML='';
@@ -3599,7 +3774,21 @@ function handle(m){
   switch(m.type){
     case 'session_ready':
       setModeBadge(m.mode||'local');
+      /* v0.6.0: new session -> the chain returns to IDLE until real
+         stage events arrive (no stale states across connections). */
+      for(const k of PIPE_KEYS) delete CHAIN_LIVE[k];
+      chainLastError=null;
+      renderChainFromLive();
       toast(i18n('connected', m.mode||'local')); break;
+
+    case 'stage_event':
+      /* v0.6.0: the generic runtime stage contract —
+         {stage, status: started|completed|failed, ts, message, error}.
+         Every state in the CHAIN comes from a real event; nothing is
+         faked or animated on its own. */
+      setChainStage(m.stage, m.status, m.message, m.error);
+      if(window.VM_DEBUG) console.log('[vm-chain]', m.stage, m.status, m.message||'');
+      break;
 
     case 'pipeline_status':
       renderPipeline(m.pipeline||null); break;
@@ -3623,7 +3812,10 @@ function handle(m){
       // extracts gets filled in once ingest finishes.
       s.ui.tags={emo:'',ent:'',sch:''};
       lvOn=false; s.ui.input=m.text; paint(s);
-      addTurn(s,'user',m.text,s.ui.speaker||'You',m.source||'asr'); break;
+      /* v0.6.0: the turn stores the GENERIC AsrResult dict (m.asr) so the
+         chat can show WHAT THE ENGINE RECOGNISED — engine id, language,
+         duration — without any engine-specific UI branch. */
+      addTurn(s,'user',m.text,s.ui.speaker||'You',m.source||'asr',m.asr||null); break;
 
     case 'memory_hits': {
       const L=m.left_brain||[], R=m.right_brain_hits||[];
@@ -3851,6 +4043,48 @@ pauseBtn.addEventListener('click',()=>{
   setVoice(paused?'paused':'user'); syncButtons();
 });
 syncButtons();
+
+/* ── v0.6.0 collapsible panels (TASK-B) ──────────────────────────── */
+/* Mic diagnostics: collapsed by default (compact header + device summary);
+   expanded = full diagnostics in a bounded, internally scrolling body. */
+(function(){
+  const head=$('micDiagHead');
+  if(head){
+    const toggle=()=>{
+      micDiagEl.classList.toggle('open');
+      head.setAttribute('aria-expanded', micDiagEl.classList.contains('open')?'true':'false');
+    };
+    head.addEventListener('click',toggle);
+    head.addEventListener('keydown',e=>{
+      if(e.key==='Enter'||e.key===' '){ e.preventDefault(); toggle(); }
+    });
+  }
+})();
+/* LLM model panel: collapsed by default (label + status dot + one-line
+   summary); expanded = the full selection UI, bounded + scrolling. The
+   summary mirrors the state summary text the backend reports. */
+(function(){
+  const bar=$('llmbar'), head=$('llmColHead');
+  if(!bar||!head) return;
+  const toggle=()=>{
+    bar.classList.toggle('open');
+    head.setAttribute('aria-expanded', bar.classList.contains('open')?'true':'false');
+  };
+  head.addEventListener('click',toggle);
+  head.addEventListener('keydown',e=>{
+    if(e.key==='Enter'||e.key===' '){ e.preventDefault(); toggle(); }
+  });
+  /* keep the collapsed summary line in sync with the detailed state */
+  const sync=()=>{
+    const sum=$('llmColSummary');
+    if(!sum) return;
+    const det=($('llmStateSummary')&&$('llmStateSummary').textContent)||'';
+    sum.textContent=det||'—';
+  };
+  const obs=new MutationObserver(sync);
+  if($('llmStateSummary')) obs.observe($('llmStateSummary'),{childList:true,characterData:true,subtree:true});
+  sync();
+})();
 
 /* ── Startup ────────────────────────────────────────────────────── */
 applyLang();

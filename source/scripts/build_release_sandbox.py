@@ -34,12 +34,14 @@ from pathlib import Path
 REPO = Path(__file__).resolve().parent.parent
 RELEASES = REPO / "releases"
 
-NEW_VERSION = "0.5.2"
-PREV_VERSION = "0.5.1"
+NEW_VERSION = "0.6.0"
+PREV_VERSION = "0.5.2"
 ZIP_NAME = f"VoiceMemAgent_v{NEW_VERSION}.zip"
 
 PLACEHOLDER_DIRS = [
-    "models/asr/qwen3-asr-0.6b",
+    "models/asr/qwen3-asr-0.6b",     # v0.6.0: LEGACY non-production migration module dir (app/asr.py); the engine registry never loads it
+    "models/asr/parakeet-tdt-0.6b-v3",     # v0.6.0: the DEFAULT production ASR engine
+    "models/asr/nemotron-3.5-asr-streaming-0.6b",  # v0.6.0: selectable streaming engine (CUDA target)
     "models/llm/qwen3.6-35b-a3b",   # v0.4.14: the ONE AND ONLY LLM dir (README + .gitkeep; the GGUF is operator-placed, any drive - v0.4.16 picker)
     "models/tts/piper",
     "models/vad/silero-vad",
@@ -61,49 +63,113 @@ ROOT_FILES = [
 ]
 
 NOTES = (
-    "v0.5.2 TASK 1.5 MEMORY SAFETY GATE (the memory engine can no longer "
-    "silently destroy information): three controlled-fork patches close the "
-    "two P0 findings of the independent Claude audit (VoiceMEM_Audit_v1.0, "
-    "audited v0.5.0 @ 57fb6a7) plus the graph-orphan P2. VM-LOCAL-007 (CD-1, "
-    "P0): right-brain run_cleanup DELETE - the LLM heartnote-cleanup decision "
-    "on the Ingest hot path - now routes through _execute_heartnote_deletes "
-    "with the SAME opt-in gate as the left brain (VOICEMEM_ALLOW_MEMORY_ "
-    "DELETE=1, DEFAULT DENY, loud log; the supersede branch stays "
-    "non-destructive). VM-LOCAL-008 (CD-2, P0): UPDATE is NON-DESTRUCTIVE "
-    "append + explicit supersession - the new observation becomes a NEW "
-    "mem0 row (supersedes + session/event-date provenance), the old row is "
-    "never text-rewritten (only gains superseded_by/superseded_at metadata "
-    "via mem0's merge-update, text and created_at preserved), the JSON "
-    "mirror appends instead of overwriting, cognitive annotation targets "
-    "the NEW id, search marks hits with superseded_by and ranks the current "
-    "value first, and _dedupe_near never collapses an explicit supersession "
-    "pair - a previous fact can never become unrecoverable just because an "
-    "LLM decided UPDATE. VM-LOCAL-009 (F-H): a permitted left-brain delete "
-    "cascades memories/entity_memory_links/memory_tags/graph_entity_memories "
-    "(FK-safe order) so no stale graph truth survives. BEHAVIOURAL REGRESSION "
-    "BATTERY tests/integration/test_memory_safety.py (15 tests, REAL vendor "
-    "+ REAL mem0/qdrant/E5 store, deterministic mock LLM for the DECISIONS "
-    "only): RB gate default-deny/=0-deny/=1-delete-with-anchor-cascade; the "
-    "restaurant A->B UPDATE scenario (old text survives, supersession "
-    "explicit both directions, provenance on both rows, mirror lossless, "
-    "current-first ranking + historical hit recoverable, both graph rows); "
-    "LB gate default-deny-non-destructive/=1-full-cascade-no-orphans; "
-    "production import resolution + PYTHONPATH shadow DETECTED by the pin "
-    "check. Gate env upgrade: the release gate now runs the torch-equipped "
-    "profile with the production offline env (HF_HUB_OFFLINE=1, like "
-    "env.local) per package + chunked (memory-capped sandbox); two "
-    "env-profile-dependent tests gained honest scope guards (ASR "
-    "dependency-free hint test skips when deps present; the warm-up "
-    "degradation test gets a deterministic broken-local-ASR fixture) and "
-    "the pre-existing v0.5.1 PAGE_VERSION staleness (page stayed 0.5.0) is "
-    "fixed (now 0.5.2, test green again). CD-6 mirror source tree: the "
-    "GitHub mirror gains the full first-party source tree under source/ "
-    "(additive, zips preserved) via the extended standing sync policy. NO "
-    "retrieval redesign, NO recency/temporal/confidence changes, NO "
-    "bi-temporal model, NO learning layer, ASR->LLM chain/E5/Piper/"
-    "llama-server/UI untouched - TASK 2 (rich retrieval) starts only after "
-    "this gate."
+    "v0.6.0 TASK A/B - MODULAR ASR ENGINE ARCHITECTURE + UI OBSERVABILITY. "
+    "FORENSIC ROOT CAUSES (measured on the real Windows capture "
+    "upload/asr_test_last.wav): (1) the production Silero VAD fed 512-sample "
+    "windows WITHOUT the official 64-sample rolling context - prob_max "
+    "0.0031 vs 1.000 with the official OnnxWrapper contract (235/312 frames "
+    "speech, 2 natural segments) - the deaf VAD was the root of the v0.4.13 "
+    "never-detects-speech report, the v0.4.14 energy-fallback hack and the "
+    "fragmented ~320-384 ms utterances; (2) the Qwen3-ASR-0.6B integration "
+    "returns repetition garbage on valid speech - retired, not tuned. The "
+    "browser->server audio chain was ACQUITTED (r=0.998). NEW ARCHITECTURE "
+    "(app/asr_core.py): canonical AudioBuffer, single AsrResult contract, "
+    "structured AsrError codes, descriptive-only AsrCapability, "
+    "MODEL_REGISTRY (parakeet default, nemotron selectable) + select_engine "
+    "with NO engine fallback and explicit ASR_ENGINE/ASR_DEVICE; engine "
+    "adapters: parakeet (transformers-native, offline; start/feed/finish "
+    "raise - non-streaming by contract), nemotron (TRUE cache-aware "
+    "streaming bridged into the official generate() cadence). VAD fix: "
+    "official context feed; FusedVad + vad_energy_fallback DELETED. Qwen "
+    "removed from production (not in the registry, not imported); app/asr.py "
+    "kept only as the clearly-marked non-production migration module. Web "
+    "server: engine-contract ASR leg, generic stage events (mic|vad|asr|"
+    "voicemem|e5|llm|tts x started|completed|failed). Web UI: live CHAIN "
+    "states (IDLE/WORKING/DONE/ERROR, late stages never DONE after an early "
+    "failure), ASR transcript in chat with the generic AsrResult dict, "
+    "collapsible MIC diagnostics + LLM panels with bounded internal scroll. "
+    "MEASUREMENT-BASED SELECTION: parakeet default (HU WER 17.1% vs 43.4% "
+    "nemotron on the identical 9-file corpus, same CPU RTF 0.80, real "
+    "capture 11.8% vs 41.2%, 9/9 stability, 0 empty outputs). Gate: 627 "
+    "unit tests 0 failures (3 stale tests realigned to the new contract, "
+    "not weakened), integration 75/0/0 re-run, vendor/ untouched (Memory "
+    "Safety freeze held), ESLint clean, e2e fake-mic browser turn verified "
+    "end-to-end. Details: docs/TASK_A_ASR_GATE.md; evidence: "
+    "data/asr_forensics_report.json, data/asr_bench/*, "
+    "data/asr_benchmark_{parakeet,nemotron}.json."
 )
+#: v0.6.0 markers: the modular ASR engine contract - asr_core (AudioBuffer,
+#: AsrResult, AsrError, registry, select_engine), the two NVIDIA adapters,
+#: the official-context SileroVad feed, the engine-contract web-server leg,
+#: the generic stage events, and the CHAIN UI. Merged LAST so it overrides
+#: every older block for the same file (the FusedVad/energy-fallback era is
+#: history).
+V060_MARKERS = {
+    "app/asr_core.py": [
+        "class AudioBuffer",
+        "class AsrResult",
+        "class AsrError",
+        "class AsrCapability",
+        "MODEL_REGISTRY",
+        "def select_engine",
+        "class _UnavailableEngine",
+        "ASR_ENGINE",
+    ],
+    "app/asr_parakeet.py": [
+        "ParakeetForTDT",
+        "Non-streaming engine: feeding is a contract violation",
+        "AudioBuffer",
+    ],
+    "app/asr_nemotron.py": [
+        "lookahead",
+        "TextIteratorStreamer",
+        "AudioBuffer",
+    ],
+    "app/vad.py": [
+        "class SileroVad:",
+        "64-sample rolling CONTEXT",
+        "def reset",
+    ],
+    "app/web_server.py": [
+        "select_engine",
+        "_UnavailableEngine",
+        "def _stage_event",
+        "stage_event",
+        "user_transcript",
+        "asr_empty",
+    ],
+    "app/config.py": [
+        "asr_engine",
+    ],
+    "config/voicemem_config.yaml": [
+        "asr_engine",
+        "parakeet",
+    ],
+    "web/voicemem.html": [
+        "const PIPE_KEYS=['mic','vad','asr','memory','embedding','llm','tts']",
+        "const CHAIN_LIVE={}",
+        "renderChainErrorLine",
+        "stage_event",
+        "PAGE_VERSION='0.6.0'",
+        "micDiagHead",
+        "llmColHead",
+    ],
+    "tests/unit/test_asr_modular.py": [
+        "AudioBuffer",
+        "AsrResult",
+        "select_engine",
+        "no fallback",
+    ],
+    "docs/TASK_A_ASR_GATE.md": [
+        "ASR Exit Gate",
+        "parakeet",
+    ],
+    "app/mock_components.py": [
+        "class MockAsrEngine",
+        "engine_id = \"mock\"",
+    ],
+}
+
 #: v0.4.3-era retired-model markers were REMOVED in v0.4.16 (single-model policy;
 #: the self-check now asserts their ABSENCE instead - see V0416_ABSENT_FILES).
 
@@ -269,7 +335,9 @@ V048_MARKERS = {
     "app/web_server.py": [
         "/api/asr-test",
         "_run_asr_test",
-        "transcribe_utterance",
+        # v0.6.0: transcribe_utterance was replaced by the ENGINE CONTRACT
+        # call (transcribe(AudioBuffer) / finish()); the marker below pins it
+        "engine contract",
         "asr_test_last.wav",
         "mic uplink carries silence",
         "vad_peak",
@@ -399,11 +467,13 @@ V0413_MARKERS = {
 
 #: v0.4.14 markers: energy-fallback VAD + automatic mic dispatch + Qwen profile.
 V0414_MARKERS = {
+    # v0.6.0: FusedVad (the v0.4.14 energy/gain fallback gate) is DELETED -
+    # Silero is the single decision path, fed with the OFFICIAL 64-sample
+    # rolling context (the forensic root-cause fix). Markers updated.
     "app/vad.py": [
-        "class FusedVad:",
-        "fallback_active",
-        "primary_peak",
-        "last_primary",
+        "class SileroVad:",
+        "64-sample rolling CONTEXT",
+        "reset()",
     ],
     "app/web_server.py": [
         "FusedVad(silero, self.config)",
@@ -435,10 +505,9 @@ V0414_MARKERS = {
         "energy-fallback gate",
         "asrTestVadSilero",
     ],
-    "tests/unit/test_fused_vad.py": [
-        "FusedVad",
-        "DEAF primary",
-    ],
+    # v0.6.0: tests/unit/test_fused_vad.py is DELETED with FusedVad (the
+    # energy fallback is gone from production; the deaf-VAD regression lives
+    # on in test_vad_state_machine.py + test_asr_modular.py).
     "tests/unit/test_web_mic_dispatch.py": [
         "ASR turn dispatch",
         "energy fallback",
@@ -732,7 +801,7 @@ V0419_MARKERS = {
         "type:'mic_probe'",
         'id="micProbeBtn"',
         'id="micDiag"',
-        "PAGE_VERSION='0.5.2'",
+        "PAGE_VERSION='0.6.0'",
     ],
     "app/web_server.py": [
         "def _mic_probe_core(",
@@ -789,7 +858,7 @@ V0420_MARKERS = {
         "test_label_lands_in_result_and_log_line",
         "test_http_probe_carries_the_ab_label",
         "test_mic_probe_frame_carries_the_ab_label",
-        "PAGE_VERSION='0.5.2'",
+        "PAGE_VERSION='0.6.0'",
     ],
 }
 
@@ -1438,7 +1507,7 @@ def build() -> int:
                             f"self-check: {rel} lacks v0.4.11 marker {m!r}"
                         )
             # v0.4.12: stale-page detection + raw capture + send-as-turn
-            for rel, markers in {**V0412_MARKERS, **V0413_MARKERS, **V0414_MARKERS, **V0415_MARKERS, **V0416_MARKERS, **V0417_MARKERS, **V0418_MARKERS, **V0419_MARKERS, **V0420_MARKERS, **V0421_MARKERS, **V050_MARKERS, **V052_MARKERS}.items():
+            for rel, markers in {**V0412_MARKERS, **V0413_MARKERS, **V0414_MARKERS, **V0415_MARKERS, **V0416_MARKERS, **V0417_MARKERS, **V0418_MARKERS, **V0419_MARKERS, **V0420_MARKERS, **V0421_MARKERS, **V050_MARKERS, **V052_MARKERS, **V060_MARKERS}.items():
                 src_text = zf.read(root_prefix + rel).decode("utf-8", errors="replace")
                 for m in markers:
                     if m not in src_text:
@@ -1450,10 +1519,10 @@ def build() -> int:
                     "self-check: v0.4.12 UI regression test file missing "
                     "from the ZIP"
                 )
-            # v0.4.14: the energy-fallback VAD + mic-dispatch regression
-            # tests and the E2E deaf-channel launcher must ship
+            # v0.4.14: the mic-dispatch regression tests and the E2E
+            # deaf-channel launcher must ship (v0.6.0: test_fused_vad.py is
+            # DELETED together with the FusedVad energy-fallback gate)
             for must in (
-                "tests/unit/test_fused_vad.py",
                 "tests/unit/test_web_mic_dispatch.py",
                 "tests/e2e_deaf_server.py",
                 "models/llm/qwen3.6-35b-a3b/README.md",
@@ -1461,6 +1530,23 @@ def build() -> int:
                 if root_prefix + must not in names:
                     raise AssertionError(
                         f"self-check: v0.4.14 file missing from the ZIP: {must}"
+                    )
+            # v0.6.0: the modular ASR engine contract must ship
+            for must in (
+                "app/asr_core.py",
+                "app/asr_parakeet.py",
+                "app/asr_nemotron.py",
+                "tests/unit/test_asr_modular.py",
+                "tests/unit/test_vad_state_machine.py",
+                "tests/e2e_fake_mic.js",
+                "docs/TASK_A_ASR_GATE.md",
+                "scripts/asr_benchmark.py",
+                "scripts/asr_forensics.py",
+                "scripts/gen_asr_bench.py",
+            ):
+                if root_prefix + must not in names:
+                    raise AssertionError(
+                        f"self-check: v0.6.0 file missing from the ZIP: {must}"
                     )
             # v0.4.15: the exact-Qwen-GGUF discovery script must ship
             for must in (

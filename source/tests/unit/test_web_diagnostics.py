@@ -190,10 +190,20 @@ class TestWarmUp(unittest.TestCase):
 
 
 class TestAsrEmptyEvent(unittest.TestCase):
-    """Speech detected + empty transcript -> the browser is TOLD (v0.4.1)."""
+    """Speech detected + empty transcript -> the browser is TOLD (v0.4.1).
+
+    v0.6.0 note: the demo MockAsrEngine transcribes speech-level audio with
+    the scripted demo phrases, so this scenario explicitly installs the
+    OTHER honest engine outcome — the engine ran, speech was detected, but
+    no text came back (a scripted empty result) — which is exactly the
+    v0.4.1 field failure this test guards against.
+    """
 
     def _run_frames(self, tmpdir: str) -> tuple[WebSession, _FakeSock]:
         comp = _mock_components(tmpdir)
+        from app.mock_components import MockAsrEngine
+
+        comp.make_asr = lambda: MockAsrEngine(queue=[""])  # type: ignore[method-assign]
         sock = _FakeSock()
         session = WebSession(sock, comp)
         rng = np.random.default_rng(7)
@@ -244,7 +254,7 @@ class TestGuardedTurn(unittest.TestCase):
         sock = _FakeSock()
         session = WebSession(sock, comp)
 
-        async def boom(text, audio=None, source="asr"):
+        async def boom(text, audio=None, source="asr", asr_result=None):
             raise ValueError("pipeline exploded")
 
         session._run_turn = boom  # type: ignore[method-assign]
@@ -471,6 +481,15 @@ class TestForcedUtteranceEnd(unittest.TestCase):
 
         tmp = tempfile.mkdtemp(prefix="vm_forcedend_test_")
         comp = _mock_components(tmp)
+        # v0.6.0: the demo engine would transcribe the 12 s noise utterance
+        # into a demo phrase and dispatch a turn — while a turn is answering,
+        # VAD frames belong to barge-in detection (v0.4.14 design), so the
+        # "loop did not wedge" property is observed on the empty-transcript
+        # path (no turn dispatched), matching the pre-v0.6.0 mock behaviour
+        # this test was written against. The assertions are unchanged.
+        from app.mock_components import MockAsrEngine
+
+        comp.make_asr = lambda: MockAsrEngine(queue=[""])  # type: ignore[method-assign]
         sock = _FakeSock()
         session = WebSession(sock, comp)
         rng = np.random.default_rng(3)

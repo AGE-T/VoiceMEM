@@ -422,7 +422,11 @@ class TestWebE2E(unittest.TestCase):
         """
         from app.mock_components import MockAsrEngine
 
-        self.components.make_asr = lambda: MockAsrEngine(queue=[])  # flush -> ""
+        # v0.6.0 engine contract: an EMPTY queue means "cycle the demo
+        # phrases for speech-level audio" — this scenario needs the honest
+        # "engine ran, speech detected, but NO text came back" outcome, so
+        # the scripted queue holds ONE empty result (old mock: queue=[]).
+        self.components.make_asr = lambda: MockAsrEngine(queue=[""])
 
         async def run():
             events = []

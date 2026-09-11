@@ -6,15 +6,21 @@ LOCAL:
 
     browser  ->  this backend  ->  agent pipeline  ->  llama-server :8080
 
-Pipeline (LOCAL mode):
+Pipeline (LOCAL mode), v0.6.0 modular ASR:
 
     microphone (24 kHz PCM16 over WS)
-      -> Silero VAD            (app.vad, 16 kHz frames)
-      -> Qwen3 ASR 0.6B        (app.asr, partials + final flush)
+      -> Silero VAD            (app.vad, official 64-sample context feed)
+      -> selected ASR engine   (app.asr_core registry: parakeet default,
+                               nemotron selectable; ONE authoritative path,
+                               no engine fallback, structured AsrError)
       -> VoiceMem              (voicemem text_mode; per-space user_id)
          embedding: multilingual E5 small, CPU (injected into VoiceMem)
       -> Qwen3.6 35B A3B IQ4_XS (llama-server /v1/chat/completions, SSE)
       -> Piper HU/EN           (app.tts, subprocess) -> 24 kHz PCM16 to browser
+
+The legacy Qwen integration lives on only as the clearly-marked non-production
+migration module ``app/asr.py`` (kept for its historical tests); it is NOT in
+the engine registry and NOT imported by this server.
 
 M2 emotion (emotion2vec+ M2) stays enabled. M3 speaker stays optional and is
 DISABLED by default here (config.enable_speaker is ignored — the web layer
@@ -22,9 +28,10 @@ never builds a recognizer). Scene recognition stays permanently excluded
 (text_mode only).
 
 DEMO mode (``--mock`` / ``VOICEMEM_WEB_MOCK=1``): every component is replaced
-by an offline stand-in (scripted LLM, tone TTS, energy VAD, in-memory store)
-so the UI can be exercised on machines without models/GPU. The UI clearly
-shows "DEMO" in that mode. No OpenAI call exists in either mode.
+by an offline stand-in (scripted LLM, tone TTS, scripted MockAsrEngine
+implementing the same engine contract, in-memory store) so the UI can be
+exercised on machines without models/GPU. The UI clearly shows "DEMO" in that
+mode. No OpenAI call exists in either mode.
 
 The browser must NEVER call OpenAI: this module does not import the openai
 package at all; the only outbound HTTP goes to ``config.llama_server_url``
@@ -113,7 +120,9 @@ DEFAULT_WEB_HOST = "127.0.0.1"
 VAD_FRAME_SAMPLES = 512
 
 #: Pipeline components surfaced in the debug view, in display order.
-COMPONENT_KEYS = ("vad", "asr", "memory", "embedding", "llm", "tts")
+#: v0.6.0: "mic" (browser uplink health) joined the chain — the UI stage
+#: list is MIC -> VAD -> ASR -> VoiceMEM -> E5 -> LLM -> TTS now.
+COMPONENT_KEYS = ("mic", "vad", "asr", "memory", "embedding", "llm", "tts")
 
 #: How long a turn's memory/emotion stage may hold the reply (ms) before the
 #: prosody emotion is demoted to a background tag_update.
@@ -349,7 +358,16 @@ class PipelineStatus:
 
 
 def resample_linear(x: Any, from_sr: int, to_sr: int) -> Any:
-    """Linear-interpolation resampler for 1-D float32 arrays (never raises)."""
+    """Linear-interpolation resampler for 1-D float32 arrays (never raises).
+
+    v0.6.0 note (TASK-A forensics): the wire stays 24 kHz PCM16 and this
+    converts 24k -> 16k linearly. Measured impact on the ASR boundary is
+    small (chain correlation r=0.998 end to end; the ASR failure was the
+    VAD context bug + the Qwen engine, NOT this resampler — see
+    scripts/asr_forensics.py). Kept as-is deliberately: the audio path is
+    NOT the broken boundary, and changing the wire format mid-task would
+    churn the browser contract for no proven gain.
+    """
     import numpy as np
 
     x = np.asarray(x, dtype=np.float32).reshape(-1)
@@ -1118,8 +1136,9 @@ class WebComponents:
             )
             st.components["memory"].set_mocked("in-memory store (demo)")
             st.components["vad"].set_mocked("energy VAD (demo)")
-            st.components["asr"].set_mocked("not used in demo; text input drives turns")
+            st.components["asr"].set_mocked("scripted demo engine (text input drives turns)")
             st.components["embedding"].set_mocked("not used in demo")
+            st.components["mic"].set_mocked("uplink idle (demo)")
             st.llama_healthy = True
             return self
 
@@ -1153,16 +1172,33 @@ class WebComponents:
         except Exception as exc:  # noqa: BLE001
             st.components["vad"].set_error(str(exc))
 
-        # ASR (Qwen3-ASR-0.6B)
+        # ASR (v0.6.0 modular engine layer): the status names the SELECTED
+        # engine + registry facts — construction is status-only; the model
+        # loads lazily at first use, and a load failure surfaces as an
+        # explicit stage error, never an engine switch.
         try:
-            from app.asr import AsrEngine
+            from app.asr_core import ENGINE_IDS, asr_backend_status, select_engine
 
-            if AsrEngine(self.config).is_available():
-                st.components["asr"].set_ready("Qwen3-ASR-0.6B (GPU)")
-            else:
-                st.components["asr"].set_missing("torch/transformers unavailable")
+            backend = asr_backend_status(self.config)
+            self.asr_backend = backend
+            chosen = backend["selected_engine"]
+            spec = backend["registry"].get(chosen) or {}
+            local_present = bool(spec.get("local_present"))
+            try:
+                engine = select_engine(self.config)
+                detail = (
+                    f"{engine.model_id} ({self.config.asr_device}"
+                    f"{', local' if local_present else ', download needed'})"
+                )
+                st.components["asr"].set_ready(detail)
+            except Exception as exc:  # noqa: BLE001 - selection error is a status
+                st.components["asr"].set_error(str(exc)[:200])
         except Exception as exc:  # noqa: BLE001
-            st.components["asr"].set_error(str(exc))
+            st.components["asr"].set_error(str(exc)[:200])
+        try:
+            st.components["mic"].set_missing("waiting for the first uplink frame")
+        except Exception:  # noqa: BLE001
+            pass
 
         # Embedding (multilingual E5 small, CPU)
         try:
@@ -1504,21 +1540,29 @@ class WebComponents:
         session["last_event"] = "warm-up: loading models in the background"
         self._event("warm-up started")
 
-        # 1) ASR — the big one (Qwen3-ASR-0.6B onto the GPU).
+        # 1) ASR — the big one (the SELECTED engine onto its device).
+        # v0.6.0: the warm-up drives the modular engine layer — the legacy
+        # app/asr.py Qwen engine is NOT loaded here anymore (it was the
+        # last hidden Qwen production route). A failed selection/load is an
+        # EXPLICIT component error; no alternative engine is warmed.
         try:
             st.components["asr"].begin()
-            from app.asr import AsrEngine
+            from app.asr_core import select_engine
 
-            engine = AsrEngine(cfg)
+            engine = select_engine(cfg)
             if engine.warm_up():
                 st.components["asr"].end()
-                st.components["asr"].set_ready(
-                    "Qwen3-ASR-0.6B (GPU) · warm"
-                    + (" · language: " + cfg.asr_language if cfg.asr_language else " · language: auto")
-                )
+                detail = f"{engine.model_id} ({cfg.asr_device}) · warm"
+                if cfg.asr_language:
+                    detail += f" · language: {cfg.asr_language}"
+                st.components["asr"].set_ready(detail)
                 self._event("ASR warm")
             else:
-                reason = engine.last_error or "see logs/web-server.log"
+                status = engine.status()
+                reason = (
+                    status.get("last_error")
+                    or "see logs/web-server.log"
+                )
                 st.components["asr"].set_error(f"ASR warm-up failed: {reason[:200]}")
                 self._event("ASR warm-up FAILED")
         except Exception as exc:  # noqa: BLE001
@@ -1571,25 +1615,22 @@ class WebComponents:
     def make_vad(self) -> Any:
         """Per-session VAD instance (state is per-connection).
 
-        v0.4.14: real mode wraps Silero in :class:`app.vad.FusedVad` — the
-        energy fallback gate. Root cause of the v0.4.13 field report ("speaking
-        never reaches the LLM, only the Send button answers"): Silero stayed
-        DEAF on the reporter's capture channel (line-in through the browser:
-        real, ASR-transcribable speech at probability 0.003, 0/190 frames over
-        the 0.25 threshold), so the live mic chain never emitted
-        ``speech_start`` — no ASR feed, no flush, no transcript, no turn.
-        The fused VAD keeps Silero as the primary and only substitutes an
-        energy gate WHILE the primary is deaf, so the automatic mic → ASR →
-        agent transition can no longer die on Silero's opinion alone.
+        v0.6.0: real mode returns the RAW :class:`app.vad.SileroVad` — the
+        energy/gain fallback gate (FusedVad, v0.4.14) is REMOVED. That gate
+        existed to compensate for the ROOT-CAUSE Silero feed bug (512-sample
+        windows without the official 64-sample rolling context: real speech
+        scored ~0.003, the live chain never started a turn — the v0.4.13
+        field report). With the context fix measured in
+        scripts/asr_forensics.py (prob_max 1.000 on the same capture that
+        scored 0.003), Silero alone is the production speech decision path;
+        the fallback's side effect (fragmenting continuous speech into
+        ~320-384 ms utterances through a noise-floor gate) is gone with it.
         """
         if self.mock:
             return EnergyVad()
-        from app.vad import FusedVad, SileroVad
+        from app.vad import SileroVad
 
-        silero = SileroVad(self.config)
-        if getattr(self.config, "vad_energy_fallback", True):
-            return FusedVad(silero, self.config)
-        return silero
+        return SileroVad(self.config)
 
     def make_vad_state_machine(self) -> Any:
         from app.vad import VadStateMachine
@@ -1601,14 +1642,32 @@ class WebComponents:
         )
 
     def make_asr(self) -> Any:
-        """Per-session ASR engine (buffer state is per-connection)."""
+        """Per-session ASR engine facade over the ONE selected engine.
+
+        v0.6.0: the engine comes from :func:`app.asr_core.select_engine`
+        (ASR_ENGINE / yaml asr.engine — parakeet by default, nemotron
+        available). There is NO engine fallback: if the selected engine
+        cannot load, every transcription returns an explicit
+        ASR_MODEL_LOAD_ERROR AsrResult (code/stage/engine/reason) that the
+        UI renders as a stage failure. The heavy model is shared per
+        (model_dir, device) inside the engine module; the returned object
+        only carries per-session state.
+
+        Demo mode returns the scripted MockAsrEngine adapted to the same
+        contract (engine_id "mock", non-streaming, preset transcripts).
+        """
         if self.mock:
             from app.mock_components import MockAsrEngine
 
             return MockAsrEngine()
-        from app.asr import AsrEngine
+        from app.asr_core import AsrError, select_engine
 
-        return AsrEngine(self.config)
+        try:
+            return select_engine(self.config)
+        except AsrError as exc:
+            from app.asr_core import _UnavailableEngine
+
+            return _UnavailableEngine(exc)
 
     def emotion_analyzer(self) -> Any:
         """Shared EmotionAnalyzer (emotion2vec+ M2), None when unavailable."""
@@ -1692,6 +1751,10 @@ class WebSession:
         # v0.4.14: one-shot "ASR feed" stage event per utterance (the trail
         # must prove frames reach the engine even before any partial text).
         self._asr_fed = False
+        # v0.6.0: True while a genuine cache-aware streaming session is open
+        # on the selected engine (nemotron); parakeet (non-streaming) keeps
+        # this False and transcribes the completed utterance at speech_end.
+        self._asr_streaming = False
         # v0.4.4: keep a reference to the background ingest task so it cannot
         # be garbage-collected mid-flight (fire-and-forget tasks with no
         # reference can be dropped by the GC between checkpoints).
@@ -1746,6 +1809,64 @@ class WebSession:
         events.append(f"{stamp} {message}")
         del events[:-48]
         logger.info("[chain] %s", message)
+
+    # -- v0.6.0 generic stage events (TASK-B event contract) ------------------- #
+
+    _STAGE_TO_COMPONENT = {
+        "mic": "mic",
+        "vad": "vad",
+        "asr": "asr",
+        "voicemem": "memory",
+        "e5": "embedding",
+        "llm": "llm",
+        "tts": "tts",
+    }
+
+    async def _stage_event(
+        self,
+        stage: str,
+        status: str,
+        message: str = "",
+        error: Optional[dict] = None,
+    ) -> None:
+        """Emit ONE generic stage event (started | completed | failed).
+
+        This is the UI-facing runtime contract: the CHAIN panel consumes
+        exactly this shape (stage / status / ts / message / error), with NO
+        engine-specific internals — engine identity appears only inside the
+        ``error`` payload (AsrError.to_dict) and diagnostics, never as a
+        stage name. Component chips are driven from the same call so the
+        strip and the events cannot disagree.
+        """
+        payload = {
+            "type": "stage_event",
+            "stage": stage,
+            "status": status,  # started | completed | failed
+            "ts": round(time.time(), 3),
+            "message": message,
+            "error": error,
+        }
+        comp_key = self._STAGE_TO_COMPONENT.get(stage)
+        st = self._c.status
+        if comp_key is not None:
+            comp = st.components.get(comp_key)
+            if comp is not None:
+                if status == "started":
+                    comp.begin()
+                elif status == "completed":
+                    comp.end()
+                    if comp.state == _STATE_ERROR:  # recover from earlier error
+                        comp.set_ready(comp.detail)
+                elif status == "failed":
+                    comp.fail(error.get("detail", message) if error else message)
+        await self._send_json(payload)
+        if error is not None:
+            self._diag(
+                f"stage {stage} FAILED: {error.get('code', '')} "
+                f"({error.get('reason', '')}) {message}"
+            )
+        elif message:
+            self._diag(f"stage {stage} {status}: {message}")
 
     def _dump_utterance(self, audio: Any, speech_ms: int, reason: str) -> None:
         """Write an empty-transcript utterance to logs/last_empty_utterance.wav.
@@ -1837,6 +1958,12 @@ class WebSession:
                         self._diag(
                             f"mic frame received (first frame, {len(raw)} bytes PCM16)"
                         )
+                        # v0.6.0: the MIC chain stage is live the moment real
+                        # bytes arrive from the browser uplink.
+                        self._c.status.components["mic"].set_ready("uplink streaming")
+                        self._spawn(
+                            self._stage_event("mic", "started", "uplink streaming")
+                        )
                     elif frames % 250 == 0:
                         logger.info(
                             "mic uplink alive: %d frames, VAD level %.2f%s",
@@ -1848,6 +1975,13 @@ class WebSession:
         except Exception as exc:  # noqa: BLE001 - disconnect and friends
             logger.debug("ws session ended: %s", exc)
         finally:
+            # v0.6.0: the uplink closed — the MIC stage returns to idle.
+            try:
+                if int(session.get("mic_frames", 0) or 0) > 0:
+                    self._diag("mic uplink closed (session end)")
+                    self._c.status.components["mic"].set_ready("uplink closed")
+            except Exception:  # noqa: BLE001 - teardown must never raise
+                pass
             self._closed = True
             session["connected"] = False
             self._diag("session closed")
@@ -2083,34 +2217,69 @@ class WebSession:
             session["utterances"] = session.get("utterances", 0) + 1
             st.components["vad"].begin()
             await self._send_status()
-            gate = ""
-            if getattr(self._vad, "fallback_active", False):
-                gate = " · energy fallback"
-            self._diag(f"speech start (level {prob:.2f}{gate})")
+            self._diag(f"speech start (level {prob:.2f})")
+            # v0.6.0: VAD decision made -> chain stage event. For engines
+            # with genuine streaming, the ASR stream opens HERE (cache-aware
+            # state, partial decode); non-streaming engines transcribe the
+            # completed utterance at speech_end.
+            await self._stage_event(
+                "vad", "completed", f"speech start (level {prob:.2f})"
+            )
+            if getattr(self._asr, "capabilities", None) is not None and bool(
+                getattr(self._asr.capabilities, "streaming", False)
+            ):
+                await self._stage_event("asr", "started", "stream open")
+                try:
+                    await asyncio.to_thread(self._asr.start)
+                    self._asr_streaming = True
+                except Exception as exc:  # noqa: BLE001
+                    self._asr_streaming = False
+                    await self._stage_event(
+                        "asr",
+                        "failed",
+                        "stream open failed",
+                        error=_asr_error_payload(exc, getattr(self._asr, "engine_id", "")),
+                    )
+            else:
+                self._asr_streaming = False
             return
 
         if self._in_speech:
-            # Collect + partial ASR while the user is speaking.
+            # Collect + (streaming engines only) partial ASR while the user
+            # is speaking. v0.6.0: non-streaming engines (parakeet) get the
+            # COMPLETED utterance at speech_end — no chunked-batch fake
+            # partials, the engine capability decides.
             self._utterance = (
                 frame if self._utterance is None else _concat(self._utterance, frame)
             )
             session["speech_ms"] = session.get("speech_ms", 0) + int(t_frame * 1000.0)
-            try:
-                st.components["asr"].begin()
-                if not self._asr_fed:
-                    self._asr_fed = True
-                    self._diag("ASR feed (frames flowing to the engine)")
-                partial = await asyncio.to_thread(self._asr.feed, frame)
-                if partial:
-                    st.components["asr"].end()
-                    self._diag(f"partial: {partial[:60]!r}")
-                    await self._send_json(
-                        {"type": "partial_transcript", "text": partial, "replace": True}
+            if self._asr_streaming:
+                try:
+                    if not self._asr_fed:
+                        self._asr_fed = True
+                        self._diag("ASR stream feed (frames flowing to the engine)")
+                    partial = await asyncio.to_thread(
+                        self._asr.feed,
+                        _frame_buffer(frame),
                     )
-            except Exception as exc:  # noqa: BLE001
-                st.components["asr"].fail(str(exc))
-                self._diag(f"ASR feed failed: {str(exc)[:120]}")
-                logger.warning("ASR feed failed: %s", exc)
+                    if partial is not None and partial.text:
+                        self._diag(f"partial: {partial.text[:60]!r}")
+                        await self._send_json(
+                            {
+                                "type": "partial_transcript",
+                                "text": partial.text,
+                                "replace": True,
+                                "asr": partial.to_dict(),
+                            }
+                        )
+                except Exception as exc:  # noqa: BLE001
+                    self._asr_streaming = False
+                    await self._stage_event(
+                        "asr",
+                        "failed",
+                        "stream feed failed",
+                        error=_asr_error_payload(exc, getattr(self._asr, "engine_id", "")),
+                    )
 
         # v0.4.2 safety: a VAD stuck IN SPEECH (continuous music/noise above
         # the threshold, or a hangover that never completes) previously meant
@@ -2147,37 +2316,66 @@ class WebSession:
             speech_ms = session.get("speech_ms", 0)
             session["speech_ms"] = 0
             self._diag(f"speech end ({speech_ms} ms of speech)")
+            await self._stage_event("vad", "completed", f"speech end ({speech_ms} ms)")
             await self._send_status()
-            final_error = ""
+            # v0.6.0: the ASR stage runs through the ENGINE CONTRACT —
+            # exactly one authoritative path, structured errors, no
+            # partial-join fallback, no engine switching:
+            #   * streaming engine: finish() the cache-aware stream
+            #   * non-streaming engine: transcribe(AudioBuffer(utterance))
+            # The result is an AsrResult consumed identically by the UI
+            # (user_transcript carries the generic asr dict) and the turn.
+            if not self._asr_streaming:
+                await self._stage_event("asr", "started", "transcribing utterance")
             t_flush0 = time.perf_counter()
+            asr_result = None
+            final_error = ""
             try:
-                st.components["asr"].begin()
-                # v0.4.14 stage events: flush start -> flush done -> final
-                # transcript -> turn dispatch. The v0.4.13 field report needed
-                # exactly this: "ASR final transcript appears but ASR turn
-                # dispatch does not" (or the reverse) now names the broken
-                # hop without a debugger.
-                self._diag("ASR flush start")
-                final = await asyncio.to_thread(self._asr.flush)
-                st.components["asr"].end()
-                self._diag(
-                    f"ASR flush done ({(time.perf_counter() - t_flush0) * 1000.0:.0f} ms)"
-                )
-            except Exception as exc:  # noqa: BLE001
-                st.components["asr"].fail(str(exc))
-                self._diag(f"ASR flush failed: {str(exc)[:120]}")
-                logger.exception("ASR flush failed")
-                final = ""
+                if self._asr_streaming:
+                    self._asr_streaming = False
+                    asr_result = await asyncio.to_thread(self._asr.finish)
+                else:
+                    buffer = _utterance_buffer(utterance)
+                    asr_result = await asyncio.to_thread(self._asr.transcribe, buffer)
+            except Exception as exc:  # noqa: BLE001 — engine raised outside its contract
+                asr_result = None
                 final_error = str(exc)
-            final = (final or "").strip()
+                await self._stage_event(
+                    "asr",
+                    "failed",
+                    "transcription failed",
+                    error=_asr_error_payload(exc, getattr(self._asr, "engine_id", "")),
+                )
+                logger.exception("ASR transcription raised outside the engine contract")
+            result_dict = asr_result.to_dict() if asr_result is not None else None
+            if asr_result is not None and asr_result.error is not None:
+                final_error = asr_result.error.detail or asr_result.error.reason
+                await self._stage_event(
+                    "asr",
+                    "failed",
+                    "transcription failed",
+                    error=asr_result.error.to_dict(),
+                )
+            final = (asr_result.text if asr_result is not None else "") or ""
+            final = final.strip()
+            if asr_result is not None and asr_result.status.value == "ok" and not final_error:
+                self._diag(
+                    f"ASR flush done ({(time.perf_counter() - t_flush0) * 1000.0:.0f} ms, "
+                    f"engine {asr_result.engine_id})"
+                )
+                await self._stage_event(
+                    "asr",
+                    "completed",
+                    f"transcript ready ({asr_result.inference_ms:.0f} ms engine time)",
+                )
             if final:
                 # Sound-only turns (noise, music) carry no text to answer in
                 # text_mode - they are dropped instead of sending " " to the LLM.
-                # (v0.4.13: the "turn starts" line moved into _run_turn as the
-                # uniform "turn received" stage event.)
                 self._diag(f"ASR final transcript: {final[:60]!r}")
                 self._diag("ASR turn dispatch (source=asr)")
-                await self._start_turn(final, audio=utterance, source="asr")
+                await self._start_turn(
+                    final, audio=utterance, source="asr", asr_result=result_dict
+                )
             elif speech_ms >= 500:
                 # v0.4.1: this was the SILENT killer - speech detected, but the
                 # transcript came back empty, so the turn was dropped with no
@@ -2185,11 +2383,11 @@ class WebSession:
                 # v0.4.2: the event carries the REASON (exception text) and
                 # the utterance is dumped to logs/last_empty_utterance.wav so
                 # the failure is diagnosable after the fact.
-                if final_error:
-                    st.components["asr"].set_error(
-                        f"ASR failed: {final_error[:200]} - see logs/web-server.log"
-                    )
-                else:
+                # v0.6.0: with the engine contract an EMPTY result is either
+                # an explicit failure (already emitted as stage asr/failed)
+                # or the engine's honest "no speech content" verdict — both
+                # are visible; the turn is NOT dispatched on empties.
+                if not final_error:
                     st.components["asr"].set_error(
                         f"last utterance ({speech_ms / 1000.0:.1f} s) produced no "
                         "transcript - see logs/web-server.log"
@@ -2201,6 +2399,7 @@ class WebSession:
                         "type": "asr_empty",
                         "audio_ms": speech_ms,
                         "reason": final_error,
+                        "asr": result_dict,
                     }
                 )
                 await self._send_status()
@@ -2271,7 +2470,13 @@ class WebSession:
         self._turn_task = None
         await self._send_json({"type": "answer_interrupt"})
 
-    async def _start_turn(self, text: str, audio: Any = None, source: str = "asr") -> None:
+    async def _start_turn(
+        self,
+        text: str,
+        audio: Any = None,
+        source: str = "asr",
+        asr_result: Optional[dict] = None,
+    ) -> None:
         """New turn: supersede any in-flight one, then run the local pipeline."""
         await self._cancel_turn()
         session = self._c.status.session
@@ -2291,16 +2496,22 @@ class WebSession:
         self._turn_started_at = time.perf_counter()
         session["turns"] = session.get("turns", 0) + 1
         self._turn_task = self._spawn(
-            self._guarded_turn(text, audio=audio, source=source)
+            self._guarded_turn(text, audio=audio, source=source, asr_result=asr_result)
         )
 
-    async def _guarded_turn(self, text: str, audio: Any = None, source: str = "asr") -> None:
+    async def _guarded_turn(
+        self,
+        text: str,
+        audio: Any = None,
+        source: str = "asr",
+        asr_result: Optional[dict] = None,
+    ) -> None:
         """v0.4.1: a crash ANYWHERE inside a turn used to kill its task with the
         exception never retrieved - the user saw their message and then nothing.
         The guard reports the failure to the chat (error + answer_done) and
         marks whichever component was mid-processing as failed."""
         try:
-            await self._run_turn(text, audio=audio, source=source)
+            await self._run_turn(text, audio=audio, source=source, asr_result=asr_result)
         except asyncio.CancelledError:
             raise
         except Exception as exc:  # noqa: BLE001
@@ -2320,7 +2531,13 @@ class WebSession:
             except Exception:  # noqa: BLE001 - client may be gone
                 pass
 
-    async def _run_turn(self, text: str, audio: Any = None, source: str = "asr") -> None:
+    async def _run_turn(
+        self,
+        text: str,
+        audio: Any = None,
+        source: str = "asr",
+        asr_result: Optional[dict] = None,
+    ) -> None:
         c = self._c
         st = c.status
         timings: dict[str, Optional[float]] = {}
@@ -2337,11 +2554,20 @@ class WebSession:
         self._diag(
             f"turn received (source={source}, {len(user_text)} chars: {user_text[:40]!r})"
         )
-        await self._send_json({"type": "user_transcript", "text": user_text, "source": source})
+        await self._send_json(
+            {
+                "type": "user_transcript",
+                "text": user_text,
+                "source": source,
+                "asr": asr_result,
+            }
+        )
 
         # --- memory recall (+ emotion in parallel) ---------------------------
         st.components["memory"].begin()
         st.components["embedding"].begin()
+        await self._stage_event("voicemem", "started", "memory search")
+        await self._stage_event("e5", "started", "embedding query")
         self._diag("memory start")
         emotion_hint, _v, _a = semantic_emotion_label(user_text)
         mem_task = asyncio.create_task(
@@ -2438,6 +2664,10 @@ class WebSession:
                     getattr(result, "rb_hits", None) or []
                 )
                 self._diag(f"memory done ({n_hits} hits)")
+                await self._stage_event(
+                    "voicemem", "completed", f"memory search done ({n_hits} hits)"
+                )
+                await self._stage_event("e5", "completed", "embedding query done")
             else:
                 st.components["memory"].fail(
                     f"search timeout after {wait_s:.0f} s (E5 first load?)"
@@ -2445,9 +2675,31 @@ class WebSession:
                 self._diag(
                     f"memory done (timeout after {wait_s:.0f} s — E5 first load?)"
                 )
+                await self._stage_event(
+                    "voicemem",
+                    "failed",
+                    f"search timeout after {wait_s:.0f} s (E5 first load?)",
+                    error={
+                        "code": "VOICEMEM_ERROR",
+                        "stage": "voicemem",
+                        "reason": "search_timeout",
+                        "detail": f"memory search timed out after {wait_s:.0f} s",
+                    },
+                )
         except Exception as exc:  # noqa: BLE001
             st.components["memory"].fail(str(exc))
             self._diag(f"memory done (failed: {str(exc)[:120]})")
+            await self._stage_event(
+                "voicemem",
+                "failed",
+                "memory search failed",
+                error={
+                    "code": "VOICEMEM_ERROR",
+                    "stage": "voicemem",
+                    "reason": "search_failed",
+                    "detail": str(exc)[:500],
+                },
+            )
         st.components["embedding"].end()
 
         # Prosody emotion: waited result, or late tag_update.
@@ -2528,6 +2780,9 @@ class WebSession:
         )
         messages = build_messages(user_text, system_prompt, history=history)
         await self._send_json({"type": "answer_start"})
+        await self._stage_event(
+            "llm", "started", f"{self._config.llm_model_name} streaming"
+        )
         await self._send_status()
 
         stream = SentenceStream(
@@ -2546,6 +2801,7 @@ class WebSession:
                     # v0.4.13 stage event: the FIRST TTS synthesis marks the
                     # tts stage start (per-chunk lines would spam the trail).
                     self._diag(f"tts start (chunk 1, {len(chunk)} chars)")
+                    self._spawn(self._stage_event("tts", "started", "speaking the reply"))
                 tts_chunks += 1
                 pcm = await self._synthesize_chunk(chunk, fused)
                 if pcm is not None:
@@ -2590,10 +2846,24 @@ class WebSession:
             self._diag(
                 f"llm done ({len(reply)} chars, {(time.perf_counter() - t_llm0) * 1000.0:.0f} ms)"
             )
+            await self._stage_event(
+                "llm", "completed", f"{len(reply)} chars generated"
+            )
         except LlmUnavailableError as exc:
             st.components["llm"].fail(str(exc))
             llm_error = str(exc)
             self._diag(f"llm failed ({str(exc)[:140]})")
+            await self._stage_event(
+                "llm",
+                "failed",
+                "LLM unavailable",
+                error={
+                    "code": "LLM_ERROR",
+                    "stage": "llm",
+                    "reason": "unavailable",
+                    "detail": str(exc)[:500],
+                },
+            )
         except asyncio.CancelledError:
             speak_queue.put_nowait(None)
             speaker.cancel()
@@ -2623,8 +2893,20 @@ class WebSession:
                 f"tts done ({tts_chunks} chunks, "
                 f"{(time.perf_counter() - t_turn0) * 1000.0:.0f} ms)"
             )
+            await self._stage_event("tts", "completed", f"{tts_chunks} chunks played")
         else:
             self._diag("tts done (no chunks synthesised — silent reply?)")
+            await self._stage_event(
+                "tts",
+                "failed",
+                "no audio synthesised",
+                error={
+                    "code": "TTS_ERROR",
+                    "stage": "tts",
+                    "reason": "no_audio",
+                    "detail": "no TTS chunks were synthesised for the reply",
+                },
+            )
 
         if llm_error:
             await self._send_json({"type": "answer_done", "timings": timings, "error": llm_error})
@@ -2771,6 +3053,44 @@ def _concat(a: Any, b: Any) -> Any:
 
 def _size(x: Any) -> int:
     return int(getattr(x, "size", 0) or 0)
+
+
+def _frame_buffer(frame: Any) -> Any:
+    """Wrap one 16 kHz VAD frame into the canonical :class:`AudioBuffer`."""
+    from app.asr_core import AudioBuffer
+
+    return AudioBuffer.from_float(frame, PIPE_SAMPLE_RATE)
+
+
+def _utterance_buffer(utterance: Any) -> Any:
+    """Wrap a collected utterance into the canonical :class:`AudioBuffer`."""
+    from app.asr_core import AudioBuffer
+
+    if utterance is None or not _size(utterance):
+        return AudioBuffer(samples=np_zeros(0), sample_rate=PIPE_SAMPLE_RATE)
+    return AudioBuffer.from_float(utterance, PIPE_SAMPLE_RATE)
+
+
+def np_zeros(n: int) -> Any:
+    """numpy zeros helper (lazy import, float32 1-D)."""
+    import numpy as np
+
+    return np.zeros(int(n), dtype=np.float32)
+
+
+def _asr_error_payload(exc: Exception, engine_id: str) -> dict:
+    """Structured error dict for an exception raised outside the contract."""
+    from app.asr_core import AsrError, AsrErrorCode
+
+    if isinstance(exc, AsrError):
+        return exc.to_dict()
+    return AsrError(
+        code=AsrErrorCode.ASR_INFERENCE_ERROR,
+        stage="asr",
+        engine=engine_id,
+        reason="inference_failed",
+        detail=str(exc)[:500],
+    ).to_dict()
 
 
 # ═══════════════════════════════════════════════════════════════════════════
@@ -3084,19 +3404,38 @@ def _run_asr_test(c: Any, raw: bytes) -> dict:
         result["verdict"] = "ok"
         _log_and_record(c, result, "demo transcript")
         return result
+    # v0.6.0: the test drives the PRODUCTION engine contract — select the
+    # configured engine, build the canonical AudioBuffer, transcribe; the
+    # structured AsrError becomes the machine-readable verdict.
     try:
-        from app.asr import AsrEngine
+        from app.asr_core import AudioBuffer, select_engine
 
-        engine = AsrEngine(cfg)
-        text = engine.transcribe_utterance(x)
+        engine = select_engine(cfg)
+        buffer = AudioBuffer.from_float(x, PIPE_SAMPLE_RATE)
+        asr_result = engine.transcribe(buffer)
         result["asr_wall_ms"] = round((time.perf_counter() - t0) * 1000.0)
-        result["transcript"] = (text or "").strip()
-        result["verdict"] = "ok" if result["transcript"] else "asr_empty"
-        if result["verdict"] == "asr_empty":
-            st.components["asr"].set_error(
-                "ASR test: transcript came back empty — listen to the recording "
-                "(logs/asr_test_last.wav) and check the language/model"
+        result["engine"] = asr_result.engine_id
+        result["model_id"] = asr_result.model_id
+        result["language"] = asr_result.language
+        result["asr"] = asr_result.to_dict()
+        if asr_result.error is not None:
+            result["verdict"] = "asr_error"
+            err = asr_result.error.to_dict()
+            result["error"] = (
+                f"{err.get('code')} stage={err.get('stage')} "
+                f"reason={err.get('reason')}: {err.get('detail', '')[:200]}"
             )
+            st.components["asr"].set_error(
+                f"ASR test failed: {err.get('reason')} — {err.get('detail', '')[:160]}"
+            )
+        else:
+            result["transcript"] = (asr_result.text or "").strip()
+            result["verdict"] = "ok" if result["transcript"] else "asr_empty"
+            if result["verdict"] == "asr_empty":
+                st.components["asr"].set_error(
+                    "ASR test: transcript came back empty — listen to the recording "
+                    "(logs/asr_test_last.wav) and check the language/model"
+                )
     except Exception as exc:  # noqa: BLE001
         result["asr_wall_ms"] = round((time.perf_counter() - t0) * 1000.0)
         result["verdict"] = "asr_error"

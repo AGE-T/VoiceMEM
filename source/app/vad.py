@@ -1,36 +1,38 @@
-"""Voice Activity Detection: pure state machine + Silero ONNX wrapper + fusion.
+"""Voice Activity Detection: Silero ONNX wrapper + pure state machine.
 
-Three layers:
+Two layers:
 
 * :class:`VadStateMachine` — pure-Python frame-level speech start/end logic with
   a configurable hangover window. Floats in, :class:`VadEvent` out; no numpy and
   no external dependencies (unit-testable on any machine).
 * :class:`SileroVad` — Silero VAD v5/v6 ONNX model executed through onnxruntime
-  on the CPU. ``onnxruntime`` is imported lazily inside ``__init__`` (this
-  sandbox has neither onnxruntime nor the model file); every failure raises
-  :class:`RuntimeError` with an actionable install/path hint.
-* :class:`FusedVad` — v0.4.14: wraps the primary with an ENERGY fallback gate
-  for capture channels Silero stays deaf on (the v0.4.13 field report: real,
-  ASR-transcribable speech scored 0.003 by Silero — the live mic path never
-  started a turn). Pure numpy; the primary is injected, so it is fully
-  unit-testable without onnxruntime.
+  on the CPU. ``onnxruntime`` is imported lazily inside ``__init__``; every
+  failure raises :class:`RuntimeError` with an actionable install/path hint.
+
+v0.6.0 ROOT-CAUSE FIX (TASK-A Phase 3 — the first objectively broken boundary
+of the voice chain, proven in scripts/asr_forensics.py): the OFFICIAL
+silero-vad OnnxWrapper contract prepends a 64-sample rolling CONTEXT to every
+512-sample frame (576-sample model windows, context carried between frames —
+verified against snakers4/silero-vad ``utils_vad.py``). The v0.4.x-v0.5.2
+wrapper fed bare 512-sample windows, which the model scores at ~0.003 on REAL,
+perfectly ASR-transcribable speech (the field's "Silero never fires" reports):
+measured on the real Windows capture, bare 512-sample feed → prob_max 0.0031 /
+0 speech segments, official 64-sample-context feed → prob_max 1.000 /
+235-of-312 frames above threshold. The energy/gain fallback gate (FusedVad,
+v0.4.14) that was added to compensate for this bug — and which fragmented
+continuous speech into ~320-384 ms utterances through its noise-floor gate —
+is REMOVED: Silero with the correct feed contract is the SOLE production VAD
+decision path (AudioBuffer -> Silero -> speech state; no heuristic gate).
 
 The audio pipeline feeds 512-sample 16 kHz float32 frames (32 ms) into
-:meth:`SileroVad.prob` / :meth:`FusedVad.prob` and routes the returned
-probability into :meth:`VadStateMachine.update`.
-
-VALIDATION NOTE (target machine): the Silero ONNX call is written defensively
-(session inputs are inspected and probed with a silent frame at init), because
-the exact model signature cannot be exercised in this GPU-less sandbox. If the
-probe fails on the target machine, the raised RuntimeError lists the model's
-actual input names — fix :meth:`SileroVad._bind_model` there.
+:meth:`SileroVad.prob` and routes the returned probability into
+:meth:`VadStateMachine.update`.
 """
 
 from __future__ import annotations
 
 import logging
 import math
-from collections import deque
 from enum import Enum
 from typing import TYPE_CHECKING, Any, Optional
 
@@ -48,6 +50,10 @@ _STATE_INPUT_NAMES = ("state", "h", "c", "rnn_state")
 _SR_INPUT_NAMES = ("sr", "sample_rate", "sampling_rate")
 _AUDIO_INPUT_PREFERRED = "input"
 _PROB_OUTPUT_PREFERRED = "output"
+
+#: The official silero-vad OnnxWrapper context window (samples @ 16 kHz):
+#: every model call receives [previous 64 samples | new 512 samples].
+_SILERO_CONTEXT_SAMPLES = 64
 
 
 class VadEvent(Enum):
@@ -120,13 +126,22 @@ class VadStateMachine:
 class SileroVad:
     """Silero VAD v5/v6 ONNX inference wrapper (CPU execution provider).
 
-    Handles the recurrent model signature (inputs ``input`` / ``state`` / ``sr``)
-    defensively: the declared session inputs are inspected at init and probed
-    with a silent dummy frame; the first working feed plan is locked in. If the
-    signature does not expose a usable recurrent state, the class falls back to
-    a stateless call and logs a warning. The hidden state (v5/v6: shape
-    ``[1, 128]`` or ``[2, 1, 128]`` depending on the export) is zeroed by
-    :meth:`reset` — call it between utterances.
+    Implements the OFFICIAL feed contract (v0.6.0 root-cause fix): every
+    512-sample frame is scored together with a 64-sample rolling CONTEXT
+    (the previous window's tail), exactly like the reference
+    ``silero_vad.utils_vad.OnnxWrapper``: model input =
+    ``[context (64) | frame (512)]`` = 576 samples, and the context for
+    the next call is the LAST 64 samples of the current input. Streams
+    start with a zero context; :meth:`reset` re-zeroes it between
+    utterances.
+
+    Handles the recurrent model signature (inputs ``input`` / ``state`` /
+    ``sr``) defensively: the declared session inputs are inspected at init
+    and probed with a silent dummy frame; the first working feed plan is
+    locked in. If the signature does not expose a usable recurrent state,
+    the class falls back to a stateless call and logs a warning. The hidden
+    state (v5/v6: shape ``[1, 128]`` or ``[2, 1, 128]`` depending on the
+    export) is zeroed by :meth:`reset` — call it between utterances.
     """
 
     def __init__(self, config: AgentConfig) -> None:
@@ -148,6 +163,8 @@ class SileroVad:
         self._config = config
         self._sample_rate = int(config.sample_rate)
         self._frame_samples = int(config.vad_frame_samples)
+        # v0.6.0 official feed contract: rolling 64-sample context state.
+        self._ctx = np.zeros(_SILERO_CONTEXT_SAMPLES, dtype=np.float32)
         options = ort.SessionOptions()
         options.log_severity_level = 3  # errors only
         self._session: Any = ort.InferenceSession(
@@ -161,9 +178,11 @@ class SileroVad:
         self._frame_buf: Optional["np.ndarray"] = None
         self._last_prob = 0.0
         logger.info(
-            "Silero VAD loaded from %s (%d-sample frames @ %d Hz, %s inference)",
+            "Silero VAD loaded from %s (%d-sample frames + %d-sample rolling "
+            "context @ %d Hz, %s inference)",
             model_path,
             self._frame_samples,
+            _SILERO_CONTEXT_SAMPLES,
             self._sample_rate,
             "stateful" if self._state_template is not None else "stateless",
         )
@@ -237,12 +256,27 @@ class SileroVad:
         return self._last_prob
 
     def _infer(self, window: "np.ndarray") -> float:
-        """Run ONE exact-length window through the locked ONNX feed plan."""
-        feed = self._build_feed(window)
+        """Run ONE exact-length window through the locked ONNX feed plan.
+
+        v0.6.0: the window is scored WITH the official 64-sample rolling
+        context — ``model input = [ctx | window]`` — and the context becomes
+        the last 64 samples of that concatenated input (the reference
+        OnnxWrapper semantics). This is the root-cause fix for the v0.4.x
+        "Silero deaf on real speech" cascade: without the context the model
+        returns ~0.003 on valid speech.
+        """
+        ctx = self._ctx
+        if int(ctx.size) != _SILERO_CONTEXT_SAMPLES:  # defensive: exact shape
+            ctx = np.zeros(_SILERO_CONTEXT_SAMPLES, dtype=np.float32)
+        model_in = np.concatenate(
+            (ctx, np.asarray(window, dtype=np.float32))
+        )
+        feed = self._build_feed(model_in)
         outputs = self._session.run(None, feed)
         if self._state_output_idx is not None and self._state_name is not None:
             self._state = np.asarray(outputs[self._state_output_idx], dtype=np.float32)
         value = float(np.asarray(outputs[self._prob_output_idx]).reshape(-1)[0])
+        self._ctx = model_in[-_SILERO_CONTEXT_SAMPLES:].copy()
         return min(1.0, max(0.0, value))
 
     def reset(self) -> None:
@@ -250,6 +284,8 @@ class SileroVad:
 
         v0.4.9: also drops any sub-window leftover in the frame buffer so a
         new utterance never starts on the tail samples of the previous one.
+        v0.6.0: re-zeroes the 64-sample rolling CONTEXT — a new utterance
+        starts from the official silent-context state.
         """
         if self._state_template is not None:
             self._state: Optional["np.ndarray"] = np.zeros_like(self._state_template)
@@ -257,6 +293,7 @@ class SileroVad:
             self._state = None
         self._frame_buf = None
         self._last_prob = 0.0
+        self._ctx = np.zeros(_SILERO_CONTEXT_SAMPLES, dtype=np.float32)
 
     # --------------------------------------------------------------- internals
 
@@ -312,8 +349,8 @@ class SileroVad:
             state_plan = [None]  # model has no recurrent state input
 
         audio_shapes: list[tuple[int, ...]] = [
-            (1, self._frame_samples),
-            (self._frame_samples,),
+            (1, self._frame_samples + _SILERO_CONTEXT_SAMPLES),
+            (self._frame_samples + _SILERO_CONTEXT_SAMPLES,),
         ]
         sr_candidates = self._sr_value_candidates(inputs.get(sr_name))
 
@@ -399,9 +436,16 @@ class SileroVad:
         sr_name: Optional[str],
         sr_value: Any,
     ) -> None:
-        """Run one dummy inference to validate a candidate feed (raises on mismatch)."""
+        """Run one dummy inference to validate a candidate feed (raises on mismatch).
+
+        v0.6.0: probes use the FULL official window (frame + 64-sample
+        context) so the locked plan is validated against exactly the shape
+        production feeds.
+        """
         feed: dict[str, Any] = {
-            audio_name: np.zeros(self._frame_samples, dtype=np.float32).reshape(audio_shape)
+            audio_name: np.zeros(
+                self._frame_samples + _SILERO_CONTEXT_SAMPLES, dtype=np.float32
+            ).reshape(audio_shape)
         }
         if state_name is not None and state_shape is not None:
             feed[state_name] = np.zeros(state_shape, dtype=np.float32)
@@ -418,124 +462,3 @@ class SileroVad:
         if self._sr_name is not None:
             feed[self._sr_name] = self._sr_value
         return feed
-
-
-class FusedVad:
-    """Primary (Silero) VAD with an ENERGY fallback gate.
-
-    v0.4.14 root cause this fixes (the v0.4.13 field report: "speaking never
-    reaches the LLM; only the 'Send to the agent' button answers"): the live
-    mic chain gates ASR behind Silero, and on the reporter's capture chain
-    (Line In device, browser-delivered) Silero scored REAL, ASR-perfectly
-    transcribable speech at ~0.003 probability — 0/190 frames above the 0.25
-    threshold (rms 0.053, signal peak 0.68 in the same clip). No
-    ``speech_start`` ever fired, so there was no ASR feed, no flush, no
-    transcript, no ``_start_turn`` — the turn was never dispatched. The manual
-    button worked because ``user_text`` bypasses VAD entirely.
-
-    Fusion rule (deliberately conservative — it can NEVER fire when Silero
-    works on this audio):
-
-    * Track the rolling MAX of the primary's probabilities over a ~10 s
-      window. While that max stays under the speech threshold the primary is
-      "deaf" on this channel.
-    * While deaf, score frames with an energy gate instead: a dual-time
-      noise-floor tracker (fast down, slow up — self-limiting against
-      constant noise) plus an absolute floor. Speech-level audio maps to a
-      synthetic probability (0.5, comfortably over the 0.25 threshold); quiet
-      frames decay linearly to 0.
-    * The moment the primary peaks above the threshold again (healthy mic),
-      the fallback goes passive and the primary alone drives the state
-      machine.
-
-    ``reset()`` resets the primary's recurrent state (between utterances)
-    but keeps the deafness window and the noise-floor estimate — deafness is
-    a property of the whole capture channel, not one utterance.
-
-    ``last_primary`` exposes the primary's own probability for the CURRENT
-    frame: the barge-in detector reads it so the energy fallback can never
-    make the agent interrupt itself on line-level noise/TTS echo.
-    """
-
-    def __init__(self, primary: Any, config: AgentConfig) -> None:
-        self._primary = primary
-        self._threshold = float(config.vad_threshold)
-        self._frame_ms = max(1, int(config.vad_frame_ms))
-        window_frames = max(1, int(round(10_000.0 / self._frame_ms)))
-        self._primary_probs: deque = deque(maxlen=window_frames)
-        # Noise-floor tracker: fast DOWN (silence drags it down within ~0.3 s),
-        # slow UP (constant noise lifts it over ~15 s, which self-limits the
-        # gate: hiss that never varies eventually stops "firing").
-        self._floor = 0.004
-        self._floor_up = 0.002
-        self._floor_down = 0.3
-        # Gate: speech needs rms >= 0.5 * gate (prob reaches 0.25); a frame at
-        # the gate maps to 0.5. Absolute floor 0.012 keeps room noise out; the
-        # 3x noise-floor term adapts to loud environments.
-        self._abs_floor = 0.012
-        self._floor_mult = 3.0
-        self._speech_prob = 0.5
-        self.last_primary = 0.0
-        self.last_rms = 0.0
-        self.fallback_active = False
-
-    # ---------------------------------------------------------------- public
-
-    def is_available(self) -> bool:
-        """Delegate to the primary (a fused VAD is as available as it is)."""
-        avail = getattr(self._primary, "is_available", None)
-        return True if not callable(avail) else bool(avail())
-
-    def prob(self, frame: "np.ndarray") -> float:
-        """Return the fused speech probability of one frame.
-
-        The primary's recurrent state advances EVERY frame (it must stay in
-        sync with the audio even while the fallback drives the gate, so it can
-        take over again the moment it stops being deaf).
-        """
-        p = float(self._primary.prob(frame))
-        self.last_primary = p
-        self._primary_probs.append(p)
-        x = np.asarray(frame, dtype=np.float32).reshape(-1)
-        rms = float(np.sqrt(np.mean(np.square(x)))) if x.size else 0.0
-        self.last_rms = rms
-        deaf = max(self._primary_probs) < self._threshold
-        self.fallback_active = deaf
-        if not deaf:
-            return p
-        # Energy fallback: dual-time-constant noise floor, then a linear
-        # rms->prob map that crosses the speech threshold at 0.5 * gate.
-        if rms < self._floor:
-            self._floor += self._floor_down * (rms - self._floor)
-        else:
-            self._floor += self._floor_up * (rms - self._floor)
-        self._floor = min(max(self._floor, 1e-4), 1.0)
-        gate = max(self._abs_floor, self._floor * self._floor_mult)
-        prob = self._speech_prob * rms / gate if gate > 0 else 0.0
-        return min(self._speech_prob, prob)
-
-    def reset(self) -> None:
-        """Reset the primary's recurrent state; keep the channel estimates."""
-        reset = getattr(self._primary, "reset", None)
-        if callable(reset):
-            reset()
-
-    @property
-    def primary(self) -> Any:
-        """The wrapped primary VAD (diagnostics/asr-test reporting)."""
-        return self._primary
-
-    @property
-    def primary_peak(self) -> float:
-        """Rolling max of the primary's probabilities (~10 s window)."""
-        return max(self._primary_probs) if self._primary_probs else 0.0
-
-    @property
-    def noise_floor(self) -> float:
-        """Current noise-floor estimate (diagnostics)."""
-        return float(self._floor)
-
-    @property
-    def gate(self) -> float:
-        """Current energy gate (speech fires at rms >= 0.5 * gate)."""
-        return max(self._abs_floor, self._floor * self._floor_mult)

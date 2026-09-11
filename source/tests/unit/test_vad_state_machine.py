@@ -118,9 +118,19 @@ class SileroVadConstructorTests(unittest.TestCase):
 
     def test_missing_runtime_or_model_raises_runtime_error(self) -> None:
         """No onnxruntime and no model file in the sandbox -> RuntimeError with hint."""
-        cfg = AgentConfig()  # root points at <repo>/runtime (does not exist here)
-        with self.assertRaises(RuntimeError) as ctx:
-            SileroVad(cfg)
+        cfg = AgentConfig()
+        # v0.6.0: the sandbox now SHIPS models/vad/silero-vad/silero_vad.onnx,
+        # so the missing-model path is forced via the env override.
+        import os
+
+        os.environ["SILERO_VAD_PATH"] = str(
+            cfg.root / "models" / "vad" / "does-not-exist.onnx"
+        )
+        try:
+            with self.assertRaises(RuntimeError) as ctx:
+                SileroVad(cfg)
+        finally:
+            os.environ.pop("SILERO_VAD_PATH", None)
         message = str(ctx.exception).lower()
         # Either the onnxruntime install hint or the missing-model path hint.
         self.assertTrue("onnxruntime" in message or "silero" in message, message)

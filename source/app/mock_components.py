@@ -47,23 +47,137 @@ MOCK_SAMPLE_RATE = 22050
 _DEFAULT_REPLY = (
     "Ez egy hosszabb magyar mondat a mock oltozonytol. "
     "Koszonem szepen a kerdest, igy folytatom a valaszt. "
-    "Ez a harmadik mondat mar tenyleg nem tartalmaz semmi meglepetest."
+    "Ez a harmadik mondat mar tenyleg nem tartalmaz semmi meglepedest."
+)
+
+
+def _MOCK_ASR_CAPABILITIES():
+    """Mock engine capabilities: non-streaming, no LID (built lazily so
+    importing mock_components never needs torch/transformers)."""
+    from app.asr_core import AsrCapability
+
+    return AsrCapability(streaming=False, multilingual=True)
+
+
+#: Demo phrases cycled by the mock engine when no explicit queue is set —
+#: the DEMO badge already says the ASR is scripted; these make the full
+#: mic -> VAD -> ASR -> chat flow exercisable in the browser without models.
+_DEMO_TRANSCRIPTS = (
+    "Szia! Ez egy demo felismerés a scripted ASR motorból.",
+    "Milyen szép nap van ma a memóriatérben.",
+    "Ezt a mondatot a mikrofon útján ismertem fel.",
 )
 
 
 class MockAsrEngine:
-    """Preset transcript queue: ``flush()`` pops the next scripted transcript.
+    """Preset transcript queue implementing the v0.6.0 engine contract.
 
-    ``feed`` counts the samples it saw (the pipeline feeds the whole
-    utterance). ``queue`` is a plain settable attribute (CONTRACT).
+    Demo/test engine: ``transcribe(AudioBuffer)`` pops the next scripted
+    transcript into an :class:`app.asr_core.AsrResult` (engine_id "mock",
+    non-streaming). With an empty queue, speech-level audio cycles the demo
+    phrases (the UI shows the DEMO badge — the engine is honestly scripted,
+    never presented as a real model). The legacy ``feed``/``flush`` surface
+    is kept for the historical tests/benchmarks (``flush`` pops the same
+    queue; ``feed`` counts samples). ``queue`` is a plain settable
+    attribute (CONTRACT).
     """
+
+    engine_id = "mock"
+    model_id = "mock-asr"
+    #: Non-streaming by contract (the demo never fakes streaming partials).
+    capabilities = _MOCK_ASR_CAPABILITIES()
 
     def __init__(self, queue: Optional[Sequence[str]] = None) -> None:
         self.queue: list[str] = list(queue) if queue else []
         self.fed_samples = 0
+        self.last_inference_ms = 0.0
+        self._demo_idx = 0
 
     def is_available(self) -> bool:
         return True
+
+    # ---- v0.6.0 engine protocol -------------------------------------------- #
+
+    def load(self) -> None:
+        return None
+
+    def unload(self) -> None:
+        return None
+
+    def is_loaded(self) -> bool:
+        return True
+
+    def status(self) -> dict:
+        return {
+            "engine": self.engine_id,
+            "model": self.model_id,
+            "loaded": True,
+            "device": "cpu",
+            "capabilities": {"streaming": False},
+            "queue_len": len(self.queue),
+        }
+
+    def warm_up(self) -> bool:
+        return True
+
+    def transcribe(self, audio) -> "Any":
+        from app.asr_core import AsrResult, AsrResultStatus
+
+        t0 = time.perf_counter()
+        self.fed_samples += int(getattr(getattr(audio, "samples", None), "size", 0) or 0)
+        if self.queue:
+            text = self.queue.pop(0)
+        else:
+            # scripted demo transcript (speech-level audio only)
+            import numpy as np
+
+            x = getattr(audio, "samples", None)
+            rms = (
+                float(np.sqrt(np.mean(np.square(np.asarray(x, dtype=np.float32)))))
+                if x is not None and int(getattr(x, "size", 0) or 0)
+                else 0.0
+            )
+            if rms < 0.01:
+                text = ""  # honest silence: no speech content
+            else:
+                text = _DEMO_TRANSCRIPTS[self._demo_idx % len(_DEMO_TRANSCRIPTS)]
+                self._demo_idx += 1
+        self.last_inference_ms = (time.perf_counter() - t0) * 1000.0
+        return AsrResult(
+            text=text,
+            language="hu" if text else "",
+            duration_s=float(
+                getattr(getattr(audio, "samples", None), "size", 0) or 0
+            ) / 16000.0,
+            engine_id=self.engine_id,
+            model_id=self.model_id,
+            status=AsrResultStatus.OK,
+            inference_ms=self.last_inference_ms,
+        )
+
+    def start(self) -> None:
+        from app.asr_core import AsrError, AsrErrorCode
+
+        raise AsrError(
+            code=AsrErrorCode.ASR_INPUT_ERROR,
+            stage="asr_streaming",
+            engine=self.engine_id,
+            reason="streaming_unsupported",
+            detail="mock ASR is non-streaming; use transcribe()",
+        )
+
+    def finish(self) -> "Any":
+        """Non-streaming: mirrors start()'s contract violation error."""
+        from app.asr_core import AsrError, AsrErrorCode, AsrResult
+
+        err = AsrError(
+            code=AsrErrorCode.ASR_INPUT_ERROR,
+            stage="asr_streaming",
+            engine=self.engine_id,
+            reason="streaming_unsupported",
+            detail="mock ASR is non-streaming; use transcribe()",
+        )
+        return AsrResult.from_error(err, self.engine_id, self.model_id)
 
     def feed(self, samples: "np.ndarray") -> str:
         self.fed_samples += int(np.asarray(samples).size)

@@ -17,7 +17,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "voicemem-agent"
-version = "0.5.2"
+version = "0.6.0"
 description = "Fully local HU/EN voice agent with long-term memory - M0/M1"
 requires-python = ">=3.11"
 dependencies = [

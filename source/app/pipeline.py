@@ -87,7 +87,7 @@ from app.voicemem_bridge import (
 if TYPE_CHECKING:  # pragma: no cover — typing only, never imported at runtime
     import numpy as np
 
-    from app.asr import AsrEngine
+    from app.asr_core import AsrEngineProtocol as AsrEngine
     from app.audio_io import SpeakerOutput
     from app.llm import LlmClient
     from app.speaker import SpeakerIdentification
@@ -503,19 +503,38 @@ class VoicePipeline:
     async def _transcribe(
         self, audio: Optional["np.ndarray"], timings: TurnTimings
     ) -> str:
-        """ASR stage: feed the utterance, then flush the accurate final."""
+        """ASR stage (v0.6.0 engine contract): one authoritative path.
+
+        The completed utterance goes to the selected engine's
+        ``transcribe(AudioBuffer)`` and returns the transcript. Engine
+        failures are EXPLICIT: the structured AsrError is logged with its
+        code/stage/reason and the turn is skipped (no partial-join
+        fallback, no engine switch, no empty-string-as-success).
+        """
+        from app.asr_core import AudioBuffer
+
+        if audio is None or int(getattr(audio, "size", 0) or 0) == 0:
+            timings.asr_final_s = time.perf_counter()
+            return ""
         try:
-            if audio is not None and int(getattr(audio, "size", 0) or 0) > 0:
-                await asyncio.to_thread(self._asr.feed, audio)
-            transcript = await asyncio.to_thread(self._asr.flush)
-        except RuntimeError as exc:  # missing stack / load failure (engine hints)
+            buffer = AudioBuffer.from_float(audio, self._config.sample_rate)
+            result = await asyncio.to_thread(self._asr.transcribe, buffer)
+        except Exception as exc:  # noqa: BLE001 - engine raised outside the contract
             self._log.error("ASR failed: %s", exc)
-            transcript = ""
-        except Exception as exc:  # noqa: BLE001 - a turn survives an ASR hiccup
-            self._log.exception("Unexpected ASR error: %s", exc)
-            transcript = ""
+            timings.asr_final_s = time.perf_counter()
+            return ""
         timings.asr_final_s = time.perf_counter()
-        return transcript.strip()
+        if result.error is not None:
+            err = result.error.to_dict()
+            self._log.error(
+                "ASR failed: %s stage=%s reason=%s — %s",
+                err.get("code"),
+                err.get("stage"),
+                err.get("reason"),
+                err.get("detail", ""),
+            )
+            return ""
+        return (result.text or "").strip()
 
     async def _retrieve_memory(
         self, transcript: str, speaker_id: str, timings: TurnTimings

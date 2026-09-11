@@ -105,28 +105,32 @@ class AgentConfig:
     vad_threshold: float = 0.25       # speech start/end threshold
     vad_hangover_ms: int = 300        # silence required before SPEECH_END
     vad_frame_ms: int = 32            # Silero v5/v6 ONNX expects 512 samples @ 16 kHz
-    # v0.4.14: energy fallback behind Silero (see app.vad.FusedVad). When the
-    # primary VAD is DEAF on the capture channel (v0.4.13 field report: real,
-    # ASR-transcribable line-in speech scored 0.003 — the live mic path never
-    # dispatched a turn), speech-LEVEL audio still opens the gate through an
-    # energy detector, so the automatic mic -> ASR -> agent transition can
-    # never die on Silero's opinion alone. Healthy-Silero channels are
-    # unaffected: the fallback is passive whenever Silero fires.
-    vad_energy_fallback: bool = True
+    # v0.6.0: the v0.4.14 energy/gain fallback (app.vad.FusedVad) is REMOVED.
+    # It existed to compensate for the ROOT-CAUSE Silero feed bug (512-sample
+    # windows without the official 64-sample rolling context -> Silero deaf
+    # on ALL speech, prob ~0.003 — proven in scripts/asr_forensics.py).
+    # With the context fix Silero is the SOLE production VAD decision path;
+    # no energy heuristic may gate speech decisions (task architecture rule).
     barge_in_threshold: float = 0.30  # speech prob during TTS playback
     barge_in_min_speech_ms: int = 500 # sustained speech needed to trigger barge-in
 
-    # --- ASR (Qwen3-ASR-0.6B, PyTorch cu128, GPU) ---
-    asr_model_name: str = "Qwen/Qwen3-ASR-0.6B"
+    # --- ASR (modular engine layer, v0.6.0) ---
+    # Exactly ONE engine is selected at runtime (ASR_ENGINE env / yaml
+    # asr.engine); there is NO automatic fallback to another engine. Valid
+    # ids: app.asr_core.ENGINE_IDS (parakeet, nemotron). The legacy Qwen3-ASR
+    # module (app/asr.py) is NON-PRODUCTION migration material: it is not in
+    # the registry, not selectable, and not imported by any production path.
+    asr_engine: str = "parakeet"     # the selected production ASR engine
     asr_model_path: str = ""          # optional local dir override (offline loading)
-    asr_device: str = "cuda"
-    asr_chunk_ms: int = 600           # quasi-streaming batch size
-    # v0.4.7: transcription language. "" = auto-detect (the model reports the
-    # detected language itself - 30 languages incl. Hungarian). Force a
-    # language with its full English name ("Hungarian", "English", ...) or an
-    # ISO code ("hu", "en") when auto-detect misfires.
-    asr_language: str = ""
+    asr_device: str = "cuda"          # cuda | cpu — execution config only, NOT a fallback
+    asr_language: str = ""            # "" = engine default behaviour
     asr_max_new_tokens: int = 256     # generation cap per transcription call
+    # LEGACY (non-production, v0.6.0): consumed only by app/asr.py (the
+    # retained Qwen3-ASR migration/debug module) and its historical tests.
+    # The production engine layer resolves model identity from
+    # app.asr_core.MODEL_REGISTRY — never from these fields.
+    asr_model_name: str = "Qwen/Qwen3-ASR-0.6B"
+    asr_chunk_ms: int = 600           # legacy quasi-streaming batch size
 
     # --- LLM (llama.cpp llama-server, OpenAI-compatible) ---
     # v0.4.16: the ONE AND ONLY production LLM is Qwen3.6 35B A3B IQ4_XS
@@ -243,6 +247,12 @@ class AgentConfig:
 
     @property
     def asr_model_dir(self) -> Path:
+        """LEGACY Qwen3-ASR model dir (non-production module app/asr.py).
+
+        v0.6.0: the production engines resolve their model directories from
+        ``app.asr_core.MODEL_REGISTRY`` (spec.local_path). This property stays
+        for the retained migration/debug module and its historical tests.
+        """
         env = os.environ.get("QWEN3_ASR_MODEL_PATH")
         if env:
             return Path(env)
@@ -412,7 +422,16 @@ class AgentConfig:
         # v0.4.14: the energy fallback behind Silero can be turned off for a
         # channel where it is not wanted (VAD_ENERGY_FALLBACK=0).
         if v := os.environ.get("VAD_ENERGY_FALLBACK", "").strip().lower():
-            self.vad_energy_fallback = v not in ("0", "false", "no", "off")
+            if v not in ("0", "false", "no", "off"):
+                logger.warning(
+                    "VAD_ENERGY_FALLBACK is set, but the energy fallback was "
+                    "REMOVED in v0.6.0 (Silero 64-sample context fix made it "
+                    "obsolete); the variable is ignored"
+                )
+        # v0.6.0: explicit ASR engine selection (no fallback — unknown ids
+        # fail loudly at engine construction with the valid id list).
+        if v := os.environ.get("ASR_ENGINE", "").strip():
+            self.asr_engine = v.lower()
         if v := os.environ.get("OPENAI_BASE_URL"):
             self._apply_base_url(v)
         if v := os.environ.get("VOICEMEM_MEMORY_ROOT"):
