@@ -37,6 +37,39 @@ import numpy as np
 #: 「讨厌吃饭吧唧嘴」↔「讨厌被打断」是 0.934（不该合并）。
 MERGE_THRESHOLD = 0.95
 
+#: [CONTROLLED FORK - patch VM-LOCAL-013] 置信度动力学（外部审计 v0.5.0 F-D：
+#: confidence 写入后永远不动、排序也不读它——「惰性字段」）。
+#: 强化规则：每次同一判断被再次确认，confidence 渐近上移、永不封顶到 1：
+#:     c' = c + (1 - c) * TRAIT_REINFORCE_STEP
+#: 0.9 → 0.93 → 0.951 → 0.9657…（确认越多越接近 1，但永远不会等于 1）。
+TRAIT_REINFORCE_STEP = 0.30
+
+#: [CONTROLLED FORK - patch VM-LOCAL-013] 读时衰减：90 天观察宽限期后按
+#: 180 天半衰期指数衰减（与左脑 VM-LOCAL-011 的「未标注旧行不惩罚」同一
+#: 策略：last_seen 解析不出来的 legacy 行拿到权重 1.0，永不受罚）。
+TRAIT_DECAY_GRACE_DAYS = 90.0
+TRAIT_DECAY_HALFLIFE_DAYS = 180.0
+
+
+def effective_trait_confidence(confidence: float, last_seen: str) -> float:
+    """[CONTROLLED FORK - patch VM-LOCAL-013] 读时置信度 = 写入置信度 × 时间衰减。
+
+    宽限期内不衰减；之后按半衰期指数下降。加法式、非破坏性：只影响排序
+    权重，数据库里的原始 confidence 不变。legacy 行（无 last_seen）返回原值。
+    """
+    try:
+        if last_seen:
+            from datetime import datetime, timezone
+            age_days = (datetime.now(timezone.utc)
+                        - datetime.fromisoformat(last_seen)).total_seconds() / 86400.0
+            if age_days > TRAIT_DECAY_GRACE_DAYS:
+                excess = age_days - TRAIT_DECAY_GRACE_DAYS
+                confidence = confidence * (0.5 ** (excess / TRAIT_DECAY_HALFLIFE_DAYS))
+    except Exception:
+        pass                      # 解析失败 → 原值（宽客策略，同 VM-LOCAL-011）
+    return float(min(max(confidence, 0.0), 1.0))
+
+
 #: [CONTROLLED FORK - ports upstream 91d2e42 + VM-LOCAL-004]
 #: 维度不符只提醒一次，别每轮刷屏（upstream 用 print；这里走 logging）。
 _WARNED_DIM: set = set()
@@ -75,10 +108,21 @@ class Trait:
     confidence: float = 0.9
     evidence: list[Evidence] = field(default_factory=list)
     updated_at: str = ""
+    # [CONTROLLED FORK - patch VM-LOCAL-013] 观察记账（外部审计 F-C：
+    # first_seen / last_seen / occurrence_count 此前不存在——
+    # 「多久/最近一次」类问题无从回答）。合并时递增，首次写入时 1。
+    first_seen: str = ""
+    last_seen: str = ""
+    occurrence_count: int = 1
 
     @property
     def cluster(self) -> str:
         return SLOT_TO_CLUSTER.get(self.slot, "personality")
+
+    @property
+    def eff_confidence(self) -> float:
+        """读时置信度（含时间衰减，见 :func:`effective_trait_confidence`）。"""
+        return effective_trait_confidence(self.confidence, self.last_seen)
 
 
 #: claim 前面常见的主语。节点标题是「讨厌被打断」而不是「用户讨厌被打断」——
@@ -139,6 +183,18 @@ class TraitStore:
                 cause_id   TEXT NOT NULL DEFAULT '',
                 created_at TEXT NOT NULL
             )""")
+            # [CONTROLLED FORK - patch VM-LOCAL-013] 旧库加法迁移：观察记账列。
+            # PRAGMA 探测 + ALTER TABLE，幂等（重跑安全），旧行拿到默认值
+            # （first_seen/last_seen 空，occurrence_count 1——读到时按宽客策略）。
+            have = {row[1] for row in c.execute("PRAGMA table_info(rb_traits)")}
+            for col, ddl in (
+                ("first_seen", "ALTER TABLE rb_traits ADD COLUMN first_seen TEXT NOT NULL DEFAULT ''"),
+                ("last_seen", "ALTER TABLE rb_traits ADD COLUMN last_seen TEXT NOT NULL DEFAULT ''"),
+                ("occurrence_count",
+                 "ALTER TABLE rb_traits ADD COLUMN occurrence_count INTEGER NOT NULL DEFAULT 1"),
+            ):
+                if col not in have:
+                    c.execute(ddl)
             c.execute("CREATE INDEX IF NOT EXISTS idx_ev_trait ON rb_evidence(trait_id)")
             c.execute("CREATE INDEX IF NOT EXISTS idx_tr_user ON rb_traits(user_id, slot)")
 
@@ -161,14 +217,29 @@ class TraitStore:
         with self._conn() as c:
             if tid is None:
                 tid = uuid.uuid4().hex
+                # [VM-LOCAL-013] 首次观察：occurrence_count=1，first=last=now。
                 c.execute("INSERT INTO rb_traits "
-                          "(id,user_id,slot,claim,embedding,confidence,created_at,updated_at) "
-                          "VALUES (?,?,?,?,?,?,?,?)",
+                          "(id,user_id,slot,claim,embedding,confidence,created_at,updated_at,"
+                          "first_seen,last_seen,occurrence_count) "
+                          "VALUES (?,?,?,?,?,?,?,?,?,?,?)",
                           (tid, user_id, slot, claim,
                            vec.astype(np.float32).tobytes() if vec is not None else None,
-                           0.9, now, now))
+                           0.9, now, now, now, now, 1))
             else:
-                c.execute("UPDATE rb_traits SET updated_at=? WHERE id=?", (now, tid))
+                # [VM-LOCAL-013] 再次确认同一判断：非破坏性记账——
+                # 证据照旧追加（下方 INSERT 不变），节点上递增 occurrence_count、
+                # 刷新 last_seen、渐近强化 confidence（旧值永不丢失）。
+                row = c.execute(
+                    "SELECT confidence, occurrence_count, first_seen FROM rb_traits WHERE id=?",
+                    (tid,)).fetchone()
+                prev_conf = float(row["confidence"]) if row is not None else 0.9
+                prev_occ = int(row["occurrence_count"]) if row is not None else 1
+                prev_first = (row["first_seen"] if row is not None else "") or now
+                new_conf = prev_conf + (1.0 - prev_conf) * TRAIT_REINFORCE_STEP
+                c.execute(
+                    "UPDATE rb_traits SET updated_at=?, last_seen=?, "
+                    "occurrence_count=?, confidence=?, first_seen=? WHERE id=?",
+                    (now, now, prev_occ + 1, round(new_conf, 4), prev_first, tid))
             # 每个字段都过一遍 str()：证据常常来自旧数据或 LLM 输出，
             # 缺字段时是 None，而这几列都是 NOT NULL，直接插会整轮写入失败。
             c.execute("INSERT INTO rb_evidence "
@@ -297,9 +368,14 @@ class TraitStore:
     def _to_trait(self, c, r) -> Trait:
         evs = c.execute("SELECT * FROM rb_evidence WHERE trait_id=? ORDER BY created_at DESC",
                         (r["id"],)).fetchall()
+        keys = set(r.keys())
         return Trait(
             id=r["id"], slot=r["slot"], claim=r["claim"],
             confidence=r["confidence"], updated_at=r["updated_at"],
+            # [VM-LOCAL-013] 观察记账字段（旧库迁移后默认：空/1）。
+            first_seen=(r["first_seen"] if "first_seen" in keys else "") or "",
+            last_seen=(r["last_seen"] if "last_seen" in keys else "") or "",
+            occurrence_count=(int(r["occurrence_count"]) if "occurrence_count" in keys else 1) or 1,
             evidence=[Evidence(quote=e["quote"], emotion=e["emotion"],
                                cause=e["cause"], cause_id=e["cause_id"],
                                at=e["created_at"]) for e in evs],

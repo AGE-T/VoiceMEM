@@ -262,6 +262,12 @@ def trait_min_sim(dim: int | None) -> float:
     return _TRAIT_MIN_SIM_BY_DIM.get(dim or 0, _TRAIT_MIN_SIM_DEFAULT)
 
 
+#: [CONTROLLED FORK - patch VM-LOCAL-013] F-D 排序混合的置信度下限：priority =
+#: sim × (floor + (1-floor) × eff_confidence)。floor 保证低置信判断的 priority
+#: 至少还有纯相似度的 75%（conf=0 → ×0.75；conf=1 → ×1.0，即原行为）。
+TRAIT_CONF_RANK_FLOOR = 0.75
+
+
 def _rb_trait_hits(store, user_id: str, query: str, top_k: int = 4) -> list["RightBrainHit"]:
     """按语义查判断表（rb_traits），最贴合这句话的几条判断。
 
@@ -278,13 +284,29 @@ def _rb_trait_hits(store, user_id: str, query: str, top_k: int = 4) -> list["Rig
         # [ports upstream f535f9d] 门槛跟 embedder 绑（384 维 E5 → 0.88）。
         if sim < trait_min_sim(getattr(store, "last_query_dim", None)):
             break                      # 已按相似度降序，后面只会更低
+        # [CONTROLLED FORK - patch VM-LOCAL-013] 外部审计 F-D：confidence 终于
+        # 参与排序——有界混合，门槛判定仍只看原始 sim（上面那行）。
+        # floor=0.75：低置信判断最多降 25%（conf 0.5 → ×0.875），永不清零、
+        # 永不放大；排序顺序最多被 1/0.75 ≈ 1.33× 的相似度差距翻转。
+        # NOTE: eff==0.0 是合法值（confidence 衰减到底）——绝不能用
+        # `or 0.9` 兜底（Python 真值语义会把 0.0 换成 0.9，上个会话的
+        # LLM_CACHE_TYPE_V 教训的近亲）。
+        eff_raw = getattr(t, "eff_confidence", 0.9)
+        eff = 0.9 if eff_raw is None else float(eff_raw)
+        priority = sim * (TRAIT_CONF_RANK_FLOOR + (1.0 - TRAIT_CONF_RANK_FLOOR) * eff)
         # 证据里挑最近一条当支撑——光一句 claim，模型看不出它是从哪来的。
         ev = t.evidence[0].quote if t.evidence else ""
         content = f"{t.claim}（{t.slot}）" + (f"｜他说过：{ev[:60]}" if ev else "")
         out.append(RightBrainHit(
             content=content, source="profile",
-            priority=round(float(sim), 3),
-            metadata={"slot_name": t.slot, "trait_id": t.id, "claim": t.claim},
+            priority=round(float(priority), 3),
+            metadata={"slot_name": t.slot, "trait_id": t.id, "claim": t.claim,
+                      # [VM-LOCAL-013] 观察记账上浮到 hit 元数据（UI 可读）。
+                      "confidence": round(float(getattr(t, "confidence", 0.9) or 0.9), 4),
+                      "eff_confidence": round(eff, 4),
+                      "occurrence_count": int(getattr(t, "occurrence_count", 1) or 1),
+                      "first_seen": getattr(t, "first_seen", "") or "",
+                      "last_seen": getattr(t, "last_seen", "") or ""},
         ))
     return out
 
@@ -919,7 +941,9 @@ significant 不管真假，其余字段都要照填（调用方另有判定）�
                 timeout=60.0,
             )
             resp = client.chat.completions.create(
-                model="gpt-4o-mini",
+                # [CONTROLLED FORK - audit F-N fix] env-overridable model name
+                # (canonical value loader-driven via OPENAI_MODEL since v0.7.2).
+                model=os.environ.get("OPENAI_MODEL", "gpt-4o-mini"),
                 messages=[
                     {"role": "system", "content": (
                         "你是记忆清洁助手。分析以下情感记忆列表，做两类判断。\n"

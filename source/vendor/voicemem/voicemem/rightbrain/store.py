@@ -23,6 +23,31 @@ def _utc_iso() -> str:
     return datetime.now(timezone.utc).isoformat()
 
 
+#: [CONTROLLED FORK - patch VM-LOCAL-014] TTL 读取侧生效（外部审计 v0.5.0 F-G /
+#: 研究审计 §12：「TTL 列写入但从未被读取」）。非破坏性：过期行在检索时
+#: 跳过（行不删、DB 不改）；long_term（默认）永不过期。
+#: 期限常量：session → 1 天；short_term → 14 天。选取依据：与上游
+#: heartnote 预期使用场景（会话内/短期情绪）一致，宁可保守。
+TTL_EXPIRY_DAYS = {"session": 1.0, "short_term": 14.0}
+
+
+def ttl_expired(ttl: str, created_at: str) -> bool:
+    """[CONTROLLED FORK - patch VM-LOCAL-014] 该行 TTL 是否已过。
+
+    未知 TTL 值、空/不可解析的时间戳 → False（宽客策略，同左脑
+    VM-LOCAL-011 的「旧行不受罚」）。
+    """
+    horizon = TTL_EXPIRY_DAYS.get(ttl)
+    if horizon is None or not created_at:
+        return False
+    try:
+        age_days = (datetime.now(timezone.utc)
+                    - datetime.fromisoformat(created_at)).total_seconds() / 86400.0
+        return age_days > horizon
+    except Exception:
+        return False
+
+
 def _new_id() -> str:
     return str(uuid.uuid4())
 
@@ -197,6 +222,8 @@ class RightBrainStore:
         """
         with self._conn() as c:
             rows = c.execute(sql, params).fetchall()
+        # [VM-LOCAL-014] TTL 读时过滤：过期行跳过（非破坏性，行保留）。
+        rows = [r for r in rows if not ttl_expired(r["ttl"], r["created_at"])]
         return [self._row_to_memory(r) for r in rows]
 
     def search_global(
@@ -226,6 +253,8 @@ class RightBrainStore:
         """
         with self._conn() as c:
             rows = c.execute(sql, params).fetchall()
+        # [VM-LOCAL-014] TTL 读时过滤：过期行跳过（非破坏性，行保留）。
+        rows = [r for r in rows if not ttl_expired(r["ttl"], r["created_at"])]
         return [self._row_to_memory(r) for r in rows]
 
     def _fallback_global(

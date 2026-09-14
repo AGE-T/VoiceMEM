@@ -757,7 +757,17 @@ try {
         if ($VmOk) {
             Write-BLog 'INFO' 'voicemem importable AND pin-verified (controlled fork @ e8384e0)'
         } else {
-            Write-BLog 'ERROR' 'voicemem import failed or is NOT the controlled fork (vendor path / commit mismatch) - degraded memory mode; re-run the installer (START.bat repair)'
+            # [external audit v1.0 F-E fix] The pin check used to be report-only
+            # (ERROR log + degraded memory). It is now GATING at install time in
+            # every mode except 'mock' (which runs on demo doubles and never
+            # touches the vendor tree): a shadowing/wrong vendor must fail the
+            # bootstrap so START.bat repair runs, instead of a silently broken
+            # memory engine. [VM-LOCAL-014 release]
+            Write-BLog 'ERROR' 'voicemem import failed or is NOT the controlled fork (vendor path / commit mismatch)'
+            if ($Mode -ne 'mock') {
+                throw 'BOOTSTRAP PIN GATE FAILED: voicemem is not the controlled fork (vendor path / commit mismatch). Run START.bat repair'
+            }
+            Write-BLog 'ERROR' 'mock mode continues without the vendor memory engine'
         }
 
         # The installer's step 15 (verify_m1 -WithServer) is the smoke gate.

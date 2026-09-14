@@ -29,6 +29,29 @@ HU_STOPWORDS = frozenset({
     "ők", "hát",
 })
 
+#: [external audit v1.0 F-O fix] Hungarian function words that carry NO
+#: diacritics — they survive informal typing without accents ("szerintem",
+#: "persze", "mikor"...). Without these, an accent-free Hungarian sentence
+#: with few listed stopwords could lose to English and get the EN voice.
+HU_PLAIN_WORDS = frozenset({
+    "szia", "sziasztok", "persze", "koszi", "koszonom", "szivesen",
+    "mikor", "hol", "ki", "mit", "miert", "rendben", "igen",
+    "vagyok", "voltam", "leszek", "tudom", "tudok", "tudsz",
+    "akarom", "akarok", "gondolom", "gondoltam", "szerintem", "na",
+    "ugye", "talalkozunk", "meseld",
+})
+
+#: [F-O fix] Hungarian digraphs — they appear in most Hungarian words even
+#: when typed without diacritics, and are rare in English text.
+HU_DIGRAPHS = ("sz", "cs", "gy", "ny", "ly", "ty", "zs")
+
+#: [F-O fix] q is essentially absent from native Hungarian orthography (and
+#: from its diacritic-free typing); in English it appears in content words
+#: ("question", "quick"). w is deliberately NOT used: too many English
+#: stopwords carry w ("was/what/when/...") and a w-bonus double-counts them,
+#: misrouting mixed text like "The tejeskávé was excellent".
+EN_ONLY_LETTERS = frozenset("q")
+
 #: Common English stopwords (weight 1 per token).
 EN_STOPWORDS = frozenset({
     "the", "a", "an", "is", "are", "was", "were", "and", "but", "or",
@@ -59,25 +82,44 @@ def _tokenize(text: str) -> list[str]:
 def detect_language(text: str) -> str:
     """Heuristic HU/EN detection.
 
-    Hungarian diacritic-bearing tokens weigh 3, Hungarian stopwords weigh 2,
-    English stopwords weigh 1. Ties go to ``"hu"`` iff any Hungarian diacritic
-    is present in the text, otherwise ``"en"``. Empty/whitespace text is
-    detected as ``"en"``.
+    Hungarian diacritic-bearing tokens weigh 3, Hungarian stopwords weigh 2
+    (plus diacritic-free Hungarian function words, weight 2 — F-O fix),
+    English stopwords weigh 1. A Hungarian digraph-density signal (sz/cs/gy/
+    ny/ly/ty/zs in at least half the tokens) adds +2 to the Hungarian score;
+    any q in the text adds +2 to English (native Hungarian lacks it). Ties go to ``"hu"`` iff any Hungarian diacritic is present in
+    the text, otherwise ``"en"``. Empty/whitespace text is detected as
+    ``"en"``.
     """
     if not text or not text.strip():
         return LANG_EN
 
-    has_hu_diacritic = any(ch in HU_DIACRITICS for ch in text.lower())
+    lowered = text.lower()
+    has_hu_diacritic = any(ch in HU_DIACRITICS for ch in lowered)
 
+    tokens = _tokenize(text)
     hu_score = 0
     en_score = 0
-    for token in _tokenize(text):
+    for token in tokens:
         if any(ch in HU_DIACRITICS for ch in token):
             hu_score += 3
         if token in HU_STOPWORDS:
             hu_score += 2
+        if token in HU_PLAIN_WORDS:
+            hu_score += 2
         if token in EN_STOPWORDS:
             en_score += 1
+
+    # [F-O fix] digraph density: Hungarian words carry sz/cs/gy/ny/... even
+    # when typed without diacritics; English rarely does. Only fires when
+    # there are at least 3 tokens, so short mixed fragments stay unbiased.
+    if len(tokens) >= 3:
+        digraph_tokens = sum(1 for t in tokens if any(d in t for d in HU_DIGRAPHS))
+        if digraph_tokens / len(tokens) >= 0.5:
+            hu_score += 2
+
+    # [F-O fix] q is essentially absent from native Hungarian orthography.
+    if any(ch in EN_ONLY_LETTERS for ch in lowered):
+        en_score += 2
 
     if hu_score > en_score:
         return LANG_HU

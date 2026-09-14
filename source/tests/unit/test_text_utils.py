@@ -49,6 +49,34 @@ class DetectLanguageTests(unittest.TestCase):
         self.assertEqual(detect_language(""), LANG_EN)
         self.assertEqual(detect_language("   \n\t "), LANG_EN)
 
+    # [external audit v1.0 F-O fix] accent-free Hungarian must be recognised
+    # as Hungarian (informal typing without diacritics) — the original
+    # heuristic only saw diacritics + a few stopwords, so accent-free HU
+    # could lose to English and get the EN voice.
+
+    def test_accent_free_hungarian_function_words(self):
+        self.assertEqual(detect_language("Szia, hol talalkozunk legkozelebb?"), LANG_HU)
+        self.assertEqual(
+            detect_language("Persze, szerintem minden rendben lesz holnap"), LANG_HU)
+
+    def test_accent_free_hungarian_digraph_density(self):
+        # No diacritics, few listed stopwords — the digraph signal decides
+        # (csapat/cs, gyorsan/gy, szombaton/sz).
+        self.assertEqual(
+            detect_language("A csapat gyorsan elindult szombaton reggel"), LANG_HU)
+
+    def test_english_with_w_stays_english(self):
+        self.assertEqual(
+            detect_language("I will go to the store tomorrow"), LANG_EN)
+
+    def test_english_with_q_stays_english(self):
+        self.assertEqual(
+            detect_language("The quick brown fox jumps over the lazy dog"), LANG_EN)
+
+    def test_short_english_fragment_unbiased(self):
+        # < 3 tokens: the digraph density signal must NOT fire
+        self.assertEqual(detect_language("ok then"), LANG_EN)
+
 
 class SplitSentencesTests(unittest.TestCase):
     def test_abbreviation_not_split(self):

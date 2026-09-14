@@ -36,7 +36,8 @@
       "snapshot": true,
       "snapshot_probe": "config.json",
       "min_total_mb": 200,
-      "pinned_revision": "main"
+      "pinned_revision": "614241f622f53c4eeff9890bdc4f31cfecc418b3",
+      "_f_m_note": "[audit F-M fix] pinned from 'main' to the resolved commit 2026-09-14 for strict reproducibility"
     },
     {
       "component": "emotion",
@@ -50,13 +51,14 @@
         "configuration.json"
       ],
       "snapshot": false,
-      "pinned_revision": "main",
+      "pinned_revision": "b318240bfe67db81a8c572ecb37ce9c3759b81c9",
       "min_bytes": {
         "model.pt": 1073741824,
         "config.yaml": 1000,
         "tokens.txt": 50,
         "configuration.json": 100
-      }
+      },
+      "_f_m_note": "[audit F-M fix] pinned from 'main' to the resolved commit 2026-09-14 for strict reproducibility"
     },
     {
       "component": "speaker",
@@ -71,14 +73,15 @@
         "label_encoder.txt"
       ],
       "snapshot": false,
-      "pinned_revision": "main",
+      "pinned_revision": "0f99f2d0ebe89ac095bcc5903c4dd8f72b367286",
       "min_bytes": {
         "embedding_model.ckpt": 80000000,
         "hyperparams.yaml": 500,
         "mean_var_norm_emb.ckpt": 500,
         "classifier.ckpt": 1048576,
         "label_encoder.txt": 10240
-      }
+      },
+      "_f_m_note": "[audit F-M fix] pinned from 'main' to the resolved commit 2026-09-14 for strict reproducibility"
     },
     {
       "component": "vad",
@@ -89,10 +92,11 @@
         "silero_vad.onnx"
       ],
       "snapshot": false,
-      "pinned_revision": "main",
+      "pinned_revision": "394d7e6b8c193baf42e965c97b13894e9de4afd8",
       "min_bytes": {
         "silero_vad.onnx": 1048576
-      }
+      },
+      "_f_m_note": "[audit F-M fix] pinned from 'main' to the resolved commit 2026-09-14 for strict reproducibility"
     },
     {
       "component": "tts",

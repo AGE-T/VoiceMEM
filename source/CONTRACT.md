@@ -905,3 +905,112 @@ web út miért pont a sima `vm.search()`-et hívja (nem a gazdagabb publikus
 Nem ebben a buildben kezelt (külső függés): CD-6 mirror-sync (GitHub-token
 visszaállítása után futtatható), SEC-1 további rétegei (auth nem bevezetve —
 egyszemélyes, loopback-re kötött szerver).
+
+---
+
+## v0.8.0 kiegészítő — memória-réteg javítások (külső auditok F-C/F-D/F-G/F-I/F-N/F-E/F-M/F-O tételei)
+
+Operátori utasítás (2026-09-14): "folytassuk a memória fixekkel" — a v0.5.0/v0.6.3
+auditok és a két vendor-kutatási dokumentum (General Memory Engine Audit;
+Memory Architecture Research) által azonosított, eddig halasztott
+memória-tételek implementálása, a P3-as F-O-val és a részleges tételekkel
+együtt. Minden változás ADDITÍV, nem-pusztító, viselkedési tesztekkel zárt.
+
+### VM-LOCAL-013 — megfigyelés-könyvelés + confidence-dinamika (F-C maradék + F-D)
+
+`vendor/voicemem/voicemem/rightbrain/traits_store.py` +
+`rightbrain/brain.py`:
+
+- **Három additív oszlop** az `rb_traits`-en: `first_seen` / `last_seen` /
+  `occurrence_count` (PRAGMA-alapú, idempotens `ALTER TABLE` migráció; régi
+  sorok: üres dátumok + 1 előfordulás — a széleskörű "régi sor nem büntetett"
+  politikával összhangban).
+- **Írás:** merge-kor (cos ≥ 0.95) a csomóponton `occurrence_count+1`,
+  `last_seen=now`, `first_seen` megőrzve, és a confidence **aszimptotikus
+  megerősítése**: `c' = c + (1-c)·0.30` (0.9 → 0.93 → 0.951…, sosem éri el
+  az 1-et). A bizonyíték-sorok továbbra is külön sorokként appended-elnek —
+  semmi nem íródik felül.
+- **Olvasás:** `effective_trait_confidence` = írott confidence × időbeli
+  csillapítás (90 napos türelmi idő, utána 180 napos felezési idő; a
+  `last_seen`-t nem tartalmazó örökölt sorok súlya változatlan).
+- **Rangsorolás (F-D — a confidence végre rangsor-tag):**
+  `priority = sim × (0.75 + 0.25 × eff_confidence)` — a floor 0.75 garantálja,
+  hogy egy alacsony confidence-ű ítélet a hasonlósági prioritásának legalább
+  75%-át megtartja (soha nem nullázódik ki, soha nem nagyítódik fel); a
+  minimum-similarity küszöb a nyers `sim`-en marad, a sorrend legfeljebb
+  1/0.75 ≈ 1.33× hasonlóságkülönbséget fordíthat felül.
+- **Metrikák a felszínre:** a trait-hit `metadata` most tartalmazza a
+  `confidence`, `eff_confidence`, `occurrence_count`, `first_seen`,
+  `last_seen` mezőket (a web UI payloadja getattr-alapú defaultokkal olvassa
+  — a régi adatokkal kompatibilis).
+- **Határozottan NEM ebben a lépésben (TASK 4 scope):** ellentmondás-alapú
+  confidence-CSÖKKENTÉS és explicit supersession a tulajdonságokon — ehhez
+  előbb a ellentmondás-párok azonosítása kell (l. a kutatási dokumentum
+  §11 javaslata); a mostani lépés csak a pozitív irányt (megerősítés) és az
+  időbeli csillapítást vezeti be, determinisztikusan.
+
+### VM-LOCAL-014 — hidegmemória-archívum bekapcsolása + TTL olvasása (F-G)
+
+`vendor/voicemem/voicemem/orchestrator.py` + `rightbrain/store.py`:
+
+- **Archívum vezetékezése:** az `ArchiveColdMemories` (a bal-agy
+  hidegmemória-archívuma) mostantól naponta (kv-throttle, 20 óra,
+  `archive_cold_last_run` kulcs) lefut az Ingest után indított karbantartási
+  szálon — pontosan a hangarchívum-tisztítással azonos mintára. A viselkedés
+  nem-pusztító: a mem0 `expiration_date` archiválás a sorokat megtartja, csak
+  a keresésben rejti el őket. Hiba esetén csak logol, sosem blokkolja az
+  Ingest-et.
+- **TTL olvasási oldala:** a heartnote-TTL (`session` / `short_term` /
+  `long_term`) végül OLVASVA lesz: a `search_by_anchors` és `search_global`
+  kihagyja a lejárt TTL-ű sorokat (session: 1 nap, short_term: 14 nap;
+  long_term: sosem). Nem-pusztító — a sorok a DB-ben maradnak, a
+  felvezető/brain-map nézet (`get_all`) továbbra is látja őket.
+
+### F-I — a háromszoros ténytárolás DOKUMENTÁLVA (adatmodell-döntés)
+
+A bal-agyi tény ma három helyen él (a kutatási audit §14 "source of truth"
+tétele):
+
+1. **mem0/Qdrant payload** — a szerzői szöveg + vektor (AUTORITATÍV);
+2. **cognitive_graph `memories` tábla** — lekérési index (slot/entity
+   grafikus beszűkítés belépési pontja), a VM-LOCAL-009 kaszkád törli ha a
+   mem0-sor törlődik (konzisztencia);
+3. **space SQLite `kv` JSON-tükör** — gyorsítótár, a VM-LOCAL-012
+   előfordulásszám-merge a tükörbe is ír (konzisztencia).
+
+**Döntés:** az egyesítés (tipizált "memory-object" sor) a TASK 4
+adatmodell-lépésének hatóköre — itt MOST csak a konzisztencia-invariánsokat
+tartjuk fenn (kaszkád-törlés, append-szel-frissítés, tükör-merge), és ezt a
+döntést dokumentáljuk. Az audit "DATA MODEL / SOURCE OF TRUTH" P1 tétele így
+nyomon követett, nem elfelejtett.
+
+### F-O (P3) — ékezet nélküli magyar felismerése
+
+`app/text_utils.py`: a heurisztika három új jelt kap — (1) ékezet nélküli
+magyar funkciószók listája (szia, persze, mikor, szerintem…, súly 2), (2)
+magyar digráf-sűrűség (sz/cs/gy/ny/ly/ty/zs a tokenek legalább felében → +2,
+min. 3 tokennél), (3) w/q jelenléte → angol pontszám +2 (a natív magyar
+helyesírásból hiányzó betűk). A meglévő súlyozás és a tie-break szabály
+változatlan; a TTS-kettős nyelvű Supertonic hangok miatt a hiba hatása
+amúgy is csökkent, de a kód most már helyesen osztályoz.
+
+### F-N / F-E / F-M — a részleges tételek lezárása
+
+- **F-N:** a maradék két hardcoded `gpt-4o-mini` hívóhely (orchestrator
+  inner-OS; rightbrain cleanup) is `os.environ.get("OPENAI_MODEL", …)`
+  alakú — mind a négy hely a kanonikus, loader-hajtotta modellnevet
+  használja.
+- **F-E:** a bootstrap pin-ellenőrzése most GATING: sikertelen ellenőrzés
+  (árnyékoló/hibás vendor) a bootstrap-et eldobja (START.bat repair a
+  gyógyír), kivéve `mock` módban (demo-duplikációk, vendor nem kell).
+- **F-M:** a MODELS.lock.json mind a négy fennmaradó `'main'` pinje pontos
+  commit-SHA-ra rögzítve (E5, emotion2vec, speechbrain, silero-vad — a
+  HF API által 2026-09-14-én visszaadott HEAD). A strict reprodukálhatóság
+  mostantól teljes: minden letöltendő modell pontos revízióra pin-elve.
+
+### Határon kívül maradt (tudatosan, TASK 2/3/4 scope)
+
+F-D ellentmondás-iránya; tulajdonság-supersession; érvényességi időintervallumok;
+a counted Observation-store / tanulási réteg (kutatási dokumentum §17-18);
+a `search_rich` API (TASK 2 Stage 1). Ezeket a jövőbeli operátori
+utasítások ütemezik.

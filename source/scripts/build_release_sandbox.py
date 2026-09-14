@@ -34,8 +34,8 @@ from pathlib import Path
 REPO = Path(__file__).resolve().parent.parent
 RELEASES = REPO / "releases"
 
-NEW_VERSION = "0.7.2"
-PREV_VERSION = "0.7.1"
+NEW_VERSION = "0.8.0"
+PREV_VERSION = "0.7.2"
 ZIP_NAME = f"VoiceMemAgent_v{NEW_VERSION}.zip"
 
 PLACEHOLDER_DIRS = [
@@ -63,36 +63,37 @@ ROOT_FILES = [
 ]
 
 NOTES = (
-    "v0.7.2 LLM-KONFIGURACIO KANONIZALASA (operator order: CENTRALISE LLM "
-    "CONFIGURATION). THE ONE FILE: config/llm_config.yaml - the single "
-    "operator-editable source for every production LLM runtime value "
-    "(model, gpu_layers 20, context_size 32768, parallel 1, cache "
-    "q8_0/q8_0, temperature 0.7, max_tokens 512, reasoning.enabled "
-    "false). THE ONE LOADER: app/llm_config.py (typed LlmRuntimeConfig, "
-    "validation with NAMED actionable errors, provenance, "
-    "llama_server_args() generation, thinking_control_kwargs(), "
-    "summary_lines(), the llama-server startup-log cross-check "
-    "match_llama_server_log - fail-closed). CONSUMERS ALL WIRED: "
-    "AgentConfig.from_yaml -> materialise_llm_runtime() (every llm_* "
-    "field comes FROM the canonical file; the duplicate env parsing in "
-    "apply_env RETIRED); stale dataclass defaults fixed (8192/-1 -> "
-    "32768/20); app/llm.py thinking kwargs delegate to the canonical "
-    "runtime; scripts/start_llama_server.ps1 generates the command line "
-    "from the bridge JSON (the hardcoded --reasoning off and fallback "
-    "values RETIRED - the direct fallback is an explicit emergency path "
-    "with a loud warning, values identical to DEFAULT_PROFILE); startup "
-    "logs print the full equivalent LLM configuration (main.py + "
-    "web_server.py); duplicate copies REMOVED (voicemem_config.yaml llm_* "
-    "keys, env.local.ps1 active value assignments commented out). "
-    "Precedence EXPLICIT: yaml > documented env overrides (reported at "
-    "startup, never silent) > built-in defaults. MIGRATION EQUIVALENCE: "
-    "the effective production values are UNCHANGED (20/32768/1/q8_0/"
-    "q8_0/0.7/512/thinking off) - identical runtime behaviour. Tests: "
-    "test_llm_config.py 44 -> 48 tests (all green), test_config.py + "
-    "test_llm_reasoning.py + test_feature_thinking.py realigned to the "
-    "centralized contract. Operator effect: change gpu_layers/context_"
-    "size/parallel/cache/temperature/max_tokens/thinking in ONE file and "
-    "restart START.bat."
+    "v0.8.0 MEMORIA-RETEG JAVITASOK (operator order: folytassuk a memoria "
+    "fixekkel + F-O P3 + a fennmarado reszleges tetelek). VM-LOCAL-013 "
+    "(audit F-D + F-C maradek): trait megfigyeles-konyveles + confidence-"
+    "dinamika - additiv first_seen/last_seen/occurrence_count oszlopok "
+    "(idempotens migracio), merge-kor aszimptotikus megerosites "
+    "c'=c+(1-c)*0.30, olvasasi oldali csillapitas (90 nap turelem, 180 nap "
+    "felezesi ido), rangsor-tag priority=sim*(0.75+0.25*eff_confidence) - "
+    "a floor 0.75 kezese, a min-sim kuszob a nyers sim-en marad; hit "
+    "metadata: confidence/eff_confidence/occurrence_count/first_seen/"
+    "last_seen. VM-LOCAL-014 (audit F-G): ArchiveColdMemories NAPONTA fut "
+    "(kv-throttle 20h) a post-Ingest karbantartasi szalon, nem-pusztito; a "
+    "heartnote-TTL VEGRE OLVASVA (session 1 nap, short_term 14 nap - "
+    "lejart sorok a keresesben kihagyva, DB-ben megtartva). F-O (P3): "
+    "detect_language harom uj jel - ekezet nelkuli magyar funkcioszok, "
+    "digraf-suruseg (sz/cs/gy/ny/ly/ty/zs), q-betu angol jelzes (w "
+    "szandekosan nem). F-N: a maradek ket hardcoded gpt-4o-mini hely is "
+    "OPENAI_MODEL-env-felulirhato. F-E: a bootstrap pin-ellenorzese GATING "
+    "(sikertelen vendor-azonositas eldobja a bootstrap-et; mock mod kivete "
+    "- START.bat repair a menekulout). F-M: a MODELS.lock.json negy 'main' "
+    "pinje pontos commit-SHA-ra rögzittve (E5 614241f6, emotion2vec "
+    "b318240b, speechbrain 0f99f2d0, silero-vad 394d7e6b). F-I: a "
+    "haromszoros tenytarolas DOKUMENTALVA (CONTRACT.md) - konzisztencia-"
+    "invariansok megtartva, egyesites TASK 4 scope. VOICEMEM_PIN.json: "
+    "VM-LOCAL-013/014 belejegyezve (15 helyi patch). Tesztek: +27 uj "
+    "(test_traits_observation 13 + test_archive_ttl_wiring 11 + F-O nyelvi "
+    "3 uj), MIND zold; teljes gate 1090 teszt, nulla uj kod-regresszio "
+    "(diff-elemzes a tisztan kicsomagolt v0.7.2 alapbázissal bizonyitva; "
+    "a sandbox-reset kornezeti hibak azonosak a bázissal). HATARON KIVUL "
+    "(TASK 2/3/4): F-D ellentmondas-irany, supersession, ervenyesseg, "
+    "Observation-store, search_rich. Gate: full sandbox battery; real "
+    "MixPre acceptance remains USER VERIFIED."
 )
 #: v0.6.0 markers: the modular ASR engine contract - asr_core (AudioBuffer,
 #: AsrResult, AsrError, registry, select_engine), the two NVIDIA adapters,
@@ -473,6 +474,52 @@ V072_MARKERS = {
         "test_from_yaml_materialises_the_canonical_runtime",
         "test_canonical_values_beat_voicemem_yaml_duplicates",
         "test_thinking_kwargs_come_from_the_runtime_single_source",
+    ],
+}
+V080_MARKERS = {
+    "vendor/voicemem/voicemem/rightbrain/traits_store.py": [
+        "TRAIT_REINFORCE_STEP",
+        "effective_trait_confidence",
+        "occurrence_count",
+        "first_seen",
+        "last_seen",
+    ],
+    "vendor/voicemem/voicemem/rightbrain/brain.py": [
+        "TRAIT_CONF_RANK_FLOOR",
+        "eff_confidence",
+    ],
+    "vendor/voicemem/voicemem/orchestrator.py": [
+        "_maybe_archive_cold_memories",
+        "archive_cold_last_run",
+    ],
+    "vendor/voicemem/voicemem/rightbrain/store.py": [
+        "TTL_EXPIRY_DAYS",
+        "ttl_expired",
+    ],
+    "app/text_utils.py": [
+        "HU_PLAIN_WORDS",
+        "HU_DIGRAPHS",
+        "EN_ONLY_LETTERS",
+    ],
+    "tests/unit/test_traits_observation.py": [
+        "test_confidence_asymptotic",
+        "test_ranking_floor_never_zeroes",
+        "test_legacy_schema_migrated",
+    ],
+    "tests/unit/test_archive_ttl_wiring.py": [
+        "test_throttle_blocks_second_run_within_20h",
+        "test_rows_survive_non_destructively",
+    ],
+    "MODELS.lock.json": [
+        "614241f622f53c4eeff9890bdc4f31cfecc418b3",
+        "394d7e6b8c193baf42e965c97b13894e9de4afd8",
+    ],
+    "VOICEMEM_PIN.json": [
+        "VM-LOCAL-013",
+        "VM-LOCAL-014",
+    ],
+    "CONTRACT.md": [
+        "v0.8.0 kiegészítő",
     ],
 }
 
@@ -1822,7 +1869,7 @@ def build() -> int:
                             f"self-check: {rel} lacks v0.4.11 marker {m!r}"
                         )
             # v0.4.12: stale-page detection + raw capture + send-as-turn
-            for rel, markers in {**V0412_MARKERS, **V0413_MARKERS, **V0414_MARKERS, **V0415_MARKERS, **V0416_MARKERS, **V0417_MARKERS, **V0418_MARKERS, **V0419_MARKERS, **V0420_MARKERS, **V0421_MARKERS, **V050_MARKERS, **V052_MARKERS, **V060_MARKERS, **V061_MARKERS, **V062_MARKERS, **V063_MARKERS, **V064_MARKERS, **V070_MARKERS, **V071_MARKERS, **V072_MARKERS}.items():
+            for rel, markers in {**V0412_MARKERS, **V0413_MARKERS, **V0414_MARKERS, **V0415_MARKERS, **V0416_MARKERS, **V0417_MARKERS, **V0418_MARKERS, **V0419_MARKERS, **V0420_MARKERS, **V0421_MARKERS, **V050_MARKERS, **V052_MARKERS, **V060_MARKERS, **V061_MARKERS, **V062_MARKERS, **V063_MARKERS, **V064_MARKERS, **V070_MARKERS, **V071_MARKERS, **V072_MARKERS, **V080_MARKERS}.items():
                 src_text = zf.read(root_prefix + rel).decode("utf-8", errors="replace")
                 for m in markers:
                     if m not in src_text:

@@ -106,6 +106,22 @@
         "voicemem/leftbrain/memory_repository.py",
         "voicemem/leftbrain/local_memory_store.py"
       ]
+    },
+    {
+      "id": "VM-LOCAL-013",
+      "summary": "trait observation bookkeeping + confidence dynamics: additive first_seen/last_seen/occurrence_count columns on rb_traits (idempotent ALTER TABLE migration), merge-time occurrence increment + asymptotic confidence reinforcement c'=c+(1-c)*0.3, read-time decay (90-day grace, 180-day halflife, legacy rows unpunished), and a bounded confidence term in the trait ranking priority sim*(0.75+0.25*eff) (external audit v1.0 findings F-D + F-C remainder; hit metadata gains confidence/occurrence/first_seen/last_seen)",
+      "files": [
+        "voicemem/rightbrain/traits_store.py",
+        "voicemem/rightbrain/brain.py"
+      ]
+    },
+    {
+      "id": "VM-LOCAL-014",
+      "summary": "cold-memory archive wired + TTL read: ArchiveColdMemories now runs daily (kv-throttled 20h, archive_cold_last_run) on the post-Ingest maintenance thread - same pattern as the audio cleanup, non-destructive mem0 expiration archiving; heartnote TTL finally READ: session (1 day) / short_term (14 days) rows skipped at retrieval, rows never deleted (external audit finding F-G)",
+      "files": [
+        "voicemem/orchestrator.py",
+        "voicemem/rightbrain/store.py"
+      ]
     }
   ],
   "ported_upstream_fixes": [

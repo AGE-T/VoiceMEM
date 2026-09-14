@@ -5,7 +5,7 @@ voice memory agent. This repository hosts the versioned release packages
 and their verification artifacts — the canonical build source lives in
 the agent workspace.
 
-**Latest stable release: `v0.7.2`**
+**Latest stable release: `v0.8.0`**
 
 ---
 
@@ -13,7 +13,7 @@ the agent workspace.
 
 | File | What it is | Size |
 | --- | --- | --- |
-| `VoiceMemAgent_v0.7.2.zip` | **The product.** Full agent source, machine-independent (no runtime state inside: no `.venv`, models, or memory). Install = unzip + `START.bat`. | 2.4 MB |
+| `VoiceMemAgent_v0.8.0.zip` | **The product.** Full agent source, machine-independent (no runtime state inside: no `.venv`, models, or memory). Install = unzip + `START.bat`. | 2.4 MB |
 | `VoiceMemAgent_v0.5.0_GitHubSync.zip` | **First authenticated sync evidence**: token permission check, push output, fresh-clone verification of the mirror state after the sync. | 6 KB |
 | `VoiceMemAgent_v0.5.0_MirrorCheck.zip` | **The mirror check**: proof that this GitHub mirror is byte-identical to the locally produced artifacts (SHA-256 tables from both sides, git clone evidence). Verdict: `PASS`. | 8 KB |
 | `VoiceMemAgent_v0.5.0_SyncSetup.zip` | **Standing sync policy + infrastructure**: the sync script, the procedure document, and the setup-run evidence (every future update goes to the GitHub mirror). | 12 KB |
@@ -26,13 +26,13 @@ the agent workspace.
 ## Verify your download
 
 ```bash
-sha256sum VoiceMemAgent_v0.7.2.zip VoiceMemAgent_v0.5.0_GitHubSync.zip VoiceMemAgent_v0.5.0_MirrorCheck.zip VoiceMemAgent_v0.5.0_SyncSetup.zip VoiceMemAgent_v0.5.0_Verification.zip VoiceMemAgent_v0.5.1_ForensicTrace.zip VoiceMemAgent_v0.5.1_Task2Gate.zip VoiceMemAgent_v0.5.2_MemorySafetyGate.zip VoiceMemAgent_v0.6.0_ASRGate.zip
+sha256sum VoiceMemAgent_v0.8.0.zip VoiceMemAgent_v0.5.0_GitHubSync.zip VoiceMemAgent_v0.5.0_MirrorCheck.zip VoiceMemAgent_v0.5.0_SyncSetup.zip VoiceMemAgent_v0.5.0_Verification.zip VoiceMemAgent_v0.5.1_ForensicTrace.zip VoiceMemAgent_v0.5.1_Task2Gate.zip VoiceMemAgent_v0.5.2_MemorySafetyGate.zip VoiceMemAgent_v0.6.0_ASRGate.zip
 ```
 
 Expected:
 
 ```text
-ec100a2dd6b9d04963cefd0a36d5f5e72b684d810f913816f30a3d46ec196aec  VoiceMemAgent_v0.7.2.zip
+980e8e43485513ced2ed8bb9854163b52f550f28d11a48f7fc9eaeff9fb53e09  VoiceMemAgent_v0.8.0.zip
 1b4596351d8ce45e0f750e1c21c0693366fdb0ab9ab3c0a627335e06bb353847  VoiceMemAgent_v0.5.0_GitHubSync.zip
 89bc2933843301e1317708e2c4b98083ef3129d149611c945a9ee9dd6a44bc14  VoiceMemAgent_v0.5.0_MirrorCheck.zip
 bce2979501864e54281e9615d563d5a0f3148c690b53e105060f58ff251be559  VoiceMemAgent_v0.5.0_SyncSetup.zip
@@ -47,7 +47,7 @@ b24ea62f65ce77bdaf94fb843e10e8c1b88c7e1fcd37c064806e948d538abbbb  VoiceMemAgent_
 
 ## Install (Windows)
 
-1. Unzip `VoiceMemAgent_v0.7.2.zip` into any folder (e.g. `F:\Voicemem\VoiceMemAgent`).
+1. Unzip `VoiceMemAgent_v0.8.0.zip` into any folder (e.g. `F:\Voicemem\VoiceMemAgent`).
 2. Double-click **`START.bat`** — that is the single user entry point.
 3. Wait for the bootstrap: Python check, `.venv`, dependencies, HF tooling,
    model download (`MODELS.lock.json`), configuration, smoke tests.
@@ -56,7 +56,7 @@ b24ea62f65ce77bdaf94fb843e10e8c1b88c7e1fcd37c064806e948d538abbbb  VoiceMemAgent_
 Advanced modes: `START.bat mock` · `check` · `benchmark` · `repair` · `build`.
 At a single end-to-end failure, re-run `START.bat repair`.
 
-## The verification story (v0.7.2)
+## The verification story (v0.8.0)
 
 - **Vendor identity:** `vendor/voicemem` pinned at
   `e8384e087bd2f44eb05fc7ae1a3c525ea8244179` (= upstream tag `v0.0.1`;
@@ -96,9 +96,9 @@ At a single end-to-end failure, re-run `START.bat repair`.
 ## Magyar összefoglaló
 
 Ez a repó a **VoiceMemAgent** kiadásainak külső tükre. A legfrissebb
-stabil verzió a **v0.7.2**. Mit találhat itt:
+stabil verzió a **v0.8.0**. Mit találhat itt:
 
-- **`VoiceMemAgent_v0.7.2.zip`** — maga a termék. Gépfüggetlen forrás,
+- **`VoiceMemAgent_v0.8.0.zip`** — maga a termék. Gépfüggetlen forrás,
   telepítés: kicsomagolás + `START.bat` dupla kattintás, minden mást a
   bootstrap elintézi.
 - **Verifikációs / evidencia ZIP-ek** — a kiadások független

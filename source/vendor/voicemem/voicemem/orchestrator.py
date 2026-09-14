@@ -939,7 +939,10 @@ class Orchestrator:
                 user_content = f"What the user said: {text}\nEmotion: {emotion}{entity_hint}"
 
             resp = client.chat.completions.create(
-                model="gpt-4o-mini",
+                # [CONTROLLED FORK - patch VM-LOCAL-013/014 release note, audit F-N]
+                # env-overridable like the SplitMgr sites above (the canonical
+                # model name comes from OPENAI_MODEL, loader-driven since v0.7.2).
+                model=os.environ.get("OPENAI_MODEL", "gpt-4o-mini"),
                 messages=[
                     {"role": "system", "content": system_prompt},
                     {"role": "user",   "content": user_content},
@@ -1319,6 +1322,11 @@ class Orchestrator:
         threading.Thread(target=self._check_and_cleanup, daemon=True).start()
         # 异步清洁：原声定期归档，每天最多跑一次，删除超过 30 天的 WAV 文件本体
         threading.Thread(target=self._check_and_cleanup_audio, daemon=True).start()
+        # [CONTROLLED FORK - patch VM-LOCAL-014] 异步冷记忆归档（外部审计 F-G：
+        # ArchiveColdMemories 早就写好了但从未被任何路径调用——「建成但未接线」）。
+        # 每天最多一次（kv 节流，同 audio 清理模式），非破坏性（mem0 过期归档，
+        # 行不删）。
+        threading.Thread(target=self._maybe_archive_cold_memories, daemon=True).start()
 
         # ── 短期/长期归因触发（攒够一批才跑 / session 边界）──────────────────
         turn_info = self._get_session_tracker().record_turn(self._user_id, session_id)
@@ -1474,6 +1482,40 @@ class Orchestrator:
     def _run_cleanup(self) -> None:
         """用 LLM 清洁右脑 heartnote，转发到 RightBrain.run_cleanup。"""
         return self._right.run_cleanup()
+
+    def _maybe_archive_cold_memories(self) -> None:
+        """[CONTROLLED FORK - patch VM-LOCAL-014] 冷记忆归档维护（F-G）。
+
+        每天（kv 节流，键 ``archive_cold_last_run``，20h 冷却）最多跑一次，
+        把「存在够久且衰减热度已低于阈值」的左脑事实交给
+        :meth:`LeftBrain.ArchiveColdMemories`（mem0 过期归档：行保留、
+        检索自动隐藏）。非致命：失败只打印，永不阻断 Ingest。
+        """
+        try:
+            from datetime import datetime, timezone
+            last_run = _space.kv_get(self._memory_root, "archive_cold_last_run", "")
+            now = datetime.now(timezone.utc)
+            if last_run:
+                try:
+                    elapsed_hours = (
+                        now - datetime.fromisoformat(last_run)
+                    ).total_seconds() / 3600.0
+                except ValueError:
+                    elapsed_hours = 999.0
+            else:
+                elapsed_hours = 999.0
+            if elapsed_hours < 20.0:
+                return
+
+            _space.kv_set(self._memory_root, "archive_cold_last_run",
+                          now.isoformat())
+            result = self._left.ArchiveColdMemories(min_age_days=30.0)
+            archived = list((result or {}).get("archived") or [])
+            status = str((result or {}).get("status") or "")
+            if archived or status not in ("nothing_to_archive", "no_cognitive_store"):
+                print(f"[Archive] 冷记忆维护: {status}, 归档 {len(archived)} 条")
+        except Exception as e:
+            print(f"[Archive] 冷记忆归档失败(非致命): {e}")
 
 
 __all__ = ["Orchestrator", "SearchResult", "Utils"]
