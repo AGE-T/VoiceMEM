@@ -8,6 +8,15 @@ Single config object shared by every component. Resolution order:
      the V1 spec Section 18.1 so VoiceMem itself can consume the same variables)
   3. Dataclass defaults
 
+v0.7.2 — LLM RUNTIME VALUES ARE CENTRALISED: the llm_* value fields
+(model name, gpu_layers, context_size, parallel, cache_k/v, temperature,
+max_tokens, thinking) are materialised from the canonical
+``config/llm_config.yaml`` through :mod:`app.llm_config` (the ONE loader)
+by :meth:`AgentConfig.materialise_llm_runtime` — from_yaml() always calls
+it, and so do the load_config helpers. The ``app:`` section's llm keys and
+the LLAMA_*/LLM_* env variables are NO LONGER a second parsing path here
+(see llm_config.py ENV_OVERRIDES for the documented env precedence).
+
 M0 principle (spec Section 26): the REPO ROOT is the single operating unit.
 ``default_root()`` therefore resolves to this repository's root (the parent
 of ``app/``); the ``VOICEMEM_HOME`` environment variable still overrides it
@@ -32,6 +41,12 @@ try:
     _HAS_YAML = True
 except ImportError:  # pragma: no cover - PyYAML missing on a bare target machine
     _HAS_YAML = False
+
+# v0.7.2: the canonical LLM runtime configuration — imported lazily in
+# materialise_llm_runtime to keep this module stdlib-importable even when
+# the canonical loader module is being changed (the loader itself is
+# pure stdlib + PyYAML, same as this file).
+from app.llm_config import LlmRuntimeConfig, format_llm_config_summary, load_llm_config
 
 
 APP_NAME = "voicemem-agent"
@@ -91,7 +106,7 @@ class AgentConfig:
 
     # --- audio ---
     sample_rate: int = 16000          # mic input (VAD + ASR), 16 kHz mono
-    output_sample_rate: int = 22050   # Piper output, 22.05 kHz mono int16
+    output_sample_rate: int = 44100   # Supertonic 3 output, 44.1 kHz mono int16
     channels: int = 1
     audio_input_device: str = ""      # "" = system default mic (sounddevice)
     audio_output_device: str = ""     # "" = system default speaker
@@ -129,7 +144,7 @@ class AgentConfig:
     # retained Qwen3-ASR migration/debug module) and its historical tests.
     # The production engine layer resolves model identity from
     # app.asr_core.MODEL_REGISTRY — never from these fields.
-    asr_model_name: str = "Qwen/Qwen3-ASR-0.6B"
+    asr_model_name: str = "nvidia/parakeet-tdt-0.6b-v3"  # v0.6.0 production ASR (display/legacy field)
     asr_chunk_ms: int = 600           # legacy quasi-streaming batch size
 
     # --- LLM (llama.cpp llama-server, OpenAI-compatible) ---
@@ -143,8 +158,15 @@ class AgentConfig:
     llama_server_port: int = 8080
     llm_model_name: str = "qwen3.6-35b-a3b"
     llm_model_path: str = ""          # only used by scripts/start_llama_server.ps1
-    llm_context_size: int = 8192
-    llm_n_gpu_layers: int = -1
+    # v0.7.2: every llm_* VALUE below is a stale-safe mirror of the canonical
+    # config/llm_config.yaml (pinned by tests/unit/test_llm_config.py). The
+    # AUTHORITATIVE source is the yaml file read through app/llm_config.py —
+    # AgentConfig.from_yaml() ALWAYS materialises these fields from it
+    # (materialise_llm_runtime); the dataclass defaults only apply when the
+    # canonical file itself is missing (the loader then falls back to its
+    # DEFAULT_PROFILE, identical to these values, with a WARNING).
+    llm_context_size: int = 32768
+    llm_n_gpu_layers: int = 20
     llm_parallel: int = 1             # llama-server --parallel slots
     llm_cache_type_k: str = "q8_0"
     llm_cache_type_v: str = "q8_0"
@@ -158,12 +180,18 @@ class AgentConfig:
     # this is explicitly turned off.
     llm_disable_thinking: bool = True
 
-    # --- TTS (Piper subprocess) ---
-    piper_executable: str = ""        # resolved to root/bin/piper[.exe] when empty
-    tts_hu_voice: str = "hu_HU-anna-medium"
-    tts_en_voice: str = "en_US-lessac-medium"
+    # --- TTS (Supertonic 3, ONNX Runtime CPU; Piper retired in v0.7.0) ---
+    tts_engine: str = "supertonic3"   # ONE production engine, no fallback
+    tts_hu_voice: str = "F1"          # Supertonic preset (F1-F5, M1-M5)
+    tts_en_voice: str = "F1"          # every preset speaks both hu and en
     tts_first_chunk_chars: int = 24   # first sentence window (low TTFB)
     tts_chunk_chars: int = 80         # later chunks
+    supertonic_model_path: str = ""   # override -> models/tts/supertonic-3
+    supertonic_speed: float = 1.05    # SDK default (0.7 slow .. 2.0 fast)
+    supertonic_steps: int = 8         # SDK default quality (5 low .. 12 high)
+    supertonic_silence_duration: float = 0.3   # SDK inter-chunk gap (s)
+    supertonic_max_chunk_chars: int = 300      # SDK chunking ceiling
+    supertonic_trim_silence: bool = True       # vocoder edge-padding trim
 
     # --- VoiceMem ---
     memory_root: str = ""             # resolved to root/memory when empty (M0)
@@ -179,7 +207,7 @@ class AgentConfig:
     emotion_model_path: str = ""      # optional dir override (env EMOTION2VEC_MODEL_PATH)
     emotion_window_s: float = 5.0      # prosody window: last N s of the utterance
     emotion_fusion_prosody_weight: float = 0.6  # spec 8.3.3 blend (semantic = 1 - w)
-    emotion_slow_length_scale: float = 1.1      # Piper --length_scale when frustrated
+    emotion_slow_length_scale: float = 1.1      # M2 pacing (maps to Supertonic speed 1/1.1)
     emotion_store_threshold: float = 0.5        # fact persistence threshold (8.3.4)
 
     # --- M3 speaker recognition (SpeechBrain ECAPA, CPU) ---
@@ -194,6 +222,13 @@ class AgentConfig:
     # --- misc ---
     offline: bool = True
     log_level: str = "INFO"
+
+    def __post_init__(self) -> None:
+        # v0.7.2: the canonical LLM runtime, materialised by
+        # materialise_llm_runtime() (called by from_yaml and every load_config
+        # helper). PLAIN attribute on purpose — not a dataclass field, so
+        # asdict()/to_dict() keep their historical shape.
+        self.llm_runtime: Optional[LlmRuntimeConfig] = None
 
     # ------------------------------------------------------------------ helpers
 
@@ -225,18 +260,19 @@ class AgentConfig:
         return self.root / self.logs_root
 
     @property
-    def voices_dir(self) -> Path:
-        env = os.environ.get("PIPER_VOICES_PATH")
+    def supertonic_model_dir(self) -> Path:
+        """Supertonic 3 asset root (onnx/ + voice_styles/; MODELS.lock entry)."""
+        env = os.environ.get("SUPERTONIC_MODEL_PATH")
         if env:
             return Path(env)
-        return self.models_dir / "tts" / "piper"
+        if self.supertonic_model_path:
+            return Path(self.supertonic_model_path)
+        return self.models_dir / "tts" / "supertonic-3"
 
     @property
-    def piper_exe_path(self) -> Path:
-        if self.piper_executable:
-            return Path(self.piper_executable)
-        name = "piper.exe" if platform.system() == "Windows" else "piper"
-        return self.bin_dir / name
+    def supertonic_voices_dir(self) -> Path:
+        """Preset voice-style JSONs (F1..F5, M1..M5)."""
+        return self.supertonic_model_dir / "voice_styles"
 
     @property
     def silero_vad_path(self) -> Path:
@@ -366,7 +402,15 @@ class AgentConfig:
 
     @classmethod
     def from_yaml(cls, path: Path | str) -> "AgentConfig":
-        """Load YAML, apply env overrides on top, validate."""
+        """Load YAML, apply env overrides on top, validate.
+
+        v0.7.2: after the classic yaml+env resolution, the llm_* VALUE fields
+        are (re)materialised from the canonical ``config/llm_config.yaml``
+        through :func:`app.llm_config.load_llm_config` — the ONE loader. The
+        ``app:`` section's llm keys and the LLAMA_*/LLM_* env values are no
+        longer a second parsing path: the loader applies its own documented
+        env overrides and FAILS clearly on invalid values.
+        """
         data: dict[str, Any] = {}
         path = Path(path)
         if path.exists():
@@ -384,10 +428,46 @@ class AgentConfig:
         cfg = cls(**{k: v for k, v in data.items() if _is_field(cls, k)})
         cfg.apply_env()
         cfg.root = Path(cfg.root)
+        # the canonical LLM values win over any historical duplicate (the
+        # loader's env overrides are applied INSIDE load_llm_config)
+        cfg.materialise_llm_runtime(config_dir=path.parent)
         errors = cfg.validate()
         if errors:
             raise ValueError("Invalid config: " + "; ".join(errors))
         return cfg
+
+    def materialise_llm_runtime(
+        self, config_dir: Optional[Path] = None
+    ) -> LlmRuntimeConfig:
+        """(Re)load the canonical ``config/llm_config.yaml`` and materialise
+        every llm_* value field from it (v0.7.2 — the ONE loader).
+
+        Called by :meth:`from_yaml` and the ``load_config`` helpers in
+        app/main.py / app/web_server.py. Lookup order (see
+        ``resolve_llm_config_path``): ``<config_dir>/llm_config.yaml`` (the
+        sibling of voicemem_config.yaml) > ``<root>/config/llm_config.yaml``.
+        Raises :class:`app.llm_config.LlmConfigError` (a ValueError) on
+        invalid values — the agent must not start with a broken LLM profile.
+        """
+        runtime = load_llm_config(config_dir=config_dir, root=self.root)
+        self.llm_runtime = runtime
+        self.llm_model_name = runtime.model
+        self.llm_n_gpu_layers = runtime.gpu_layers
+        self.llm_context_size = runtime.context_size
+        self.llm_parallel = runtime.parallel
+        self.llm_cache_type_k = runtime.cache_k
+        self.llm_cache_type_v = runtime.cache_v
+        self.llm_temperature = runtime.temperature
+        self.llm_max_tokens = runtime.max_tokens
+        self.llm_disable_thinking = not runtime.reasoning_enabled
+        return runtime
+
+    def llm_config_summary(self) -> str:
+        """The startup 'LLM configuration:' block ('' when the canonical
+        runtime was never materialised)."""
+        if self.llm_runtime is None:
+            return ""
+        return format_llm_config_summary(self.llm_runtime)
 
     def apply_env(self) -> None:
         """Override from environment variables (spec Section 18.1 names).
@@ -400,6 +480,14 @@ class AgentConfig:
         the operator's typo entirely). v0.4.9 also honours AUDIO_INPUT_DEVICE
         / AUDIO_OUTPUT_DEVICE for the sounddevice device selection and
         fallback chain in app.audio_io.
+
+        v0.7.2: this method now handles ONLY server binding (LLAMA_SERVER_HOST/
+        PORT, OPENAI_BASE_URL), the model PATH (LLAMA_MODEL_PATH) and the
+        non-LLM variables — the LLM VALUE overrides (LLAMA_CONTEXT_SIZE,
+        LLAMA_N_GPU_LAYERS, LLAMA_CACHE_TYPE_K/V, LLAMA_PARALLEL,
+        LLM_TEMPERATURE, LLM_MAX_TOKENS, LLM_DISABLE_THINKING, OPENAI_MODEL)
+        live in app/llm_config.py ENV_OVERRIDES, applied by
+        materialise_llm_runtime() with validation + provenance.
         """
         if v := os.environ.get("LLAMA_SERVER_HOST"):
             self.llama_server_host = v
@@ -407,18 +495,14 @@ class AgentConfig:
             self.llama_server_port = _parse_env_int("LLAMA_SERVER_PORT", v)
         if v := os.environ.get("LLAMA_MODEL_PATH"):
             self.llm_model_path = v
-        if v := os.environ.get("LLAMA_CONTEXT_SIZE"):
-            self.llm_context_size = _parse_env_int("LLAMA_CONTEXT_SIZE", v)
-        if v := os.environ.get("LLAMA_N_GPU_LAYERS"):
-            self.llm_n_gpu_layers = _parse_env_int("LLAMA_N_GPU_LAYERS", v)
-        if v := os.environ.get("LLAMA_CACHE_TYPE_K"):
-            self.llm_cache_type_k = v
-        if v := os.environ.get("LLAMA_CACHE_TYPE_V"):
-            self.llm_cache_type_v = v
-        if v := os.environ.get("OPENAI_MODEL"):
-            self.llm_model_name = v
-        if v := os.environ.get("LLM_DISABLE_THINKING", "").strip().lower():
-            self.llm_disable_thinking = v not in ("0", "false", "no", "off")
+        # v0.7.2 — REMOVED duplicate LLM VALUE parsing (LLAMA_CONTEXT_SIZE,
+        # LLAMA_N_GPU_LAYERS, LLAMA_CACHE_TYPE_K/V, OPENAI_MODEL as the
+        # request model id, LLM_DISABLE_THINKING, and the never-implemented
+        # here LLM_TEMPERATURE / LLM_MAX_TOKENS / LLAMA_PARALLEL): these
+        # variables are now read ONLY by app/llm_config.py (the ONE loader,
+        # with validation + provenance reporting) inside
+        # materialise_llm_runtime(). Precedence and the full override list:
+        # config/llm_config.yaml header + app/llm_config.py ENV_OVERRIDES.
         # v0.4.14: the energy fallback behind Silero can be turned off for a
         # channel where it is not wanted (VAD_ENERGY_FALLBACK=0).
         if v := os.environ.get("VAD_ENERGY_FALLBACK", "").strip().lower():
@@ -442,12 +526,31 @@ class AgentConfig:
             self.embed_dim = _parse_env_int("VOICEMEM_EMBED_DIM", v)
         if v := os.environ.get("VOICEMEM_HOME"):
             self.root = Path(v)
+        if v := os.environ.get("TTS_ENGINE"):
+            self.tts_engine = v.strip().lower()
         if v := os.environ.get("PIPER_EXECUTABLE"):
-            self.piper_executable = v
+            logger.warning(
+                "PIPER_EXECUTABLE is set, but Piper was retired in v0.7.0 "
+                "(Supertonic 3 is the production TTS); the variable is ignored"
+            )
         if v := os.environ.get("TTS_HU_VOICE"):
             self.tts_hu_voice = v
         if v := os.environ.get("TTS_EN_VOICE"):
             self.tts_en_voice = v
+        if v := os.environ.get("SUPERTONIC_MODEL_PATH"):
+            self.supertonic_model_path = v
+        if v := os.environ.get("SUPERTONIC_SPEED"):
+            self.supertonic_speed = _parse_env_float("SUPERTONIC_SPEED", v)
+        if v := os.environ.get("SUPERTONIC_STEPS"):
+            self.supertonic_steps = _parse_env_int("SUPERTONIC_STEPS", v)
+        if os.environ.get("SUPERTONIC_TRIM_SILENCE", "").strip().lower() in (
+            "0", "false", "no", "off",
+        ):
+            self.supertonic_trim_silence = False
+        if os.environ.get("SUPERTONIC_TRIM_SILENCE", "").strip().lower() in (
+            "1", "true", "yes", "on",
+        ):
+            self.supertonic_trim_silence = True
         if v := os.environ.get("VOICEMEM_LOG_LEVEL"):
             self.log_level = v
         if v := os.environ.get("EMOTION2VEC_MODEL_PATH"):
@@ -529,8 +632,21 @@ class AgentConfig:
             errors.append("llama_server_port out of range")
         if self.sample_rate != 16000:
             errors.append("sample_rate must be 16000 (VAD/ASR requirement)")
-        if self.output_sample_rate != 22050:
-            errors.append("output_sample_rate must be 22050 (Piper voices are 22.05 kHz)")
+        if self.output_sample_rate != 44100:
+            errors.append("output_sample_rate must be 44100 (Supertonic 3 native rate)")
+        if self.tts_engine != "supertonic3":
+            errors.append(
+                "tts_engine must be 'supertonic3' (the single production TTS;"
+                " Piper was retired in v0.7.0, there is no fallback)"
+            )
+        if not (0.7 <= self.supertonic_speed <= 2.0):
+            errors.append("supertonic_speed out of range [0.7, 2.0] (SDK band)")
+        if not (1 <= self.supertonic_steps <= 100):
+            errors.append("supertonic_steps out of range [1, 100] (SDK band)")
+        if self.supertonic_silence_duration < 0:
+            errors.append("supertonic_silence_duration must be >= 0")
+        if self.supertonic_max_chunk_chars < 20:
+            errors.append("supertonic_max_chunk_chars must be >= 20")
         if self.top_k < 1:
             errors.append("top_k must be >= 1")
         if self.llm_parallel < 1:
@@ -553,13 +669,52 @@ class AgentConfig:
             "llama_model": bool(
                 self.llm_model_file and self.llm_model_file.is_file()
             ),
-            "piper_executable": self.piper_exe_path.is_file(),
+            "supertonic_model": all(
+                (self.supertonic_model_dir / rel).is_file()
+                for rel in (
+                    "onnx/tts.json",
+                    "onnx/unicode_indexer.json",
+                    "onnx/duration_predictor.onnx",
+                    "onnx/text_encoder.onnx",
+                    "onnx/vector_estimator.onnx",
+                    "onnx/vocoder.onnx",
+                )
+            ),
             "silero_vad": self.silero_vad_path.is_file(),
-            "hu_voice": (self.voices_dir / f"{self.tts_hu_voice}.onnx").is_file(),
-            "en_voice": (self.voices_dir / f"{self.tts_en_voice}.onnx").is_file(),
-            "asr_model": (self.asr_model_dir / "config.json").is_file(),
+            "hu_voice": (self.supertonic_voices_dir / f"{self.tts_hu_voice}.json").is_file(),
+            "en_voice": (self.supertonic_voices_dir / f"{self.tts_en_voice}.json").is_file(),
+            "asr_model": self._selected_asr_model_present(),
         }
         return assets
+
+    def _selected_asr_model_present(self) -> bool:
+        """v0.6.1: readiness checks the SELECTED engine's model directory.
+
+        v0.6.0 field bug: the check pointed at the retired legacy qwen dir
+        (``asr_model_dir``), so a machine that still had the old qwen
+        weights reported ``asr_model=True`` while the parakeet weights
+        were never downloaded (the delivery manifest still listed qwen).
+        The honest signal is the SELECTED engine's local dir from the
+        ``app.asr_core.MODEL_REGISTRY`` (lazy import - config must not
+        import asr_core at module level, that would be circular).
+        """
+        try:
+            from app.asr_core import MODEL_REGISTRY  # noqa: PLC0415
+
+            engine = (self.asr_engine or "parakeet").strip().lower()
+            spec = MODEL_REGISTRY.get(engine)
+            if spec is not None:
+                # v0.6.1: the SAME resolution order as the engine adapters
+                # (app/asr_parakeet.py _resolve_model_dir) - the explicit
+                # asr_model_path override wins over the registry default,
+                # so readiness and the actual load path can never disagree.
+                override = (self.asr_model_path or "").strip()
+                if override:
+                    return (Path(override) / "config.json").is_file()
+                return (spec.local_path(self) / "config.json").is_file()
+        except Exception:  # noqa: BLE001 - readiness probe, never raises
+            pass
+        return False
 
     def check_emotion_assets(self) -> dict[str, bool]:
         """M2 emotion asset checklist (informational, never blocks startup)."""

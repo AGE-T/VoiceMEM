@@ -25,7 +25,7 @@ Validated contracts:
   (v0.1.6 release blocker: the CLI's emoji deprecation warning crashed
   the child Python with UnicodeEncodeError under a CP1252 console);
 * MODELS.lock.json ships with the repo (schema 2: the M1 strict model set
-  + the llama.cpp/piper tool pins) and matches the M0 path layout;
+  + the llama.cpp tool pin) and matches the M0 path layout;
 * no user-facing script instructs the user to run manual pip / installer /
   CLI commands for things the system can fix itself.
 """
@@ -74,12 +74,14 @@ FORBIDDEN_PHRASES = (
 )
 
 #: The M0 section-7 canonical model layout the lock must pin.
+#: v0.6.1: asr -> the v0.6.0 production engine dir (nvidia/parakeet-tdt-
+#: 0.6b-v3); the retired qwen dir is NOT in the lock (never auto-downloaded).
 CANONICAL_TARGETS = {
     "llm": "models/llm/qwen3.6-35b-a3b",
-    "asr": "models/asr/qwen3-asr-0.6b",
+    "asr": "models/asr/parakeet-tdt-0.6b-v3",
     "embedding": "models/embedding/multilingual-e5-small",
     "vad": "models/vad/silero-vad",
-    "tts": "models/tts/piper",
+    "tts": "models/tts/supertonic-3",
     "emotion": "models/emotion/emotion2vec-plus-base",
     "speaker": "models/speaker/ecapa-voxceleb",
 }
@@ -436,17 +438,26 @@ class OneClickFeatureTest(FeatureValidationTest):
         self.assertIn("asr", components)
         self.assertIn("vad", components)
 
-        # The llama.cpp + piper tool pins (must match install_m1.ps1).
+        # v0.7.0: ONLY the llama.cpp tool pin - the TTS is the supertonic
+        # pip package (requirements.lock) + the 'tts' model entry, no binary.
         tools = lock.get("tools")
         self.assertIsInstance(tools, list)
         tool_components = {t.get("component") for t in tools}
-        self.assertEqual(tool_components, {"llama-server", "piper"})
+        self.assertEqual(tool_components, {"llama-server"})
         for tool in tools:
             self.assertEqual(tool.get("target_dir"), "bin")
             self.assertIn("tag", tool)
             self.assertIn("assets", tool)
         tool_files = {f for t in tools for f in t["files"]}
-        self.assertEqual(tool_files, {"llama-server.exe", "piper.exe"})
+        self.assertEqual(tool_files, {"llama-server.exe"})
+        # the TTS model entry is the supertonic-3 archive repo at the pinned revision
+        tts_entries = [e for e in models if e["component"] == "tts"]
+        self.assertEqual(len(tts_entries), 1)
+        self.assertEqual(tts_entries[0]["repo"], "supertone-oss-archive/supertonic-3")
+        self.assertEqual(
+            tts_entries[0]["pinned_revision"],
+            "aafc6e32416a594460b32413efc49d7fe4ce6d46",
+        )
 
     def test_logic_gitignore_tracks_lock_and_state(self):
         text = GITIGNORE.read_text(encoding="utf-8")

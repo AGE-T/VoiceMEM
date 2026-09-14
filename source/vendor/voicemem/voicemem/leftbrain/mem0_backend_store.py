@@ -84,7 +84,10 @@ from voicemem.leftbrain.local_memory_store import (
     _content_words,
     _lexical_time_bonus,
     date_overlap_bonus,
+    date_overlap_bonus_values,
+    query_date_values,
     query_dates,
+    recency_bonus,
 )
 
 
@@ -382,6 +385,63 @@ class Mem0BackendStore:
             return new_id
         return new_id
 
+    def count_occurrence(self, memory_id: str,
+                         session_id: int | str | None = None,
+                         observed_at: str | None = None) -> bool:
+        """[CONTROLLED FORK - patch VM-LOCAL-012] occurrence counting.
+
+        External audit v0.6.3 finding OCC-1 (P2): supersession models
+        *corrections* well, but a repeated **identical** confirmation
+        resolved to NONE wrote nothing — "observed N times / last observed
+        when" was uncountable, so a 5-confirmed allergy and a 1-mentioned
+        whim ranked identically.
+
+        This method is the write side of occurrence counting: a NONE
+        resolution (explicit, or the omit-NONE default) that matches an
+        existing memory increments, non-destructively, its metadata:
+
+        * ``occurrence_count``  (int, 1 after the first re-observation)
+        * ``last_observed_at``  (ISO timestamp of THIS confirmation)
+        * ``last_observed_session`` / ``last_observed_event_time`` (when given)
+
+        Text, created_at and every other field stay untouched (mem0's
+        metadata-merge update — the same mechanism update_memory uses for
+        the supersession marking). Returns True when the count was written.
+        """
+        import logging
+        try:
+            existing = self._mem0.get(memory_id)
+        except Exception as e:
+            logging.getLogger(__name__).warning(
+                "count_occurrence(%s): cannot read the row (%s)", memory_id, e)
+            return False
+        if not existing:
+            logging.getLogger(__name__).warning(
+                "count_occurrence(%s): memory not found", memory_id)
+            return False
+        inner = existing.get("metadata") or {}
+        try:
+            prev = int(inner.get("occurrence_count") or 0)
+        except (TypeError, ValueError):
+            prev = 0
+        from datetime import datetime, timezone
+        now_iso = datetime.now(timezone.utc).isoformat()
+        meta: dict[str, Any] = {
+            "occurrence_count": prev + 1,
+            "last_observed_at": now_iso,
+        }
+        if session_id is not None:
+            meta["last_observed_session"] = session_id
+        if observed_at is not None:
+            meta["last_observed_event_time"] = str(observed_at)
+        try:
+            self._mem0.update(memory_id, metadata=meta)
+        except Exception as e:
+            logging.getLogger(__name__).warning(
+                "count_occurrence(%s): metadata write failed (%s)", memory_id, e)
+            return False
+        return True
+
     def delete_memory(self, memory_id: str) -> bool:
         """[CONTROLLED FORK - patch VM-LOCAL-005] DELETE safety guard.
 
@@ -505,6 +565,11 @@ class Mem0BackendStore:
         want_dur = bool(_DURATION_Q_RE.search(q))
         want_date = (not want_dur) and bool(_DATE_Q_RE.search(q))
         q_dates = query_dates(q)     # "下周"展开出来的那几天（见 time_expand）
+        # [VM-LOCAL-010] 值级日期集：ISO/中文/匈牙利语/英语格式族都进（time_expand
+        # 的 ISO 扩展戳在这里被解析），格式无关的交集比对在下面加。
+        from datetime import date as _d
+        today = _d.today()
+        q_dvals = query_date_values(q, today)
 
         hits: list[MemorySearchHit] = []
         for e in entries:
@@ -517,6 +582,9 @@ class Mem0BackendStore:
             text = str(e.get("memory", ""))
             bonus, time_hit = _lexical_time_bonus(q_words, want_dur, want_date, text)
             bonus += date_overlap_bonus(q_dates, text)
+            # [VM-LOCAL-010] 值级日期重叠：问句展开出的 date 值与正文里任何
+            # 格式族解析出的 date 值有交集即加分（字面版只对同格式生效）。
+            bonus += date_overlap_bonus_values(q_dvals, text, today)
             metadata = {k: v for k, v in e.items()
                         if k not in ("id", "memory", "score", "hash", "user_id", "created_at", "updated_at")}
             # 事件时间：Ingest 的 observed_at 同时写进了 metadata.time_start 和顶层
@@ -530,6 +598,16 @@ class Mem0BackendStore:
             # 检索排序的时间权重从未生效，记忆的 [日期] 前缀也从未进过 prompt
             # （而人设里写着“记忆里带日期就用那个日期”）。所以要先校验像不像日期。
             observed = _as_date(inner.get("time_start")) or _as_date(e.get("created_at"))
+            # [VM-LOCAL-011] 时效加分（外部审计 CD-4）：事件时间越近越高，
+            # 无日期的旧行为 0（排序不变）。参与排序，不进 score 展示。
+            rec_boost = recency_bonus(observed, today)
+            # [VM-LOCAL-012] 同一观察的重复确认次数（外部审计 OCC-1）：
+            # 元数据 occurrence_count / last_observed_at（首次入库不带键）。
+            try:
+                occ_count = int(inner.get("occurrence_count") or 0)
+            except (TypeError, ValueError):
+                occ_count = 0
+            last_obs = str(inner.get("last_observed_at") or "")
             # [VM-LOCAL-008] 显式取代链：被 UPDATE 的旧观察保留 superseded_by
             # （新行 id），检索时当前值优先、历史值仍可查。
             superseded_by = str(inner.get("superseded_by") or "").strip()
@@ -538,11 +616,19 @@ class Mem0BackendStore:
                 attributed_to=str(e.get("attributed_to") or "user"),
                 metadata=metadata, base_score=cos, time_boost=time_hit,
                 observed_at=observed, superseded_by=superseded_by,
+                recency_boost=rec_boost, occurrence_count=occ_count,
+                last_observed_at=last_obs,
             ))
 
         # [VM-LOCAL-008] 排序：非 superseded（当前值）优先，余弦分高者先。
         # 只影响带 superseded_by 的行（旧数据不含该键 → 行为与之前完全一致）。
-        hits.sort(key=lambda h: (not h.superseded_by, h.base_score), reverse=True)
+        # [VM-LOCAL-011] 余弦之上叠加时效加分（量级 ≤ 0.10，与 _TIME_WEIGHT
+        # 同级）——"我最近说过什么"从今往后偏向新观察；无日期行加分 0，
+        # 行为不变。加分进排序键，不进展示用 score（词面/时间加分留在 score）。
+        hits.sort(
+            key=lambda h: (not h.superseded_by, h.base_score + h.recency_boost),
+            reverse=True,
+        )
         base = hits[:top_k]
         if rescue_k <= 0:
             return base

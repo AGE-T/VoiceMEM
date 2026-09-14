@@ -1,0 +1,5 @@
+=== process check BEFORE stop ===
+1
+6912 /tmp/llama/llama-b10717/llama-server --model /tmp/llama/qwen3-0.6b-q4km.gguf --host 127.0.0.1 --port 8080 -ngl 20 -c 32768 --parallel 1 --cache-type-k q8_0 --cache-type-v q8_0 --temp 0.7 --metrics --no-webui --reasoning off --verbose
+=== process check AFTER stop ===
+0 llama-server processes (clean)

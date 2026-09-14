@@ -1,0 +1,52 @@
+v0.6.1 ASR DELIVERY HOTFIX — GATE SUMMARY (2026-09-11, sandbox)
+
+UNIT (unittest discover, production offline env):
+  Ran 631 tests ... OK (skipped=3)
+  (v0.6.0 record: 627/0/3; +4 = ParakeetPlaceholderLoadTests: actionable
+   placeholder load error, missing-dir case, AsrResult error mapping,
+   readiness-follows-selected-engine. The real-model ParakeetEngineTests
+   RAN in this sandbox - the model is present.)
+
+INTEGRATION (per-package, production offline env):
+  test_llm_streaming_e2e  : 3/0/0
+  test_memory_safety      : 15/0/0   (REAL vendor + mem0/qdrant/E5 - freeze held)
+  test_pipeline_mock      : 46/0/0
+  test_web_e2e            : 11/0/0
+  total                   : 75/0/0   (identical to the v0.6.0 record)
+
+VALIDATION (unittest discover, production offline env):
+  Ran 264 tests ... OK (skipped=22)
+  (v0.6.0/recovery record: 264/0/23. Test COUNT identical, zero failures,
+   zero weakened assertions; the -1 skip delta is environmental deep-guard
+   state, NOT a removed test: 11 stale pins were REALIGNED to the corrected
+   delivery contract (transformers floor 5.6, parakeet lock paths, config
+   readiness, placeholder semantics) — every realigned assertion stayed
+   equally strict; test_feature_models deep guards moved from 'asr=qwen
+   present' to 'full locked set present' (both environments skip 2 deep
+   tests).)
+
+TOTAL: 970 tests, 0 failures, 25 skipped
+  (v0.6.0: 966/0/26 — +4 new tests, no removals, no weakening)
+
+BUILD (scripts/build_release_sandbox.py 970):
+  BUILD SUCCESS - VoiceMemAgent 0.6.1
+  ZIP    : releases/VoiceMemAgent_v0.6.1.zip (2381.2 KB, 307 files, 1 .bat CRLF)
+  SHA256 : F80FBC022892E60CEB7DCCE9C2F9704DF9B2A973D8EF293800AB3C076279B9FC
+  Deep   : PASS: release, runtime-deps (SKIP: 0)
+  Self-check marker blocks updated to the corrected contract (V061 + floor
+  marker values 5.6 + ParakeetForTFT symptom name).
+
+DELIVERY LAYER INVARIANTS HELD:
+  - NO engine fallback added anywhere (the no-fallback rule: stage failure
+    is an explicit AsrError; only the diagnostic text became actionable)
+  - vendor/ untouched (Memory Safety freeze: memory_safety 15/15 on the
+    REAL store)
+  - the v0.6.0 app architecture untouched (asr_core/asr_nemotron unchanged;
+    asr_parakeet gained ONLY the pre-check raise before from_pretrained)
+  - the retired qwen dir ships as a placeholder, never auto-downloaded,
+    never loaded by production
+  - the lock is the single source of truth (the downloader's forced-snapshot
+    'asr' override REMOVED)
+
+AGENT VERIFIED in sandbox (this run); real MixPre + field START.bat
+acceptance of v0.6.1: USER VERIFIED (operator-side).

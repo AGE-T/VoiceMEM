@@ -61,7 +61,7 @@ class ConfigFeatureTest(_EnvNeutralTest):
         self.assertTrue(cfg.offline)
         # Audio contract.
         self.assertEqual(cfg.sample_rate, 16000)
-        self.assertEqual(cfg.output_sample_rate, 22050)
+        self.assertEqual(cfg.output_sample_rate, 44100)
         # VAD / barge-in tunables (v0.4.11: vad_threshold 0.5 -> 0.25).
         self.assertEqual(cfg.vad_threshold, 0.25)
         self.assertEqual(cfg.vad_hangover_ms, 300)
@@ -82,10 +82,14 @@ class ConfigFeatureTest(_EnvNeutralTest):
         self.assertEqual(
             cfg.speaker_model_name, "speechbrain/spkrec-ecapa-voxceleb"
         )
-        # Model identities.
-        self.assertEqual(cfg.asr_model_name, "Qwen/Qwen3-ASR-0.6B")
-        self.assertEqual(cfg.tts_hu_voice, "hu_HU-anna-medium")
-        self.assertEqual(cfg.tts_en_voice, "en_US-lessac-medium")
+        # Model identities (v0.6.1: the display field follows the production
+        # engine; the LEGACY asr_model_dir property keeps the retired qwen
+        # path for the non-production migration module - asserted below).
+        self.assertEqual(cfg.asr_model_name, "nvidia/parakeet-tdt-0.6b-v3")
+        # v0.7.0: Supertonic 3 preset voices (Piper retired).
+        self.assertEqual(cfg.tts_hu_voice, "F1")
+        self.assertEqual(cfg.tts_en_voice, "F1")
+        self.assertEqual(cfg.tts_engine, "supertonic3")
         # llama-server endpoint (loopback).
         self.assertEqual(cfg.llama_server_host, "127.0.0.1")
         self.assertEqual(cfg.llama_server_port, 8080)
@@ -94,7 +98,7 @@ class ConfigFeatureTest(_EnvNeutralTest):
         cfg = AgentConfig.from_yaml(YAML_PATH)
         self.assertEqual(cfg.root, REPO_ROOT, "root must be the repo root")
         self.assertEqual(cfg.models_dir, cfg.root / "models")
-        self.assertEqual(cfg.voices_dir, cfg.models_dir / "tts" / "piper")
+        self.assertEqual(cfg.supertonic_model_dir, cfg.models_dir / "tts" / "supertonic-3")
         self.assertTrue(cfg.asr_model_dir.as_posix().endswith("models/asr/qwen3-asr-0.6b"))
         # v0.4.17: NO phantom project-default path. llm_model_file resolves
         # to a Path ONLY when a model is ACTUALLY configured (user selection
@@ -117,7 +121,7 @@ class ConfigFeatureTest(_EnvNeutralTest):
         cfg = AgentConfig.from_yaml(REPO_ROOT / "config" / "does_not_exist.yaml")
         self.assertEqual(cfg.validate(), [], "defaults must be valid on their own")
         self.assertEqual(cfg.sample_rate, 16000)
-        self.assertEqual(cfg.output_sample_rate, 22050)
+        self.assertEqual(cfg.output_sample_rate, 44100)
         self.assertEqual(cfg.voicemem_mode, "text_mode")
         self.assertEqual(cfg.models_dir, cfg.root / "models")
         self.assertEqual(cfg.memory_root_path, cfg.root / "memory")

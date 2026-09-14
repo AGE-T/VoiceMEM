@@ -51,8 +51,10 @@ class AsrFeatureTest(_EnvNeutralTest):
     def test_logic_model_and_chunk_contract(self):
         cfg = AgentConfig.from_yaml(YAML_PATH)
         self.assertEqual(cfg.asr_chunk_samples, 9600, "600 ms @ 16 kHz must be 9600")
+        # v0.6.1: the display name follows the v0.6.0 production engine;
+        # asr_model_dir stays the LEGACY qwen dir (non-production module).
         self.assertEqual(cfg.asr_model_dir.name, "qwen3-asr-0.6b")
-        self.assertEqual(cfg.asr_model_name, "Qwen/Qwen3-ASR-0.6B")
+        self.assertEqual(cfg.asr_model_name, "nvidia/parakeet-tdt-0.6b-v3")
         self.assertEqual(cfg.sample_rate, 16000)
 
     def test_logic_engine_unavailable_without_torch(self):

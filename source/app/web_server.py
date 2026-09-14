@@ -16,7 +16,8 @@ Pipeline (LOCAL mode), v0.6.0 modular ASR:
       -> VoiceMem              (voicemem text_mode; per-space user_id)
          embedding: multilingual E5 small, CPU (injected into VoiceMem)
       -> Qwen3.6 35B A3B IQ4_XS (llama-server /v1/chat/completions, SSE)
-      -> Piper HU/EN           (app.tts, subprocess) -> 24 kHz PCM16 to browser
+      -> Supertonic 3 HU/EN     (app.tts_supertonic, ONNX Runtime CPU) -> 44.1 kHz
+                                 PCM16, resampled to 24 kHz PCM16 for browser
 
 The legacy Qwen integration lives on only as the clearly-marked non-production
 migration module ``app/asr.py`` (kept for its historical tests); it is NOT in
@@ -99,7 +100,6 @@ from app.voice_settings import (
     VOICE_MODES,
     VoiceSettings,
     language_name,
-    language_of_voice,
     voice_label,
 )
 
@@ -429,6 +429,34 @@ def clean_rb_content(content: str) -> str:
     t = _RB_PREFIX_RE.sub("", str(content or ""))
     t = _RB_SUFFIX_RE.sub("", t)
     return t.strip()
+
+
+def hit_provenance_suffix(h: Any) -> str:
+    """[external audit v0.6.3 F-B] provenance suffix for a left-brain hit.
+
+    Event date + confirmation count (OCC-1) + supersession status +
+    attribution, compact ``[<date> | <N>x confirmed | superseded | by X]``
+    so the reply model can reason about freshness, confidence and currency.
+    Raw cosine scores are deliberately NOT shown to the persona. Duplicated
+    in app/voicemem_bridge.py (the same render helper pattern as
+    clean_rb_content) so the CLI and web paths stay identical.
+    """
+    bits: list[str] = []
+    obs = str(getattr(h, "observed_at", "") or "")[:10]
+    if len(obs) == 10 and obs[4] == "-":
+        bits.append(obs)
+    try:
+        occ = int(getattr(h, "occurrence_count", 0) or 0)
+    except (TypeError, ValueError):
+        occ = 0
+    if occ > 1:
+        bits.append(f"{occ}x confirmed")
+    if str(getattr(h, "superseded_by", "") or "").strip():
+        bits.append("superseded")
+    attr = str(getattr(h, "attributed_to", "") or "").strip()
+    if attr and attr not in ("user", ""):
+        bits.append(f"by {attr}")
+    return f" [{' | '.join(bits)}]" if bits else ""
 
 
 #: Right-brain trait slots → English display labels. The vendored VoiceMem
@@ -1001,20 +1029,30 @@ class DemoLlmClient:
 class DemoTtsEngine:
     """Demo-mode TTS: soft modulated tone, duration from text length.
 
-    v0.4.2 voice selection: the four selectable Piper voices map to distinct
+    v0.4.2 voice selection: the selectable preset voices map to distinct
     base frequencies, so changing the selection audibly changes the output and
     the whole flow (UI selection -> backend -> synthesis) is demonstrable on
-    machines without Piper (the sandbox preview runs this engine).
+    machines without the Supertonic model assets (the sandbox preview runs
+    this engine).
     """
 
-    SAMPLE_RATE = 22050
+    # v0.7.0: the demo engine follows the production contract - 44.1 kHz
+    # int16 mono (config.output_sample_rate; the web boundary resamples to
+    # the 24 kHz wire from the CONFIG rate, so the demo must match it).
+    SAMPLE_RATE = 44100
 
-    #: Distinct demo tone per selectable voice (Anna/Berta/Imre/Lessac).
+    #: Distinct demo tone per selectable Supertonic preset (F1-F5, M1-M5).
     VOICE_FREQ = {
-        "hu_HU-anna-medium": 210.0,
-        "hu_HU-berta-medium": 262.0,
-        "hu_HU-imre-medium": 175.0,
-        "en_US-lessac-medium": 294.0,
+        "F1": 220.0,
+        "F2": 294.0,
+        "F3": 247.0,
+        "F4": 330.0,
+        "F5": 196.0,
+        "M1": 147.0,
+        "M2": 110.0,
+        "M3": 131.0,
+        "M4": 165.0,
+        "M5": 123.0,
     }
 
     def __init__(self) -> None:
@@ -1084,7 +1122,7 @@ class WebComponents:
         self.llm: Any = None
         self.tts: Any = None
         self.memory: Any = None
-        # v0.4.2: persisted Piper voice selection (UI Voice section).
+        # v0.7.0: persisted Supertonic preset voice selection (UI Voice section).
         self.voice: Optional[VoiceSettings] = None
         # v0.4.16: persisted LLM GGUF selection (UI "LLM model" section):
         # the operator picks any .gguf on ANY drive; only the absolute PATH
@@ -1143,18 +1181,20 @@ class WebComponents:
             return self
 
         from app.llm import LlmClient
-        from app.tts import TtsEngine
+        from app.tts_supertonic import SupertonicTtsEngine as TtsEngine
 
         self.llm = LlmClient(self.config)
         self.tts = TtsEngine(self.config)
         self.memory = RealMemoryLayer(self.config, st)
 
-        # TTS (Piper) readiness — the detail names the SELECTED voices so the
+        # TTS (Supertonic 3) readiness — the detail names the SELECTED voices so the
         # runtime status answers "which voice is active?" at a glance.
         if self.tts.is_available():
             st.components["tts"].set_ready(self._tts_detail())
         else:
-            st.components["tts"].set_missing("piper binary/voices not found")
+            st.components["tts"].set_missing(
+                "Supertonic 3 model assets incomplete (models/tts/supertonic-3)"
+            )
 
         # VAD (Silero) — v0.4.14: the detail names the energy fallback so the
         # pipeline panel answers "what exactly gates my speech?" at a glance.
@@ -1445,14 +1485,14 @@ class WebComponents:
         }
 
     def _tts_detail(self) -> str:
-        """TTS chip detail: Piper + the SELECTED voices + mode ("Voice: …")."""
+        """TTS chip detail: Supertonic 3 + the SELECTED voices + mode."""
         voice = self.voice
         if voice is None:
-            return "Piper"
+            return "Supertonic 3"
         if self.mock:
             return f"tone generator (demo) · voice mode: {voice.mode}"
         return (
-            f"Piper · {voice_label(voice.hu_voice)} (HU), "
+            f"Supertonic 3 · {voice_label(voice.hu_voice)} (HU), "
             f"{voice_label(voice.en_voice)} (EN) · mode: {voice.mode}"
         )
 
@@ -1466,7 +1506,7 @@ class WebComponents:
         # Update the chip detail WITHOUT touching the state (ready/processing
         # is owned by the synthesis lifecycle; the detail names the voice).
         comp.detail = (
-            f"Piper · Voice: {voice_label(voice_id)} · "
+            f"Supertonic 3 · Voice: {voice_label(voice_id)} · "
             f"{language_name(language)}"
             if not self.mock
             else f"demo tone · Voice: {voice_label(voice_id)} · "
@@ -2942,12 +2982,14 @@ class WebSession:
             self._bg_store_task = self._spawn(_store())
 
     async def _synthesize_chunk(self, chunk: str, fused: Any) -> Optional[bytes]:
-        """TTS one chunk via Piper, convert to 24 kHz PCM16 for the browser.
+        """TTS one chunk via Supertonic 3, convert to 24 kHz PCM16 for the browser.
 
         v0.4.2 voice flow (task contract): LLM response -> language detection
-        -> voice selection (mode-aware) -> Piper -> audio. The resolved voice
-        is recorded in the runtime status ("Voice: Imre · Hungarian") and is
-        what the Piper --model argument actually uses.
+        -> voice selection (mode-aware) -> Supertonic 3 -> audio. The resolved
+        voice is recorded in the runtime status ("Voice: F1 · Hungarian") and
+        is what the engine actually synthesizes with. v0.7.0: the engine
+        returns 44.1 kHz int16 (Supertonic-native); the resample to the
+        24 kHz browser wire happens at THIS boundary (unchanged mechanism).
         """
         c = self._c
         st = c.status
@@ -2993,10 +3035,13 @@ class WebSession:
             return ""
         parts: list[str] = []
         hits = getattr(result, "hits", None) or []
+        # [external audit v0.6.3 F-B] provenance suffix per hit (event date,
+        # confirmation count, supersession, attribution) - mirrors the CLI
+        # bridge render exactly.
         for h in hits[:5]:
             t = (getattr(h, "text", "") or "").strip()
             if t:
-                parts.append(f"- {t}")
+                parts.append(f"- {t}{hit_provenance_suffix(h)}")
         rb = getattr(result, "rb_hits", None) or []
         for h in rb[:3]:
             t = clean_rb_content(getattr(h, "content", "") or "").strip()
@@ -3021,6 +3066,12 @@ class WebSession:
                     "attributed_to": getattr(h, "attributed_to", "") or "",
                     "memory_id": getattr(h, "memory_id", "") or "",
                     "has_audio": False,
+                    # [external audit v0.6.3 F-B] provenance in the UI payload:
+                    # event date, occurrence count (OCC-1), currency status.
+                    "observed_at": getattr(h, "observed_at", "") or "",
+                    "occurrence_count": getattr(h, "occurrence_count", 0) or 0,
+                    "last_observed_at": getattr(h, "last_observed_at", "") or "",
+                    "superseded_by": getattr(h, "superseded_by", "") or "",
                 }
                 for h in hits
             ],
@@ -3713,7 +3764,7 @@ def build_web_app(components: WebComponents) -> Any:
     async def api_voice_preview(req: Request) -> Response:
         """Synthesize a short local sentence with the SELECTED voice (WAV).
 
-        Local Piper only - no network call in any mode. Demo mode answers
+        Local Supertonic 3 only - no network call in any mode. Demo mode answers
         with a voice-specific tone so the flow is testable without models.
         """
         try:
@@ -3728,7 +3779,10 @@ def build_web_app(components: WebComponents) -> Any:
             raise HTTPException(400, "body must be {\"voice\": <voice id>}")
         if c.voice is not None and voice not in c.voice.available:
             raise HTTPException(400, f"unknown voice {voice!r}")
-        language = language_of_voice(voice)
+        # v0.7.0: presets are language-agnostic; the preview sentence follows
+        # the persisted voice MODE (auto -> Hungarian, the product language).
+        mode = c.voice.mode if c.voice is not None else "auto"
+        language = LANG_EN if mode == LANG_EN else LANG_HU
         text = PREVIEW_SENTENCES[language]
         if c.mock:
             wav_bytes = c.tts.synthesize_wav(text, language, voice=voice)
@@ -3750,8 +3804,8 @@ def build_web_app(components: WebComponents) -> Any:
             if not wav_bytes:
                 raise HTTPException(
                     503,
-                    "Piper could not synthesize the preview (is the voice "
-                    "installed? see the TTS row in the Pipeline panel)",
+                    "Supertonic 3 could not synthesize the preview (are the "
+                    "model assets installed? see the TTS row in the Pipeline panel)",
                 )
         c._event(f"voice preview: {voice_label(voice)} ({language})")
         return Response(
@@ -4167,6 +4221,7 @@ def _parse_args(argv: Optional[list[str]] = None):
     p.add_argument(
         "--host",
         default=os.environ.get("VOICEMEM_WEB_HOST", DEFAULT_WEB_HOST),
+        help="bind address (loopback only unless VOICEMEM_ALLOW_REMOTE_WEB=1)",
     )
     p.add_argument(
         "--port",
@@ -4178,13 +4233,18 @@ def _parse_args(argv: Optional[list[str]] = None):
 
 
 def load_config(path: str = "") -> AgentConfig:
-    """Build AgentConfig: YAML (if any) + env overrides + web defaults."""
+    """Build AgentConfig: YAML (if any) + env overrides + web defaults.
+
+    v0.7.2: both branches materialise the llm_* VALUES from the canonical
+    config/llm_config.yaml (from_yaml / materialise_llm_runtime).
+    """
     cfg = AgentConfig(root=_ROOT)
     if path and Path(path).is_file():
         cfg = AgentConfig.from_yaml(Path(path))
         cfg.apply_env()
     else:
         cfg.apply_env()
+        cfg.materialise_llm_runtime()
     # M3 speaker stays optional and DISABLED in the web UI (the web layer
     # routes memory by Memory Space, not by speaker; the agent CLI keeps the
     # full M3 pipeline). WebComponents.build() enforces this again.
@@ -4229,6 +4289,27 @@ def main(argv: Optional[list[str]] = None) -> int:
     args = _parse_args(argv if argv is not None else None)
     level = os.environ.get("VOICEMEM_WEB_LOG", "INFO")
 
+    # [external audit v0.6.3 SEC-1] loopback hard-guard: this server has NO
+    # authentication and serves a single local user. The default bind is
+    # 127.0.0.1, but --host/VOICEMEM_WEB_HOST could widen it to the LAN -
+    # previously env-configured only. Now a non-loopback bind is REFUSED at
+    # code level unless VOICEMEM_ALLOW_REMOTE_WEB=1 is set explicitly (the
+    # operator takes responsibility for exposing an unauthenticated server).
+    _loopback = {"127.0.0.1", "localhost", "::1"}
+    if str(args.host).strip() not in _loopback and \
+            os.environ.get("VOICEMEM_ALLOW_REMOTE_WEB", "") != "1":
+        print(
+            f"[web] REFUSING non-loopback bind {args.host}: this server has "
+            "no authentication and is built for single-user local use.",
+            flush=True,
+        )
+        print(
+            "[web] To expose it on the LAN anyway, set "
+            "VOICEMEM_ALLOW_REMOTE_WEB=1 explicitly and accept the risk.",
+            flush=True,
+        )
+        return 2
+
     cfg = load_config(args.config)
     log_path = _setup_logging(level, cfg)
     components = WebComponents(cfg, mock=args.mock).build()
@@ -4252,6 +4333,12 @@ def main(argv: Optional[list[str]] = None) -> int:
     url = f"http://{args.host}:{args.port}/"
     print(f"[web] VoiceMem local web backend - {mode_label}", flush=True)
     print(f"[web] LLM endpoint: {cfg.llama_server_url} (llama-server, local)", flush=True)
+    # v0.7.2: the canonical LLM configuration at startup — the llama-server
+    # starter generates its command line from THE SAME source
+    # (config/llm_config.yaml through app/llm_config.py).
+    if cfg.llm_runtime is not None:
+        for line in cfg.llm_config_summary().splitlines():
+            print(f"[web] {line}", flush=True)
     print(f"[web] UI: {url}", flush=True)
     if log_path is not None:
         print(f"[web] Diagnostics log: {log_path}", flush=True)

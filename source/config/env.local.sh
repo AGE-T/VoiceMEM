@@ -48,7 +48,7 @@ export VOICEMEM_EMBED_DIM=384                       # local E5 (multilingual-e5-
 export OPENAI_BASE_URL="http://127.0.0.1:8080/v1"   # llama.cpp llama-server (loopback)
 export OPENAI_API_KEY="not-needed-but-required-by-openai-lib"  # dummy, NO real key
 export OPENAI_MODEL="qwen3.6-35b-a3b"  # v0.4.16: az EGYETLEN LLM = Qwen3.6 35B A3B IQ4_XS (l. env.local.ps1 LLM-MODELPROFIL)
-export TTS_BACKEND="local"                          # Piper instead of OpenAI TTS
+export TTS_BACKEND="local"                          # Supertonic 3 local TTS (v0.7.0)
 
 # ---------------------------------------------------------------------------
 # Model path overrides (OPTIONAL - the AgentConfig property defaults already
@@ -57,7 +57,9 @@ export TTS_BACKEND="local"                          # Piper instead of OpenAI TT
 # models/llm/qwen3.6-35b-a3b, models/embedding/multilingual-e5-small
 # ---------------------------------------------------------------------------
 # export QWEN3_ASR_MODEL_PATH="$Root/models/asr/qwen3-asr-0.6b"
-# export PIPER_VOICES_PATH="$Root/models/tts/piper"
+# v0.7.0: a TTS hangok a Supertonic 3 presetjei (F1-F5, M1-M5), a
+# PIPER_VOICES_PATH mar nem hasznalatban (Piper nyugdijazva)
+# export SUPERTONIC_MODEL_PATH="$Root/models/tts/supertonic-3"
 # export SILERO_VAD_PATH="$Root/models/vad/silero-vad/silero_vad.onnx"
 # export EMBEDDING_MODEL_PATH="$Root/models/embedding/multilingual-e5-small"
 # M2 (emotion2vec) - EXCLUDED in M0/M1, FORBIDDEN to enable:
@@ -79,8 +81,8 @@ export LLAMA_SERVER_PORT=8080
 # identify_ollama_blob.ps1 -Select (config/llm_model.json) or un-comment
 # this line with a REAL absolute path:
 # export LLAMA_MODEL_PATH="D:/AI/Models/Qwen3.6-35B-A3B-IQ4_XS.gguf"
-export LLAMA_CONTEXT_SIZE=8192
-export LLAMA_N_GPU_LAYERS=26   # partial offload: ~19 GB model > 12 GB VRAM
+export LLAMA_CONTEXT_SIZE=32768
+export LLAMA_N_GPU_LAYERS=20   # partial offload, measured profile: 20/42 layers on GPU (~19 GB model > 12 GB VRAM)
 export LLM_DISABLE_THINKING=1  # hybrid-reasoning: thinking channel OFF
 export LLAMA_CACHE_TYPE_K=q8_0
 export LLAMA_CACHE_TYPE_V=q8_0

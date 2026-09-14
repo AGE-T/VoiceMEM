@@ -8,7 +8,7 @@ Two levels per feature (see ``tests/validation/_report.py``):
 
 * ``test_deep_*`` methods additionally exercise the REAL component when it
   is available on this machine (installed models, torch/CUDA, running
-  llama-server, piper binary, audio devices). When the component is absent
+  llama-server, supertonic assets, audio devices). When the component is absent
   they SKIP with a recorded reason (``self.deep_skip``) - never silently
   pass, never hang. On the target machine (after ``install_m1.ps1``) they
   run for real.

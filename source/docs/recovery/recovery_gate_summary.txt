@@ -1,0 +1,40 @@
+=== WORKSPACE RECOVERY GATE SUMMARY (2026-09-11) ===
+SOURCE STATE: NO source file changed by the recovery (content proven intact, git status clean at f730b70;
+  mode-bits normalized 755->644 per committed state; releases/ untracked artifacts restored byte-identical from public/)
+TARGETED RECOVERY TESTS (real models, production contract): 6/6 PASS
+  T1 registry+selection (parakeet+nemotron, default parakeet)           PASS
+  T2 parakeet REAL transcribe on real_windows_capture.wav               PASS
+     transcript == recorded v0.6.0 evidence transcript BYTE-IDENTICAL:
+     "Ez egy teszt, egy teszt. Most kipróbáljuk, hogy működik-e az ASR-rendszer, de szerintem kurvára nem működik úgy."
+  T3 Silero VAD official 64-sample context on real capture              PASS (236/312 frames > 0.25; recorded evidence 235/312)
+  T4 E5 local offline load + 384-d embed                                PASS
+  T5 vendor pin runtime identity e8384e0                                PASS
+  T6 memory-safety gates VM-LOCAL-007/008 present in vendor source      PASS
+FULL RELEASE GATE (identical files, identical numbers, NOT weakened):
+  unit        : 627 tests, 0 failures, 3 skipped      (v0.6.0 record: 627/0/3)    MATCH
+  integration : 75 tests, 0 failures, 0 skipped  (per-package: llm_streaming_e2e 3 + pipeline_mock 46 + web_e2e 11 + memory_safety 15)
+                (v0.6.0 record: 75/0/0)    MATCH
+  validation  : 264 tests, 0 failures, 23 skipped     (v0.6.0 record: 264/0/23)   MATCH
+  TOTAL       : 966 tests, 0 failures, 26 skipped    (v0.6.0 record: 966/0/26)   MATCH
+  ESLint (Next.js): clean (exit 0)
+  vendor/ untouched (Memory Safety freeze held): zero diffs all unit run
+BROWSER E2E (agent-browser, zero console errors):
+  landing page / : "legfrissebb stabil: v0.6.0" + TASK A/B card + gate 966 + mirror badge 8b7e6fb
+                   + downloads 200 (v0.6.0.zip, ASRGate + sidecars); screenshots recovery_landing_desktop.png
+  VoiceMem UI (127.0.0.1:8787, mock mode): UI v0.6.0 · backend v0.6.0
+    - full mic turn REPRODUCED: chat "ASR · mock · hu · 12.0s · You: Szia! Ez egy demo felismerés a scripted ASR motorból." + assistant reply
+      (identical to the delivered v0.6.0 e2e evidence line)
+    - CHAIN live states from real WS stage events: MIC WORKING / VAD DONE / ASR DONE / VoiceMEM DEMO / E5 DEMO / LLM DONE 467ms / TTS DONE
+    - live mic frames rms 0.0496 (delivered evidence: 0.0495)
+    - MIC diagnostics + LLM model panels collapsible (aria-expanded toggle verified), bounded bodies
+    - screenshots recovery_micturn_{desktop,mobile}.png
+  dev.log: no new runtime errors (only the known historical EADDRINUSE boot artifact)
+SELF CHECK:
+  scripts/verify_voicemem_pin.py  -> VERIFICATION OK (source)
+  scripts/verify_setup.py         -> piper OK, silero OK, hu/en voices OK, torch OK, pin OK;
+                                     llama leg field-side by design; legacy qwen/emotion/speaker placeholders = delivered semantics
+  piper smoke: "Szia, ez egy teszt." -> 69792B WAV, RTF 0.097 (RUNPATH=$ORIGIN, no env needed)
+LLM LEG (sandbox): production Qwen3.6 35B A3B IQ4_XS is operator-placed (~19 GB) and NEVER sandbox-resident by design
+  (MODELS.lock llm note; README policy: missing GGUF = LLM ERROR state, no fallback). The /tmp/llama 1.7B stand-in
+  proof instance was ephemeral and is not part of the v0.6.0 gate. LLM integration proven via tests.integration.test_llm_streaming_e2e (3/3).
+REAL MIXPRE MICROPHONE ACCEPTANCE: NOT VERIFIED (remains USER VERIFIED only — field-side).

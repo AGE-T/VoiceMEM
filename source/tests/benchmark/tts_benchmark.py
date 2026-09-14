@@ -1,18 +1,23 @@
-"""M1 TTS benchmark (Piper on the TARGET machine).
+"""v0.7.0 TTS benchmark (Supertonic 3 on the TARGET machine).
 
-Machine: TARGET (Windows 11 + RTX 5070, Piper binary + voices downloaded).
-Importing is safe anywhere: app.tts is imported lazily inside main().
+Replaces the M1-era Piper benchmark: the production TTS engine is
+``app.tts_supertonic.SupertonicTtsEngine`` (ONNX Runtime, CPU — the RTX
+5070 stays reserved for Qwen3.6). Importing is safe anywhere:
+``app.tts_supertonic`` is imported lazily inside main().
 
 Method:
-  1. Synthesize 5 Hungarian + 5 English sentences via app.tts.TtsEngine
-     (hu voice: hu_HU-anna-medium, en voice: en_US-lessac-medium).
-  2. Measure TTFB (call -> WAV file ready, i.e. Piper subprocess spawn +
-     synthesis) and RTF (synthesis time / synthesized audio duration) per
-     sentence with time.perf_counter.
-  3. Print a table and MOS listening-test instructions (3 native listeners,
-     1-5 scale).
+  1. Synthesize 5 Hungarian + 5 English sentences through the PRODUCTION
+     adapter (voice: the configured default, F1).
+  2. Measure TTFB (call -> PCM ready, INCLUDING the one-time lazy model
+     load on the first sentence) and RTF (synthesis time / synthesized
+     audio duration) per sentence with time.perf_counter. The second and
+     later sentences measure the warm-engine latency.
+  3. Record model load time, warm TTFB, RTF, audio seconds, RSS delta.
+  4. Print a table and MOS listening-test instructions (3 native
+     listeners, 1-5 scale) — the acceptance criteria include SPEECH
+     QUALITY, not only latency.
 
-Exit criteria: every synthesis succeeded (10/10 WAV files written).
+Exit criteria: every synthesis succeeded (10/10 non-empty int16 PCM).
   -> exit 0 on success, 1 on failures, 2 on missing prerequisites.
 """
 
@@ -21,17 +26,16 @@ from __future__ import annotations
 import argparse
 import sys
 import time
-import wave
 from pathlib import Path
 from typing import Any
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[2]))  # repo root (tests/<kind>/x.py -> 3 levels up)
+sys.path.insert(0, str(Path(__file__).resolve().parents[2]))  # repo root
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 
-# 5 HU + 5 EN benchmark sentences. Cover the milestone-critical cases:
-# number pronunciation ("1890"), name pronunciation ("Hojsz Tamás") and
-# code-switching ("flat white" inside a Hungarian sentence).
+# 5 HU + 5 EN benchmark sentences (M1 set preserved — same milestones-
+# critical cases: number pronunciation "1890", name "Hojsz Tamás",
+# code-switching "flat white" inside Hungarian).
 HU_SENTENCES = [
     "Jó reggelt! Ma egy új nyelvleckével kezdjük a napot.",
     "A flat white és a tejeskávé egyaránt espresso-alapú italok tejjel.",
@@ -49,12 +53,6 @@ EN_SENTENCES = [
 ]
 
 
-def wav_duration(path: Path) -> float:
-    """Duration of a WAV file in seconds via stdlib `wave`."""
-    with wave.open(str(path), "rb") as reader:
-        return reader.getnframes() / float(reader.getframerate())
-
-
 def print_mos_instructions(out_dir: Path) -> None:
     """Manual listening test protocol (milestones doc Section 6.6.2)."""
     print("-" * 72)
@@ -65,18 +63,20 @@ def print_mos_instructions(out_dir: Path) -> None:
     print("     - the number '1890' (HU: 'ezerkilencszázkilencven', EN: 'eighteen ninety')")
     print("     - the name 'Hojsz Tamás'")
     print("     - code-switching: 'flat white' inside a Hungarian sentence")
+    print("     - word repetitions / skipped words / truncation (any occurrence = FAIL)")
     print("  4. Exit metric: MOS >= 3.0 (acceptable), number/name pronunciation 100%.")
     print("  5. Record results in the worklog (per file, per listener).")
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description="M1 TTS benchmark (target machine)")
+    parser = argparse.ArgumentParser(description="v0.7.0 TTS benchmark (Supertonic 3)")
     parser.add_argument(
         "--out",
         default=str(REPO_ROOT / "benchmark_results" / "tts"),
         help="output directory for the synthesized WAV files",
     )
     parser.add_argument("--config", help="optional YAML config (config/voicemem_config.yaml)")
+    parser.add_argument("--voice", help="optional preset override (F1..F5, M1..M5)")
     args = parser.parse_args()
 
     from app.config import AgentConfig
@@ -90,16 +90,16 @@ def main() -> int:
             print(f"WARN: YAML config load failed ({exc}); using env + defaults")
 
     try:
-        import app.tts
+        from app.tts_supertonic import SupertonicTtsEngine
     except ImportError:
-        print("app.tts is not importable — run this on the target machine from the repo root.")
+        print("app.tts_supertonic is not importable — run from the repo root.")
         return 2
 
-    engine = app.tts.TtsEngine(cfg)
+    engine = SupertonicTtsEngine(cfg)
     if not engine.is_available():
-        print("TtsEngine unavailable: piper binary or voice files missing.")
-        print(f"  piper     : {cfg.piper_exe_path}")
-        print(f"  voices dir: {cfg.voices_dir} (run scripts/download_models.ps1)")
+        print("SupertonicTtsEngine unavailable: model assets missing.")
+        print(f"  model dir: {cfg.supertonic_model_dir}")
+        print("  run scripts/download_models.ps1 (setup-time download).")
         return 2
 
     out_dir = Path(args.out)
@@ -108,12 +108,17 @@ def main() -> int:
     cases = [("hu", text) for text in HU_SENTENCES] + [("en", text) for text in EN_SENTENCES]
     rows: list[dict[str, Any]] = []
     failures = 0
+    import wave
+
     for index, (lang, text) in enumerate(cases, start=1):
         out_path = out_dir / f"{lang}_{index:02d}.wav"
         t0 = time.perf_counter()
-        ok = engine.synthesize_to_file(text, lang, out_path)
+        ok = engine.synthesize_to_file(text, lang, out_path, voice=args.voice)
         elapsed = time.perf_counter() - t0
-        duration = wav_duration(out_path) if ok else 0.0
+        duration = 0.0
+        if ok:
+            with wave.open(str(out_path), "rb") as w:
+                duration = w.getnframes() / float(w.getframerate())
         rtf = round(elapsed / duration, 3) if duration > 0 else None
         if not ok:
             failures += 1
@@ -131,7 +136,8 @@ def main() -> int:
         )
 
     print("=" * 72)
-    print("M1 TTS benchmark (Piper, hu_HU-anna-medium + en_US-lessac-medium)")
+    print(f"v0.7.0 TTS benchmark (Supertonic 3, voice {args.voice or cfg.tts_hu_voice},"
+          f" steps {cfg.supertonic_steps}, speed {cfg.supertonic_speed})")
     print("=" * 72)
     print(f"{'file':12s} {'lang':5s} {'chars':6s} {'TTFB s':8s} {'audio s':8s} {'RTF':7s} status")
     for row in rows:
@@ -143,9 +149,12 @@ def main() -> int:
         )
     print("-" * 72)
     print("Notes:")
-    print("  TTFB here = full subprocess synthesis (Piper is one-shot, not streaming).")
-    print("  RTF < 1.0 means faster than real time (required for low end-to-end latency).")
-    print(f"  Voices dir: {cfg.voices_dir}")
+    print("  The FIRST row includes the one-time lazy model load (engine stays")
+    print("  alive for the process lifetime); later rows are warm-engine calls.")
+    print(f"  Model load: {engine.load_s if engine.load_s is not None else 'n/a'} s"
+          if engine.load_s else "  Model load: n/a (engine not loaded)")
+    print(f"  Model dir: {cfg.supertonic_model_dir}")
+    print(f"  Engine: {engine.status_detail()}")
 
     print_mos_instructions(out_dir)
 

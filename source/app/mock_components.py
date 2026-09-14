@@ -239,7 +239,7 @@ class MockTtsEngine:
     Records ``(text, language, length_scale, voice)`` in ``synthesized``;
     ``stop()`` aborts the in-flight synthesis (the next call resets the flag,
     mirroring the real subprocess wrapper). v0.4.2: accepts and records the
-    resolved Piper voice id (4th positional arg) the same way the real
+    resolved voice id (4th positional arg) the same way the real
     :class:`app.tts.TtsEngine` does.
     """
 
@@ -263,7 +263,7 @@ class MockTtsEngine:
         self._stopped = False  # a new request supersedes a previous stop()
         if not text or not text.strip():
             return None
-        time.sleep(self.delay_s)  # simulates the piper subprocess latency
+        time.sleep(self.delay_s)  # simulates the synthesis latency
         if self._stopped:
             return None
         self.synthesized.append((text, language, length_scale, voice))

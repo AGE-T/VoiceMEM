@@ -204,6 +204,34 @@ class LeftBrainMemoryRepository:
                     logging.getLogger(__name__).warning("UPDATE 认知图重新写入失败: %s", _cog_err)
         return new_id
 
+    def count_occurrence(self, memory_id: str,
+                         session_id: int | str | None = None,
+                         observed_at: str | None = None) -> bool:
+        """[CONTROLLED FORK - patch VM-LOCAL-012] 重复确认计数（追加元数据）。
+
+        向量层见 ``mem0_backend_store.count_occurrence``：同一条记忆被
+        **相同内容**再次确认（resolver 判 NONE、不改不删）时，元数据
+        ``occurrence_count`` +1、``last_observed_at`` 刷新，原文与其它
+        字段一律不动。本层把同样的标注同步进 JSON 镜像（镜像条目不
+        重写、只加键）。检索端 ``MemorySearchHit.occurrence_count``
+        读的元数据键。返回 True = 计数已落库。"""
+        counted = self._vector_store.count_occurrence(
+            memory_id, session_id=session_id, observed_at=observed_at)
+        if counted:
+            from datetime import datetime, timezone
+            now_iso = datetime.now(timezone.utc).isoformat()
+            store = self.load_json_store()
+            for obj in store["results"]:
+                if isinstance(obj, dict) and str(obj.get("id", "")) == memory_id:
+                    try:
+                        obj["occurrence_count"] = int(obj.get("occurrence_count") or 0) + 1
+                    except (TypeError, ValueError):
+                        obj["occurrence_count"] = 1
+                    obj["last_observed_at"] = now_iso
+                    break
+            self._write_json_store(store["results"])
+        return counted
+
     def delete_memory(self, memory_id: str) -> bool:
         """删除单条记忆。同步更新 JSON 镜像 + 认知图级联。
 

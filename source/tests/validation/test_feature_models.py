@@ -12,7 +12,7 @@ Validates the on-disk M0 Section 7 model layout under ``models/``:
 
 Deep check: when the models are downloaded (target machine after
 ``download_models.ps1``), the actual files are verified (existence, size,
-safetensors presence, piper voice pairs).
+safetensors presence, supertonic onnx + voice styles).
 """
 from __future__ import annotations
 
@@ -27,11 +27,35 @@ from tests.validation._report import FeatureValidationTest
 REPO_ROOT = Path(__file__).resolve().parents[2]
 MODELS_DIR = REPO_ROOT / "models"
 
+
+def _deep_model_set_ready() -> bool:
+    """v0.6.1: the DEEP checks run only when the locked model set is present.
+
+    The guard follows the components the deep tests actually assert (asr +
+    embedding + vad + the default supertonic presets). The dev sandbox
+    intentionally hosts E5 under the HF_HOME cache root (models/hf), not at
+    the lock's embedding target - there the deep checks skip, exactly like
+    the v0.6.0 gate skipped on the then-absent qwen dir. A machine that
+    downloaded the lock set (the field/one-click flow) runs them for real.
+    """
+    checks = (
+        MODELS_DIR / "asr" / "parakeet-tdt-0.6b-v3" / "config.json",
+        MODELS_DIR / "embedding" / "multilingual-e5-small" / "config.json",
+        MODELS_DIR / "vad" / "silero-vad" / "silero_vad.onnx",
+        MODELS_DIR / "tts" / "supertonic-3" / "onnx" / "vocoder.onnx",
+        MODELS_DIR / "tts" / "supertonic-3" / "voice_styles" / "F1.json",
+    )
+    return all(p.is_file() for p in checks)
+
 #: M0 Section 7 component layout (repo-side, always required).
+#: v0.6.1: parakeet (production) + nemotron (selectable) joined; the retired
+#: qwen dir still SHIPS as the legacy migration-module placeholder.
 EXPECTED_DIRS = (
+    "asr/parakeet-tdt-0.6b-v3",
+    "asr/nemotron-3.5-asr-streaming-0.6b",
     "asr/qwen3-asr-0.6b",
     "llm/qwen3.6-35b-a3b",
-    "tts/piper",
+    "tts/supertonic-3",
     "vad/silero-vad",
     "embedding/multilingual-e5-small",
     "hf",
@@ -85,9 +109,11 @@ class ModelsLayoutFeatureTest(FeatureValidationTest):
 
     def test_deep_downloaded_model_files(self):
         """Verify the downloaded model files when they are present."""
-        asr_dir = MODELS_DIR / "asr" / "qwen3-asr-0.6b"
-        if not (asr_dir / "config.json").is_file():
-            self.deep_skip("ASR model not downloaded")
+        if not _deep_model_set_ready():
+            self.deep_skip("model set not fully downloaded on this machine")
+        # v0.6.1: the ASR deep check follows the PRODUCTION engine dir
+        # (parakeet; the retired qwen dir is never auto-downloaded).
+        asr_dir = MODELS_DIR / "asr" / "parakeet-tdt-0.6b-v3"
         verified: list[str] = []
         # ASR: config + at least one safetensors shard.
         self.assertTrue((asr_dir / "config.json").is_file(), "ASR config.json missing")
@@ -118,23 +144,23 @@ class ModelsLayoutFeatureTest(FeatureValidationTest):
         embed_dir = MODELS_DIR / "embedding" / "multilingual-e5-small"
         self.assertTrue((embed_dir / "config.json").is_file(), "e5 config.json missing")
         verified.append("embedding config.json")
-        # Piper voices: the two selected voices + their .onnx.json configs.
-        piper_dir = MODELS_DIR / "tts" / "piper"
-        for voice in ("hu_HU-anna-medium", "en_US-lessac-medium"):
-            onnx = piper_dir / f"{voice}.onnx"
-            conf = piper_dir / f"{voice}.onnx.json"
-            self.assertTrue(onnx.is_file(), f"piper voice missing: {voice}.onnx")
-            self.assertTrue(conf.is_file(), f"piper voice config missing: {voice}.onnx.json")
-        verified.append("piper hu+en voices")
-        # Optional extra HU voices: validated only when present.
-        for voice in ("hu_HU-berta-medium", "hu_HU-imre-medium"):
-            onnx = piper_dir / f"{voice}.onnx"
-            if onnx.is_file():
-                self.assertTrue(
-                    (piper_dir / f"{voice}.onnx.json").is_file(),
-                    f"piper voice {voice} exists without its .onnx.json",
-                )
-                verified.append(f"piper {voice}")
+        # Supertonic 3 (v0.7.0): the 6 onnx modules + the default voice styles.
+        st_onnx = MODELS_DIR / "tts" / "supertonic-3" / "onnx"
+        for module in (
+            "tts.json", "unicode_indexer.json", "duration_predictor.onnx",
+            "text_encoder.onnx", "vector_estimator.onnx", "vocoder.onnx",
+        ):
+            f = st_onnx / module
+            self.assertTrue(f.is_file(), f"supertonic onnx module missing: {module}")
+            self.assertGreater(f.stat().st_size, 1000, f"supertonic {module} suspiciously small")
+        verified.append("supertonic 3 onnx modules (6)")
+        styles = MODELS_DIR / "tts" / "supertonic-3" / "voice_styles"
+        for preset in ("F1", "F2", "F3", "F4", "F5", "M1", "M2", "M3", "M4", "M5"):
+            self.assertTrue(
+                (styles / f"{preset}.json").is_file(),
+                f"supertonic voice style missing: {preset}.json",
+            )
+        verified.append("supertonic preset voice styles (10)")
         self.deep_pass("model files verified: " + ", ".join(verified))
 
 
@@ -240,8 +266,8 @@ class ModelDownloadFeatureTest(FeatureValidationTest):
         """--verify-only must exit 0 iff the locked model set is on disk."""
         import subprocess
 
-        if not (MODELS_DIR / "asr" / "qwen3-asr-0.6b" / "config.json").is_file():
-            self.deep_skip("models not downloaded on this machine")
+        if not _deep_model_set_ready():
+            self.deep_skip("model set not fully downloaded on this machine")
         try:
             import huggingface_hub  # noqa: F401
         except ImportError:

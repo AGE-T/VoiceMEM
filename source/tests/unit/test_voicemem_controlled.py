@@ -20,6 +20,7 @@ from __future__ import annotations
 
 import json
 import os
+import shutil
 import struct
 import subprocess
 import sqlite3
@@ -225,6 +226,124 @@ class DeploymentChainSourceTests(unittest.TestCase):
     def test_pin_verifier_tool_present(self):
         tool = ROOT / "scripts" / "verify_voicemem_pin.py"
         self.assertTrue(tool.is_file())
+
+
+# --------------------------------------------------------------------------- #
+# v0.6.2 field regression: the installer's step-12 PowerShell pin read
+# --------------------------------------------------------------------------- #
+
+def _find_pwsh():
+    exe = shutil.which("pwsh")
+    if exe:
+        return exe
+    sandbox = Path("/tmp/pwsh/pwsh")  # documented sandbox proof instance
+    if sandbox.is_file() and os.access(sandbox, os.X_OK):
+        return str(sandbox)
+    return None
+
+
+class InstallerPinReadRegressionTests(unittest.TestCase):
+    """Step 12 must read provenance.upstream_commit (not the JSON root).
+
+    Field report (v0.6.1 -> v0.6.2): START.bat failed at installer step 12
+    with "A VOICEMEM_PIN.json hianyzik vagy nem a vart upstream commit-et
+    rogziti" on a PERFECT pin file. Root cause: the PowerShell check read
+    $PinJson.upstream_commit, but in VOICEMEM_PIN.json the commit lives at
+    provenance.upstream_commit; ConvertFrom-Json therefore yields $null and
+    the comparison failed deterministically on every first REAL run of the
+    installer. The idempotent bootstrap had never executed step 12 in the
+    field before v0.6.1 (the v0.6.0 false-positive "model set complete"
+    probe always skipped the installer), and the Linux sandbox never runs
+    the .ps1 - so the broken check shipped silently through every gate.
+    These tests pin the fixed contract and, when pwsh is available, EXECUTE
+    the exact shipped block against the real pin file (valid + mutated).
+    """
+
+    PS1 = ROOT / "scripts" / "install_m1.ps1"
+    BOOTSTRAP = ROOT / "scripts" / "bootstrap.ps1"
+
+    def test_installer_reads_pin_commit_via_provenance(self):
+        ps1 = self.PS1.read_text(encoding="utf-8")
+        self.assertIn("$PinJson.provenance.upstream_commit", ps1,
+                      "the fixed pin read is missing from step 12")
+        self.assertNotIn(
+            "$PinJson.upstream_commit", ps1,
+            "the v0.6.1 root-cause pattern is back: the pin commit lives at "
+            "provenance.upstream_commit, a root-level read is always $null")
+
+    def test_asr_banners_name_the_production_engine(self):
+        """START.bat must no longer print "ASR: Qwen3 ASR 0.6B".
+
+        The field report "start.bat still lists asr: qwen" was (also) this
+        stale banner text in bootstrap/install final summaries - v0.6.1
+        fixed the delivery layer but missed these two lines.
+        """
+        for path in (self.PS1, self.BOOTSTRAP):
+            text = path.read_text(encoding="utf-8")
+            self.assertNotIn("Qwen3 ASR 0.6B", text,
+                             f"stale ASR banner in {path.name}")
+            self.assertIn("NVIDIA Parakeet TDT 0.6B v3", text,
+                          f"{path.name} lost the production ASR banner")
+
+    def _extract_shipped_pin_block(self) -> str:
+        text = self.PS1.read_text(encoding="utf-8")
+        lines = text.splitlines()
+        start = end = None
+        for i, ln in enumerate(lines):
+            if start is None and "v0.6.2 (FIELD REPORT" in ln:
+                start = i
+            if start is not None and "VoiceMem pin-fajl OK" in ln:
+                end = i + 1
+                break
+        self.assertIsNotNone(start, "step-12 v0.6.2 marker comment missing")
+        self.assertIsNotNone(end, "step-12 pin OK line missing")
+        return "\n".join(lines[start:end]) + "\n"
+
+    def _run_pwsh_harness(self, pin_json: str):
+        pwsh = _find_pwsh()
+        if pwsh is None:
+            self.skipTest("pwsh not available (content checks still ran)")
+        with tempfile.TemporaryDirectory(prefix="vm_step12_") as tmp:
+            tmp_path = Path(tmp)
+            (tmp_path / "VOICEMEM_PIN.json").write_text(pin_json, encoding="utf-8")
+            harness = "\n".join([
+                '$Root = $env:PINTEST_ROOT',
+                '$VoiceMemUpstreamCommit = "e8384e087bd2f44eb05fc7ae1a3c525ea8244179"',
+                '$VoiceMemPinFile = "VOICEMEM_PIN.json"',
+                '$VmPinFile = Join-Path $Root $VoiceMemPinFile',
+                'function Fail-Install([string]$Message, [string]$Hint) {',
+                '    Write-Output ("FAIL-INSTALL: " + $Message)',
+                '    exit 1',
+                '}',
+                self._extract_shipped_pin_block(),
+                'Write-Output "STEP12-PASS"',
+            ])
+            script = tmp_path / "harness.ps1"
+            script.write_text(harness, encoding="utf-8", newline="\r\n")
+            env = dict(os.environ)
+            env["PINTEST_ROOT"] = str(tmp_path)
+            proc = subprocess.run(
+                [pwsh, "-NoProfile", "-File", str(script)],
+                capture_output=True, text=True, timeout=120, env=env,
+            )
+        return proc
+
+    def test_step12_passes_on_the_real_pin_file(self):
+        """The exact field scenario: a perfect pin file must PASS step 12."""
+        proc = self._run_pwsh_harness(PIN_FILE.read_text(encoding="utf-8"))
+        self.assertEqual(proc.returncode, 0, proc.stdout + proc.stderr)
+        self.assertIn("STEP12-PASS", proc.stdout)
+        self.assertNotIn("FAIL-INSTALL", proc.stdout)
+
+    def test_step12_fails_loudly_on_a_wrong_commit(self):
+        pin = json.loads(PIN_FILE.read_text(encoding="utf-8"))
+        pin["provenance"]["upstream_commit"] = "deadbeef" * 5
+        proc = self._run_pwsh_harness(json.dumps(pin, indent=2))
+        self.assertEqual(proc.returncode, 1, proc.stdout + proc.stderr)
+        self.assertIn("FAIL-INSTALL", proc.stdout)
+        self.assertIn("deadbeef", proc.stdout,
+                      "the diagnostic must print the actually-read commit")
+        self.assertNotIn("STEP12-PASS", proc.stdout)
 
 
 # --------------------------------------------------------------------------- #

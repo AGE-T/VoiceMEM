@@ -1,0 +1,60 @@
+0.00.346.511 I print_info: n_ctx_train           = 32768
+0.00.346.574 I print_info: n_ctx_orig_yarn       = 32768
+0.00.348.889 I load_tensors: offloading output layer to GPU
+0.00.348.891 I load_tensors: offloading 19 repeating layers to GPU
+0.00.348.891 I load_tensors: offloaded 20/29 layers to GPU
+0.00.351.275 I llama_context: n_ctx                 = 32768
+0.00.351.276 I llama_context: n_ctx_seq             = 32768
+0.00.351.276 I llama_context: n_batch               = 2048
+0.00.351.931 I llama_kv_cache: size = 1904.00 MiB ( 32768 cells,  28 layers,  1/1 seqs), K (q8_0):  952.00 MiB, V (q8_0):  952.00 MiB
+0.00.674.616 I print_info: n_ctx_train           = 32768
+0.00.674.648 I print_info: n_ctx_orig_yarn       = 32768
+0.01.163.771 I load_tensors: offloading output layer to GPU
+0.01.163.777 I load_tensors: offloading 19 repeating layers to GPU
+0.01.163.777 I load_tensors: offloaded 20/29 layers to GPU
+0.01.293.363 I llama_context: n_ctx                 = 32768
+0.01.293.364 I llama_context: n_ctx_seq             = 32768
+0.01.293.364 I llama_context: n_batch               = 2048
+0.02.555.445 I llama_kv_cache: size = 1904.00 MiB ( 32768 cells,  28 layers,  1/1 seqs), K (q8_0):  952.00 MiB, V (q8_0):  952.00 MiB
+0.03.101.989 I srv    load_model: initializing, n_slots = 1, n_ctx_slot = 32768, kv_unified = 'false'
+0.03.102.821 I slot   load_model: id  0 | task -1 | new slot, n_ctx = 32768
+0.03.143.494 I srv          init: init: chat template, thinking = 0
+0.03.143.575 I srv  llama_server: model loaded
+0.03.143.582 I srv  llama_server: listening on http://127.0.0.1:8080
+0.38.481.469 D slot launch_slot_: id  0 | task -1 | launching slot : {"id":0,"n_ctx":32768,"speculative":false,"is_processing":false}
+0.38.481.692 I slot   operator(): id  0 | task 0 | new prompt, n_ctx_slot = 32768, n_keep = 0, task.n_tokens = 37
+0.38.482.104 D srv        decode: n_batch (effective) = 2048, off = 0
+0.38.731.784 D slot handle_last_: id  0 | task 0 | slot decode token, id=42, n_ctx = 32768, n_tokens = 37, truncated = 0
+0.38.731.825 D srv        decode: n_batch (effective) = 2048, off = 0
+0.38.764.587 D slot handle_last_: id  0 | task 0 | slot decode token, id=2956, n_ctx = 32768, n_tokens = 38, truncated = 0
+0.38.764.601 D srv        decode: n_batch (effective) = 2048, off = 0
+0.38.821.739 D slot handle_last_: id  0 | task 0 | slot decode token, id=14357, n_ctx = 32768, n_tokens = 39, truncated = 0
+0.38.821.749 D srv        decode: n_batch (effective) = 2048, off = 0
+0.38.853.894 D slot handle_last_: id  0 | task 0 | slot decode token, id=23348, n_ctx = 32768, n_tokens = 40, truncated = 0
+0.38.853.905 D srv        decode: n_batch (effective) = 2048, off = 0
+0.38.914.519 D slot handle_last_: id  0 | task 0 | slot decode token, id=73, n_ctx = 32768, n_tokens = 41, truncated = 0
+0.38.914.532 D srv        decode: n_batch (effective) = 2048, off = 0
+0.38.946.829 D slot handle_last_: id  0 | task 0 | slot decode token, id=0, n_ctx = 32768, n_tokens = 42, truncated = 0
+0.38.946.840 D srv        decode: n_batch (effective) = 2048, off = 0
+0.39.019.033 D slot launch_slot_: id  0 | task -1 | launching slot : {"id":0,"n_ctx":32768,"speculative":false,"is_processing":false,"id_task":0,"n_prompt_tokens":43,"n_prompt_tokens_processed":0,"n_prompt_tokens_cache":0,"params":{"seed":4294967295,"temperature":0.699999988079071,"dynatemp_range":0.0,"dynatemp_exponent":1.0,"top_k":40,"top_p":0.949999988079071,"min_p":0.05000000074505806,"top_n_sigma":-1.0,"xtc_probability":0.0,"xtc_threshold":0.10000000149011612,"typical_p":1.0,"repeat_last_n":64,"repeat_penalty":1.0,"presence_penalty":0.0,"frequency_penalty":0.0,"dry_multiplier":0.0,"dry_base":1.75,"dry_allowed_length":2,"dry_penalty_last_n":64,"dry_sequence_breakers":["\n",":","\"","*"],"mirostat":0,"mirostat_tau":5.0,"mirostat_eta":0.10000000149011612,"adaptive_target":-1.0,"adaptive_decay":0.8999999761581421,"stop":[],"max_tokens":512,"n_predict":512,"n_keep":0,"n_discard":0,"ignore_eos":false,"stream":true,"logit_bias":[],"n_probs":0,"min_keep":0,"grammar":"","grammar_lazy":false,"grammar_triggers":[],"preserved_tokens":[151657,151658,151667,151668],"chat_format":"peg-native","reasoning_format":"deepseek","reasoning_in_content":false,"generation_prompt":"<|im_start|>assistant\n<think>\n\n</think>\n\n","samplers":["penalties","dry","top_n_sigma","top_k","typ_p","top_p","min_p","xtc","temperature"],"speculative.types":"none","timings_per_token":false,"post_sampling_probs":false,"backend_sampling":false,"lora":[]},"next_token":[{"has_next_token":false,"has_new_line":false,"n_remain":-1,"n_decoded":0}],"prompt":"<|im_start|>user\nSzia! Kérlek köszönj vissza egyetlen rövid magyar mondatban!<|im_end|>\n<|im_start|>assistant\n<think>\n\n</think>\n\n","generated":""}
+0.39.019.204 I slot   operator(): id  0 | task 8 | new prompt, n_ctx_slot = 32768, n_keep = 0, task.n_tokens = 43
+0.39.019.284 D srv        decode: n_batch (effective) = 2048, off = 0
+0.39.263.687 D slot handle_last_: id  0 | task 8 | slot decode token, id=73594, n_ctx = 32768, n_tokens = 43, truncated = 0
+0.39.263.708 D srv        decode: n_batch (effective) = 2048, off = 0
+0.39.321.813 D slot handle_last_: id  0 | task 8 | slot decode token, id=2236, n_ctx = 32768, n_tokens = 44, truncated = 0
+0.39.321.832 D srv        decode: n_batch (effective) = 2048, off = 0
+0.39.355.511 D slot handle_last_: id  0 | task 8 | slot decode token, id=198, n_ctx = 32768, n_tokens = 45, truncated = 0
+0.39.355.527 D srv        decode: n_batch (effective) = 2048, off = 0
+0.39.412.941 D slot handle_last_: id  0 | task 8 | slot decode token, id=4913, n_ctx = 32768, n_tokens = 46, truncated = 0
+0.39.412.961 D srv        decode: n_batch (effective) = 2048, off = 0
+0.39.445.726 D slot handle_last_: id  0 | task 8 | slot decode token, id=70, n_ctx = 32768, n_tokens = 47, truncated = 0
+0.39.445.734 D srv        decode: n_batch (effective) = 2048, off = 0
+0.39.506.003 D slot handle_last_: id  0 | task 8 | slot decode token, id=43632, n_ctx = 32768, n_tokens = 48, truncated = 0
+0.39.506.016 D srv        decode: n_batch (effective) = 2048, off = 0
+0.39.538.259 D slot handle_last_: id  0 | task 8 | slot decode token, id=788, n_ctx = 32768, n_tokens = 49, truncated = 0
+0.39.538.274 D srv        decode: n_batch (effective) = 2048, off = 0
+0.39.595.231 D slot handle_last_: id  0 | task 8 | slot decode token, id=330, n_ctx = 32768, n_tokens = 50, truncated = 0
+0.39.595.243 D srv        decode: n_batch (effective) = 2048, off = 0
+0.39.626.924 D slot handle_last_: id  0 | task 8 | slot decode token, id=39, n_ctx = 32768, n_tokens = 51, truncated = 0
+0.39.626.932 D srv        decode: n_batch (effective) = 2048, off = 0
+0.39.659.000 D slot handle_last_: id  0 | task 8 | slot decode token, id=1630, n_ctx = 32768, n_tokens = 52, truncated = 0

@@ -1,0 +1,6 @@
+REQUEST-FLAGS: {"chat_template_kwargs": {"enable_thinking": false}, "reasoning_effort": "none"}
+CONFIG: model=qwen3.6-35b-a3b url=http://127.0.0.1:8080/v1 ctx=32768 ngl=20 parallel=1 kv=q8_0/q8_0 temp=0.7 max_tokens=512
+STREAM: ttft=0.091s total=0.456s chunks=7 chars=10
+REPLY: Köszönj! 😊
+JSON: model-side note: ValueError: LLM returned invalid JSON: Expecting value: line 1 column 1 (char 0)
+LLM-CLIENT-PROOF: PASS

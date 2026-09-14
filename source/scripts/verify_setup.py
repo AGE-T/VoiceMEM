@@ -44,10 +44,10 @@ from app.config import AgentConfig  # noqa: E402  (pure stdlib, safe everywhere)
 ASSET_PATHS: dict[str, Callable[[AgentConfig], Optional[Path]]] = {
     # v0.4.17: llm_model_file is Optional (None = no model configured).
     "llama_model": lambda cfg: cfg.llm_model_file,
-    "piper_executable": lambda cfg: cfg.piper_exe_path,
+    "supertonic_model": lambda cfg: cfg.supertonic_model_dir / "onnx" / "vocoder.onnx",
     "silero_vad": lambda cfg: cfg.silero_vad_path,
-    "hu_voice": lambda cfg: cfg.voices_dir / f"{cfg.tts_hu_voice}.onnx",
-    "en_voice": lambda cfg: cfg.voices_dir / f"{cfg.tts_en_voice}.onnx",
+    "hu_voice": lambda cfg: cfg.supertonic_voices_dir / f"{cfg.tts_hu_voice}.json",
+    "en_voice": lambda cfg: cfg.supertonic_voices_dir / f"{cfg.tts_en_voice}.json",
     "asr_model": lambda cfg: cfg.asr_model_dir / "config.json",
     # New M0 layout key (optional until AgentConfig adds it to check_runtime_assets).
     "embedding_model": lambda cfg: (

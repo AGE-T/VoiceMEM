@@ -56,7 +56,7 @@ REPLY = (
 
 #: Every asset key the --check checklist must report.
 CHECK_ASSET_KEYS = (
-    "llama_model", "piper_executable", "silero_vad", "hu_voice",
+    "llama_model", "supertonic_model", "silero_vad", "hu_voice",
     "en_voice", "asr_model",
 )
 

@@ -88,6 +88,14 @@ RB_UTTERANCES = [
 
 _FACT_SLOT = "daily_life"
 
+# v0.6.4 — external audit v0.6.3 OCC-1 scenario (occurrence counting):
+# the same allergy fact, repeated verbatim (explicit NONE on the second
+# turn; omit-NONE on the combined turn), plus one independent tea fact.
+ALLERGY_UTT = "A földimogyoróra allergiás vagyok."
+ALLERGY_FACT = "A felhasználó allergiás a földimogyoróra."
+TEA_UTT = "A földimogyoróra allergiás vagyok, és szeretem a teát."
+TEA_FACT = "A felhasználó szereti a teát."
+
 
 def _extraction_payload(fact: str, emotion: str = "",
                         entities: list[str] | None = None) -> dict[str, Any]:
@@ -134,9 +142,28 @@ def _route(messages: list[dict[str, Any]]) -> dict[str, Any]:
             return {"memory": [{"event": "UPDATE", "id": "0", "text": FACT_B}]}
         if "Bistro Buda" in user:
             return {"memory": [{"event": "UPDATE", "id": "0", "text": FACT_B}]}
+        # ── v0.6.4 OCC-1 surfaces (external audit): explicit NONE for the
+        # repeated allergy fact; ADD-only for the tea fact (the repeated
+        # allergy fact is OMITTED -> the omit-NONE counting path).
+        if "teát" in user:
+            return {"memory": [
+                {"event": "ADD", "id": "1", "text": TEA_FACT}]}
+        if "földimogyoróra" in user:
+            return {"memory": [{"event": "NONE", "id": "0"}]}
         return {"memory": []}
 
     # ── merged fact extraction (utterance-keyed) ───────────────────────────
+    # v0.6.4 OCC-1 scenario (external audit): the SAME allergy fact is
+    # extracted from both utterances (identical normalized text — that is
+    # what omit-NONE exact-matching keys on); the second utterance adds a
+    # second, independent fact.
+    if "szeretem a teát" in everything:
+        return {"memory": [
+            {"text": ALLERGY_FACT, "slot": _FACT_SLOT},
+            {"text": TEA_FACT, "slot": _FACT_SLOT},
+        ], "emotion": "", "traits": []}
+    if "földimogyoróra allergiás vagyok" in everything:
+        return _extraction_payload(ALLERGY_FACT)
     if OBS_A in everything:
         return _extraction_payload(FACT_A, entities=["Arany Kanna"])
     if OBS_B in everything:
@@ -698,3 +725,95 @@ class VendorImportResolutionTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)
+
+
+# ===========================================================================
+# 6. Occurrence counting + recency flow (v0.6.4 / external audit OCC-1, CD-4)
+# ===========================================================================
+
+class OccurrenceExplicitNoneTests(unittest.TestCase):
+    """A repeated identical confirmation (explicit NONE) counts, changes
+    nothing else, and the count + freshness flow through search."""
+
+    @classmethod
+    def setUpClass(cls) -> None:
+        cls.vm = _new_vm()
+        cls.vm.ingest(ALLERGY_UTT)          # 1st observation: plain ADD
+        cls.vm.ingest(ALLERGY_UTT)          # 2nd: resolver says NONE(id 0)
+
+    @classmethod
+    def tearDownClass(cls) -> None:
+        _release_vm(cls.vm)
+
+    def _allergy_hit(self):
+        hits = self.vm.search("földimogyoró allergia").hits
+        self.assertTrue(hits, "allergy fact must be retrievable")
+        for h in hits:
+            if ALLERGY_FACT in h.text:
+                return h
+        self.fail("allergy fact not among the hits")
+
+    def test_occurrence_counted_once_for_the_repeat(self):
+        h = self._allergy_hit()
+        self.assertEqual(h.occurrence_count, 1)
+
+    def test_text_never_rewritten(self):
+        h = self._allergy_hit()
+        self.assertEqual(h.text, ALLERGY_FACT)
+        raw = _mem0(self.vm).get(h.memory_id)
+        self.assertEqual(str(raw.get("memory")), ALLERGY_FACT)
+
+    def test_last_observed_at_written(self):
+        h = self._allergy_hit()
+        self.assertTrue(h.last_observed_at)
+
+    def test_recency_flows_through_search(self):
+        # CD-4 wiring: a today-observed fact must carry the full decay bonus
+        # through the WHOLE search path (orchestrator -> repo -> store).
+        h = self._allergy_hit()
+        self.assertGreater(h.recency_boost, 0.05)
+        self.assertTrue(h.observed_at)
+
+    def test_missing_id_refused(self):
+        repo = _repo(self.vm)
+        self.assertFalse(repo.count_occurrence("nonexistent-id-xyz"))
+
+
+class OccurrenceOmitNoneTests(unittest.TestCase):
+    """The DEFAULT omit-NONE path (resolver answers for other facts only)
+    also counts an exactly-matching repeated fact — the audit's exact
+    scenario: the resolver's model output omits NONE entries entirely."""
+
+    @classmethod
+    def setUpClass(cls) -> None:
+        cls.vm = _new_vm()
+        cls.vm.ingest(ALLERGY_UTT)          # allergy stored (ADD)
+        cls.vm.ingest(TEA_UTT)              # resolver: ADD tea only;
+                                            # allergy omitted -> counted
+
+    @classmethod
+    def tearDownClass(cls) -> None:
+        _release_vm(cls.vm)
+
+    def _hit_for(self, needle: str):
+        hits = self.vm.search(needle).hits
+        for h in hits:
+            if needle.split()[0].lower() in h.text.lower():
+                return h
+        self.fail(f"no hit containing {needle!r}")
+
+    def test_repeated_fact_counted_via_omit(self):
+        h = self._hit_for(ALLERGY_FACT)
+        self.assertIn("földimogyoróra", h.text)
+        self.assertEqual(h.occurrence_count, 1, "omit-NONE must count exactly once")
+
+    def test_independent_fact_added(self):
+        h = self._hit_for(TEA_FACT)
+        self.assertIn("teát", h.text)
+        self.assertEqual(h.occurrence_count, 0, "first observation carries no count key")
+
+    def test_no_duplicate_row_created(self):
+        # The repeated fact must NOT appear twice (NONE = no ADD).
+        hits = [h for h in self.vm.search(ALLERGY_FACT).hits
+                if ALLERGY_FACT in h.text]
+        self.assertEqual(len(hits), 1)

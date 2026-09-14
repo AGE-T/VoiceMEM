@@ -1,0 +1,42 @@
+v0.6.1 ASR DELIVERY HOTFIX — SANDBOX REPRODUCTION (2026-09-11)
+
+Environment: .venv Python 3.12.14, transformers 5.17.0 (same class family as
+the field - the ParakeetForTDT import succeeds on both).
+
+Test: AutoProcessor.from_pretrained(<dir with README.md only>) — the exact
+state of models/asr/parakeet-tdt-0.6b-v3 on the field machine (the release
+ZIP ships a README + .gitkeep placeholder; the weights were never downloaded
+because the lock never listed parakeet).
+
+  $ mkdir -p /tmp/parakeet_test/empty-asr && echo placeholder > README.md
+  $ .venv/bin/python -c "from transformers import AutoProcessor; \
+      AutoProcessor.from_pretrained('/tmp/parakeet_test/empty-asr')"
+  ERROR TYPE: ValueError
+  ERROR MSG: Unrecognized processing class in /tmp/parakeet_test/empty-asr.
+  Can't instantiate a processor, a tokenizer, an image processor, a video
+  processor or a feature extractor for this model. ...
+
+MATCH: byte-for-byte the field error ("Unrecognized processing class in
+F:\Voicemem\..."). The cryptic transformers ValueError is exactly what a
+README-only placeholder produces — root cause CONFIRMED, no other defect
+involved (VAD, mic chain, LLM, TTS all healthy in the field log).
+
+POST-FIX (app/asr_parakeet.py v0.6.1 pre-check, same placeholder state):
+  AsrError ASR_MODEL_LOAD_ERROR / model_unavailable:
+  "model directory <dir> does not contain config.json - the Parakeet weights
+   are not present; run START.bat (the bootstrap auto-downloads
+   nvidia/parakeet-tdt-0.6b-v3 per MODELS.lock.json) or
+   scripts\download_models.ps1 --only asr"
+  -> the stage still FAILS (no fallback added); the diagnostic is actionable.
+  Pinned by ParakeetPlaceholderLoadTests (4 tests, tests/unit/test_asr_modular.py).
+
+DELIVERY-LAYER FIX VERIFICATION (the exact one-click mechanism):
+  $ .venv/bin/python scripts/download_models_hf.py --root . --verify-only
+  [SKIP] asr: already present and verified (idempotent - no network).
+    -> the new lock entry (nvidia/parakeet-tdt-0.6b-v3, 6 explicit runtime
+       files, pinned revision 541d1f99c6b0c3cd..., min_bytes floors) verifies
+       against the real sandbox model; on the field the placeholder will be
+       detected as missing -> the installer downloads the 6 files (~2.4 GB).
+  Revision cross-check: the sandbox model's hf transfer metadata records
+  541d1f99c6b0c3cd0b11a95167540bb8edefd82b == the lock pin == MODEL_REGISTRY
+  revision 541d1f99c6b0 (the exact commit the v0.6.0 gate ran against).

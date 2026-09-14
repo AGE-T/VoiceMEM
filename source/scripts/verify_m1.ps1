@@ -16,7 +16,7 @@ ELLENORZESI SORREND (a felhasznalo M0 specje szerint):
   3.  CUDA/torch GPU smoke test (valodi matrixmuvelet)
   4.  GPU compute capability >= 12.0 (Blackwell sm_120)
   5.  modellfajlok: LLM GGUF (> 1 GB), ASR config.json, silero_vad.onnx,
-      e5 config.json, 4 Piper hang (.onnx + .onnx.json)
+      e5 config.json, Supertonic 3 ONNX assetek (6 onnx + 10 hangstulus JSON)
   6.  VoiceMem import (kotelezo PASS - M0 exit criteria)
   7.  ASR modell betoltes (AutoTokenizer, local_files_only=True)
   8.  LLM szerver (v0.3.3: a /health az ELSODELEGES sikerfeltetel)
@@ -29,7 +29,7 @@ ELLENORZESI SORREND (a felhasznalo M0 specje szerint):
       Ha a wrapper kilepett ES nem marad elo llama-server folyamat, a
       verify KOZVETLENUL inditja a bin\llama-server.exe-t a shellbol
       kozvetlenul levezetett konfiguracioval (ugyanazok a flagek:
-      -ngl -1, -c 8192, --parallel 1, q8_0 KV cache, --temp 0.7,
+      -ngl 20, -c 32768, --parallel 1, q8_0 KV cache, --temp 0.7,
       --metrics, --no-webui).
       FAIL CSAK akkor, ha (1) a llama-server folyamat tenylegesen
       leallt ES (2) a /health nem valt elerhetove a timeouton belul.
@@ -46,8 +46,9 @@ ELLENORZESI SORREND (a felhasznalo M0 specje szerint):
       a vegen LEALLITJA (a kulso inditast nem nyulja).
       Alapmodban (kapcsolo nelkul) csak a health-check fut - ha nem megy,
       a hibauzenet mutatja a javitasi utat.
-  9.  Piper HU szintezis (bin\piper.exe -> data\audio\smoke_hu.wav, > 1 KB)
-  10. Piper EN szintezis (en_US-lessac-medium -> data\audio\smoke_en.wav)
+  9.  Supertonic 3 HU szintezis (.venv python + supertonic SDK ->
+      data\audio\smoke_hu.wav, > 1 KB)
+  10. Supertonic 3 EN szintezis (data\audio\smoke_en.wav)
   11. memory konyvtarak irhatosaga (sqlite/qdrant/backups + write probe)
   12. konfiguracio: AgentConfig.from_yaml + validate()
 
@@ -306,11 +307,11 @@ if ([string]::IsNullOrWhiteSpace($LlmGguf)) {
     Check-Fail "LLM GGUF (Qwen3.6 35B A3B IQ4_XS - az EGYETLEN LLM)" ("nem talalhato: {0} (forras: {1})" -f $LlmGguf, $LlmGgufSource) "v0.4.17 harom ut: (a) a web UI 'LLM model' szekcio Browse... gombja (barmelyik meghajto; Ollama sha256-... blob is; az ut a config/llm_model.json-be kerul), (b) az Ollama-blob azonosito: powershell -NoProfile -ExecutionPolicy Bypass -File scripts\identify_ollama_blob.ps1 -Select (manifest+GGUF-header+digest-ellenorzes; -Select = web UI kivalasztas), (c) az altalanos pontos-modell kereso: powershell -NoProfile -ExecutionPolicy Bypass -File scripts\find_qwen_gguf.ps1 (Ollama-store / HF-cache / letoltesek). NINCS visszaesi profil - a Qwen3.6 az egyetlen LLM."
 }
 
-$AsrConfig = Join-Path $Root "models\asr\qwen3-asr-0.6b\config.json"
+$AsrConfig = Join-Path $Root "models\asr\parakeet-tdt-0.6b-v3\config.json"
 if (Test-Path $AsrConfig) {
     Check-Pass "ASR config.json" $AsrConfig
 } else {
-    Check-Fail "ASR config.json" ("nem talalhato: {0}" -f $AsrConfig) "scripts\download_models.ps1 (M1: Qwen3-ASR-0.6B, NEM 1.7B)"
+    Check-Fail "ASR config.json" ("nem talalhato: {0}" -f $AsrConfig) "scripts\download_models.ps1 (v0.6.0 production ASR: NVIDIA Parakeet TDT 0.6B v3 - MODELS.lock.json asr bejegyzes)"
 }
 
 $VadOnnx = Join-Path $Root "models\vad\silero-vad\silero_vad.onnx"
@@ -327,24 +328,25 @@ if (Test-Path $E5Config) {
     Check-Fail "Embedding config.json" ("nem talalhato: {0}" -f $E5Config) "scripts\download_models.ps1"
 }
 
-$PiperDir = Join-Path $Root "models\tts\piper"
-$VoiceNames = @("hu_HU-anna-medium", "hu_HU-berta-medium", "hu_HU-imre-medium", "en_US-lessac-medium")
-$MissingVoices = @()
-foreach ($V in $VoiceNames) {
-    foreach ($Ext in @(".onnx", ".onnx.json")) {
-        $Vp = Join-Path $PiperDir ("{0}{1}" -f $V, $Ext)
-        if (-not (Test-Path $Vp)) {
-            $MissingVoices += ("{0}{1}" -f $V, $Ext)
-        } elseif (($Ext -eq ".onnx") -and ((Get-Item -LiteralPath $Vp).Length -lt 1048576)) {
-            # a MODELS.lock.json-gal osszehangolt 1 MB-os padlo (serult letoltes)
-            $MissingVoices += ("{0}{1} (tulkicsi)" -f $V, $Ext)
-        }
+# v0.7.0: Supertonic 3 ONNX assetek (MODELS.lock.json tts bejegyzes) -
+# a Piper hangok es a piper.exe nyugdijazva (nincs fallback).
+$SupertonicDir = Join-Path $Root "models\tts\supertonic-3"
+$SupertonicFiles = @(
+    "onnx\tts.json", "onnx\unicode_indexer.json", "onnx\duration_predictor.onnx",
+    "onnx\text_encoder.onnx", "onnx\vector_estimator.onnx", "onnx\vocoder.onnx",
+    "voice_styles\F1.json", "voice_styles\M1.json"
+)
+$MissingSupertonic = @()
+foreach ($F in $SupertonicFiles) {
+    $Fp = Join-Path $SupertonicDir $F
+    if (-not (Test-Path $Fp)) {
+        $MissingSupertonic += $F
     }
 }
-if ($MissingVoices.Count -eq 0) {
-    Check-Pass "Piper hangok (4 hang x .onnx + .onnx.json)" $PiperDir
+if ($MissingSupertonic.Count -eq 0) {
+    Check-Pass "Supertonic 3 ONNX assetek (6 onnx + hangstulusok)" $SupertonicDir
 } else {
-    Check-Fail "Piper hangok (4 hang x .onnx + .onnx.json)" ("hianyzik: {0}" -f ($MissingVoices -join ", ")) "scripts\download_models.ps1 ujrafuttatasa (idempotens)"
+    Check-Fail "Supertonic 3 ONNX assetek" ("hianyzik: {0}" -f ($MissingSupertonic -join ", ")) "scripts\download_models.ps1 ujrafuttatasa (idempotens)"
 }
 
 # ---------------------------------------------------------------------------
@@ -396,7 +398,7 @@ sys.exit(0 if ok else 1)
 # 7) ASR modell betoltes (AutoTokenizer, local_files_only=True)
 # ---------------------------------------------------------------------------
 if ((Test-Path $VenvPython) -and (Test-Path $AsrConfig)) {
-    $AsrDirPy = (Join-Path $Root "models\asr\qwen3-asr-0.6b").Replace('\', '/')
+    $AsrDirPy = (Join-Path $Root "models\asr\parakeet-tdt-0.6b-v3").Replace('\', '/')
     $AsrCode = "from transformers import AutoTokenizer; t = AutoTokenizer.from_pretrained(r'" + $AsrDirPy + "', local_files_only=True); print('ASR TOKENIZER OK', type(t).__name__)"
     $AsrOut = & $VenvPython -c $AsrCode 2>&1
     $AsrText = ((@($AsrOut) | ForEach-Object { [string]$_ }) -join " ")
@@ -453,7 +455,7 @@ from app.config import AgentConfig
 
 c = AgentConfig.from_yaml(os.path.join(root, "config", "voicemem_config.yaml"))
 print(json.dumps({
-    "exe": str(c.piper_exe_path.parent),
+    "exe": str(c.bin_dir),
     "model": (str(c.llm_model_file) if c.llm_model_file else ""),
     "host": c.llama_server_host,
     "port": c.llama_server_port,
@@ -569,8 +571,8 @@ if (Test-LlamaHealth -TimeoutSec 5) {
                     "--model", $ModelPathQ,
                     "--host", "127.0.0.1",
                     "--port", "8080",
-                    "-ngl", "-1",
-                    "-c", "8192",
+                    "-ngl", "20",
+                    "-c", "32768",
                     "--parallel", "1",
                     "--cache-type-k", "q8_0",
                     "--cache-type-v", "q8_0",
@@ -886,51 +888,59 @@ Write-Host ""
 Write-Host ("LLM resz-eredmenyek: server startup={0} | health={1} | chat completion={2} | JSON completion={3} | model loaded={4} | process alive={5}" -f $FS, $FH, $FC, $FJ, $FM, $FP)
 
 # ---------------------------------------------------------------------------
-# 9) Piper HU szintezis
+# 9-10) Supertonic 3 szintezis (HU + EN) - a PRODUCTION adapteren at
+# v0.7.0: a Piper subprocess-t valtotta a supertonic pip-csomag (ONNX
+# Runtime CPU). A smoke teszt a .venv pythonnel futtatja az
+# app/tts_supertonic.py SupertonicTtsEngine-t (auto_download=False -
+# a modeleket a telepito toltotte le, a teszt NEM hasznal halot).
 # ---------------------------------------------------------------------------
-$PiperExe = Join-Path $Root "bin\piper.exe"
 $AudioDir = Join-Path $Root "data\audio"
 New-Item -ItemType Directory -Path $AudioDir -Force | Out-Null
-$HuVoiceOnnx = Join-Path $PiperDir "hu_HU-anna-medium.onnx"
-$SmokeHuWav = Join-Path $AudioDir "smoke_hu.wav"
-if ((Test-Path $PiperExe) -and (Test-Path $HuVoiceOnnx)) {
-    # Az ekezetes szoveget ASCII-forrasbol epitjuk fel (a fajl ekezetmentes):
-    $HuText = "J" + [char]0x00F3 + " reggelt, ez egy f" + [char]0x00FC + "stteszt."
-    $OutputEncoding = [System.Text.Encoding]::UTF8
-    $PiperOut = $HuText | & $PiperExe --model $HuVoiceOnnx --output_file $SmokeHuWav
-    $PiperExit = $LASTEXITCODE
-    $HuWavSize = 0
-    if (Test-Path $SmokeHuWav) { $HuWavSize = (Get-Item -LiteralPath $SmokeHuWav).Length }
-    if (($PiperExit -eq 0) -and ($HuWavSize -gt 1024)) {
-        Check-Pass "Piper HU szintezis" ("{0} ({1} KB)" -f $SmokeHuWav, [int]($HuWavSize / 1024))
-    } else {
-        $PiperDetail = ((@($PiperOut) | ForEach-Object { [string]$_ }) -join " ")
-        Check-Fail "Piper HU szintezis" ("kilepesi kod: {0}, wav meret: {1} byte; kimenet: {2}" -f $PiperExit, $HuWavSize, $PiperDetail) "kezi teszt: echo szoveg | bin\piper.exe --model models\tts\piper\hu_HU-anna-medium.onnx --output_file probe.wav"
-    }
-} else {
-    Check-Fail "Piper HU szintezis" ("hianyzik: {0} vagy {1}" -f $PiperExe, $HuVoiceOnnx) "START.bat repair (binarisok + hangok automatikus potlasa)"
-}
+$SupertonicProbe = @'
+import sys
+from pathlib import Path
+sys.path.insert(0, r"%ROOT%")
+from app.config import AgentConfig
+from app.tts_supertonic import SupertonicTtsEngine
 
-# ---------------------------------------------------------------------------
-# 10) Piper EN szintezis
-# ---------------------------------------------------------------------------
-$EnVoiceOnnx = Join-Path $PiperDir "en_US-lessac-medium.onnx"
-$SmokeEnWav = Join-Path $AudioDir "smoke_en.wav"
-if ((Test-Path $PiperExe) -and (Test-Path $EnVoiceOnnx)) {
-    $EnText = "Good morning, this is a smoke test."
-    $OutputEncoding = [System.Text.Encoding]::UTF8
-    $PiperOut2 = $EnText | & $PiperExe --model $EnVoiceOnnx --output_file $SmokeEnWav
-    $PiperExit2 = $LASTEXITCODE
+cfg = AgentConfig(root=Path(r"%ROOT%"))
+engine = SupertonicTtsEngine(cfg)
+ok_hu = engine.synthesize_to_file(
+    "J" + chr(0x00F3) + " reggelt, ez egy f" + chr(0x00FC) + "stteszt.",
+    "hu", Path(r"%ROOT%") / "data" / "audio" / "smoke_hu.wav",
+)
+ok_en = engine.synthesize_to_file(
+    "Good morning, this is a smoke test.",
+    "en", Path(r"%ROOT%") / "data" / "audio" / "smoke_en.wav",
+)
+print("HU=%s EN=%s" % ("OK" if ok_hu else "FAIL", "OK" if ok_en else "FAIL"))
+'@
+$SupertonicProbe = $SupertonicProbe.Replace("%ROOT%", $Root)
+$ProbePy = Join-Path $env:TEMP "voicemem_tts_probe.py"
+[System.IO.File]::WriteAllText($ProbePy, $SupertonicProbe, [System.Text.Encoding]::UTF8)
+
+if (Test-Path $VenvPython) {
+    $TtsOut = & $VenvPython $ProbePy 2>&1
+    $TtsExit = $LASTEXITCODE
+    $SmokeHuWav = Join-Path $AudioDir "smoke_hu.wav"
+    $SmokeEnWav = Join-Path $AudioDir "smoke_en.wav"
+    $HuWavSize = 0
     $EnWavSize = 0
+    if (Test-Path $SmokeHuWav) { $HuWavSize = (Get-Item -LiteralPath $SmokeHuWav).Length }
     if (Test-Path $SmokeEnWav) { $EnWavSize = (Get-Item -LiteralPath $SmokeEnWav).Length }
-    if (($PiperExit2 -eq 0) -and ($EnWavSize -gt 1024)) {
-        Check-Pass "Piper EN szintezis" ("{0} ({1} KB)" -f $SmokeEnWav, [int]($EnWavSize / 1024))
+    if (($TtsExit -eq 0) -and ($HuWavSize -gt 1024)) {
+        Check-Pass "Supertonic 3 HU szintezis" ("{0} ({1} KB)" -f $SmokeHuWav, [int]($HuWavSize / 1024))
     } else {
-        $PiperDetail2 = ((@($PiperOut2) | ForEach-Object { [string]$_ }) -join " ")
-        Check-Fail "Piper EN szintezis" ("kilepesi kod: {0}, wav meret: {1} byte; kimenet: {2}" -f $PiperExit2, $EnWavSize, $PiperDetail2) "kezi teszt: echo szoveg | bin\piper.exe --model models\tts\piper\en_US-lessac-medium.onnx --output_file probe.wav"
+        $TtsDetail = ((@($TtsOut) | ForEach-Object { [string]$_ }) -join " ")
+        Check-Fail "Supertonic 3 HU szintezis" ("kilepesi kod: {0}, wav meret: {1} byte; kimenet: {2}" -f $TtsExit, $HuWavSize, $TtsDetail) "A .venv-be: pip install supertonic==1.3.1, es a modellek: scripts\download_models.ps1"
+    }
+    if (($TtsExit -eq 0) -and ($EnWavSize -gt 1024)) {
+        Check-Pass "Supertonic 3 EN szintezis" ("{0} ({1} KB)" -f $SmokeEnWav, [int]($EnWavSize / 1024))
+    } else {
+        Check-Fail "Supertonic 3 EN szintezis" ("kilepesi kod: {0}, wav meret: {1} byte" -f $TtsExit, $EnWavSize) "A .venv-be: pip install supertonic==1.3.1, es a modellek: scripts\download_models.ps1"
     }
 } else {
-    Check-Fail "Piper EN szintezis" ("hianyzik: {0} vagy {1}" -f $PiperExe, $EnVoiceOnnx) "START.bat repair (binarisok + hangok automatikus potlasa)"
+    Check-Fail "Supertonic 3 szintezis (HU+EN)" ("hianyzik a .venv python: {0}" -f $VenvPython) "scripts\install_m1.ps1 ujrafuttatasa"
 }
 
 # ---------------------------------------------------------------------------

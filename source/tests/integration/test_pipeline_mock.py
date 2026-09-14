@@ -870,6 +870,14 @@ class PipelineVoiceSettingsTests(_PipelineTestBase):
     the CLI agent resolves the SAME selection per chunk (auto: the response
     language picks the per-language voice; forced mode: every chunk uses the
     forced voice and language).
+
+    v0.7.1: expectations updated to the Supertonic 3 preset contract (the
+    v0.7.0 migration made the 10 presets F1-F5/M1-M5 the ONLY valid voice
+    ids; a legacy Piper id is invalid and migrates to the default preset
+    F1 per language - unit-tested in test_voice_settings.py; these
+    integration tests kept the raw Piper pass-through expectations and
+    were missed by the v0.7.0 gate, which ran only the memory-safety
+    integration subset).
     """
 
     def _settings(self, tmp: Path, **kwargs: str):
@@ -885,17 +893,41 @@ class PipelineVoiceSettingsTests(_PipelineTestBase):
             pipeline._voice_settings = self._settings(
                 Path(tmp),
                 mode="auto",
-                hu_voice="hu_HU-imre-medium",
-                en_voice="en_US-lessac-medium",
+                hu_voice="F2",
+                en_voice="F3",
             )
             await pipeline.handle_utterance(_audio(pipeline._config))
         calls = parts["tts"].synthesized
         self.assertTrue(calls)
         for _text, language, _scale, voice in calls:
             if language == LANG_EN:
-                self.assertEqual(voice, "en_US-lessac-medium")
+                self.assertEqual(voice, "F3")
             else:
-                self.assertEqual(voice, "hu_HU-imre-medium")
+                self.assertEqual(voice, "F2")
+
+    async def test_auto_mode_migrates_legacy_piper_ids_to_the_default(self) -> None:
+        """v0.7.1 regression: a Piper-era voice_settings.json keeps working.
+
+        Legacy ids (hu_HU-.../en_US-...) are not presets; VoiceSettings
+        validation migrates them to the default preset (F1) per language,
+        so the pipeline speaks instead of failing (Piper retirement, no
+        fallback engine: the VOICE falls back, not the ENGINE).
+        """
+        import tempfile
+
+        pipeline, parts = _build_pipeline(transcripts=["Mixed, please"], replies=[MIXED_REPLY])
+        with tempfile.TemporaryDirectory() as tmp:
+            pipeline._voice_settings = self._settings(
+                Path(tmp),
+                mode="auto",
+                hu_voice="hu_HU-imre-medium",
+                en_voice="en_US-lessac-medium",
+            )
+            await pipeline.handle_utterance(_audio(pipeline._config))
+        calls = parts["tts"].synthesized
+        self.assertTrue(calls)
+        for _text, _language, _scale, voice in calls:
+            self.assertEqual(voice, "F1")
 
     async def test_forced_mode_speaks_every_chunk_with_the_selected_voice(self) -> None:
         import tempfile
@@ -905,15 +937,15 @@ class PipelineVoiceSettingsTests(_PipelineTestBase):
             pipeline._voice_settings = self._settings(
                 Path(tmp),
                 mode="hu",
-                hu_voice="hu_HU-berta-medium",
-                en_voice="en_US-lessac-medium",
+                hu_voice="F4",
+                en_voice="F3",
             )
             await pipeline.handle_utterance(_audio(pipeline._config))
         calls = parts["tts"].synthesized
         self.assertTrue(calls)
         for _text, language, _scale, voice in calls:
             self.assertEqual(language, LANG_HU)
-            self.assertEqual(voice, "hu_HU-berta-medium")
+            self.assertEqual(voice, "F4")
 
 
 if __name__ == "__main__":

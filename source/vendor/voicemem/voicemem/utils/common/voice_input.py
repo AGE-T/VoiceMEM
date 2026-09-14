@@ -489,6 +489,7 @@ def ingest_voice_input(
             out.append(c)
         return out
 
+
     # ── Step 1.5: 候选旧记忆（供抽取阶段去重参考）───────────────────────────────
     # 之前抽取阶段完全没传 existing_memories，模型对库里已有什么一无所知，
     # 抽取 prompt 里设计好的"Existing Memories 仅用于去重/linked_memory_ids"
@@ -618,8 +619,13 @@ def ingest_voice_input(
         # 建立 fact_text → ExtractedAdditiveMemory 映射，供 ADD 时复用 metadata
         fact_map = {m.text: m for m in extracted if m.text}
         to_add: list = []
+        # [VM-LOCAL-012] 已被决策引用的 id / 已被决策覆盖的 fact 文本
+        # （下面的 omit-NONE 计数要避开它们——显式 NONE 在循环里就地计数）。
+        resolved_ids: set[str] = set()
+        resolved_texts: set[str] = set()
         for r in resolutions:
             if r.event == "ADD" and r.text:
+                resolved_texts.add(_norm_fact_text(r.text))
                 orig = fact_map.get(r.text) or next(iter(fact_map.values()), None)
                 if orig:
                     from voicemem.leftbrain.extract_facts_openai import ExtractedAdditiveMemory
@@ -629,6 +635,8 @@ def ingest_voice_input(
                         attributed_to=orig.attributed_to,
                     ))
             elif r.event == "UPDATE" and r.memory_id and r.text:
+                resolved_ids.add(str(r.memory_id))
+                resolved_texts.add(_norm_fact_text(r.text))
                 if hasattr(repo, "update_memory"):
                     # 带上本次会话日期：被更新的那条记忆讲的已经是这次说的事了，
                     # 时间戳必须跟着走，否则新事实会挂在被并那条的旧日期上。
@@ -637,8 +645,45 @@ def ingest_voice_input(
                     repo.update_memory(r.memory_id, r.text, session_id=session_id,
                                        observed_at=vi.begin_time, user_id=user_id)
             elif r.event == "DELETE" and r.memory_id:
+                resolved_ids.add(str(r.memory_id))
                 if hasattr(repo, "delete_memory"):
                     repo.delete_memory(r.memory_id)
+            elif r.event == "NONE" and r.memory_id:
+                # [CONTROLLED FORK - patch VM-LOCAL-012] 显式 NONE：同一观察的
+                # 重复确认（外部审计 OCC-1）——不改不删，但计数 +1 并刷新
+                # last_observed_at（非破坏性元数据合并，见
+                # mem0_backend_store.count_occurrence）。
+                resolved_ids.add(str(r.memory_id))
+                if hasattr(repo, "count_occurrence"):
+                    try:
+                        repo.count_occurrence(
+                            str(r.memory_id), session_id=session_id,
+                            observed_at=vi.begin_time)
+                    except Exception as _occ_err:
+                        import logging
+                        logging.getLogger(__name__).warning(
+                            "count_occurrence(%s) failed: %s", r.memory_id, _occ_err)
+        # [CONTROLLED FORK - patch VM-LOCAL-012] omit-NONE 计数：
+        # VOICEMEM_RESOLVE_OMIT_NONE=1（默认）时 resolver 只输出要动的条目，
+        # 其余一律视为 NONE。其中与库内某条**归一化后完全同文**的 fact 是
+        # 真实的重复确认——计数。只认精确同文（改写属于 ADD/UPDATE 的世界，
+        # 模糊匹配会把不同记忆误计到一起）。
+        if hasattr(repo, "count_occurrence") and existing:
+            for fact in new_fact_texts:
+                n = _norm_fact_text(fact)
+                if not n or n in resolved_texts:
+                    continue
+                for cand in existing:
+                    if _norm_fact_text(str(cand.get("text") or "")) == n:
+                        mid = str(cand.get("id") or "")
+                        if mid and mid not in resolved_ids:
+                            try:
+                                repo.count_occurrence(
+                                    mid, session_id=session_id,
+                                    observed_at=vi.begin_time)
+                            except Exception:
+                                pass
+                        break
         extracted = to_add  # 只 append ADD 部分
 
     # entity_id 绑定：收集本批次所有有绑定的声纹
@@ -699,3 +744,14 @@ def _write_slotv2_hints(repo: Any, user_id: str, memory_ids: list[str], slotv2_t
             store.upsert_memory_tags(mid, user_id, tags)
     except Exception:
         pass
+
+
+def _norm_fact_text(text: str) -> str:
+    """[CONTROLLED FORK - patch VM-LOCAL-012] 归一化 fact 文本用于重复确认比对。
+
+    小写、压缩空白、去掉首尾标点——"I'm allergic to peanuts." 与
+    "i'm allergic to peanuts " 是同一句确认；标点/大小写差异不算改写。
+    只用于 omit-NONE 的**精确同文**匹配；改写文本不在此路径（那属于
+    ADD/UPDATE 的世界，模糊匹配会把不同记忆误计到一起）。"""
+    import re as _re
+    return _re.sub(r"\s+", " ", str(text or "").strip().lower()).strip(" \t\r\n.,;:!?'\"()[]。！？，；：")

@@ -82,7 +82,12 @@ class ThinkingSuppressionContractTests(FeatureValidationTest):
         self.assertIs(AgentConfig().llm_disable_thinking, True)
 
     def test_yaml_carries_the_flag(self) -> None:
-        self.assertIn("llm_disable_thinking: true", _read(CONFIG / "voicemem_config.yaml"))
+        # v0.7.2: the flag moved to the CANONICAL config/llm_config.yaml
+        # (llm.reasoning.enabled: false — the single thinking switch); the
+        # voicemem_config.yaml duplicate copy is REMOVED.
+        self.assertIn("enabled: false", _read(CONFIG / "llm_config.yaml"))
+        self.assertIn("reasoning", _read(CONFIG / "llm_config.yaml"))
+        self.assertNotIn("llm_disable_thinking:", _read(CONFIG / "voicemem_config.yaml"))
 
     def test_env_example_carries_the_flag(self) -> None:
         env_example = _read(CONFIG / ".env.example")
@@ -90,9 +95,18 @@ class ThinkingSuppressionContractTests(FeatureValidationTest):
 
     def test_starter_starts_server_with_reasoning_off(self) -> None:
         """The server-side default protects clients that cannot send kwargs
-        (the voicemem package's own OpenAI-lib calls)."""
+        (the voicemem package's own OpenAI-lib calls).
+
+        v0.7.2: the flag is GENERATED from the canonical config — the
+        python-bridge emits ``reasoning`` ("off" when
+        llm.reasoning.enabled is false) and the arg list appends
+        ``--reasoning <value>`` conditionally; the emergency direct
+        fallback also carries reasoning = "off" (identical to the
+        loader's DEFAULT_PROFILE)."""
         starter = _read_ascii(SCRIPTS / "start_llama_server.ps1")
-        self.assertIn('"--reasoning", "off"', starter)
+        self.assertIn('$LlamaArgs += @("--reasoning", $ReasoningFlag)', starter)
+        self.assertIn('"reasoning": (runtime.reasoning_server_arg', starter)
+        self.assertIn('reasoning = "off"', starter)  # emergency fallback
         # the pinned v0.4.3 flag set is still intact (config-driven values)
         for flag in ('"--parallel", [string]$Cfg.parallel',
                      '"--cache-type-k", [string]$Cfg.ck_k',
@@ -113,9 +127,11 @@ class ThinkingSuppressionContractTests(FeatureValidationTest):
         self.assertIn("parse_sse_reasoning_delta", llm)
         self.assertIn("reasoning_content", llm)
         self.assertIn("LLM reply was empty", llm)
-        # the server-side default flag is pinned in the starter
+        # the server-side flag is GENERATED from the canonical config (bridge
+        # field + conditional append; the emergency fallback carries "off")
         starter = _read_ascii(SCRIPTS / "start_llama_server.ps1")
-        self.assertIn('"--reasoning", "off"', starter)
+        self.assertIn('$LlamaArgs += @("--reasoning", $ReasoningFlag)', starter)
+        self.assertIn('"reasoning": (runtime.reasoning_server_arg', starter)
 
     def test_verify_m1_bodies_suppress_thinking(self) -> None:
         verify = _read_ascii(SCRIPTS / "verify_m1.ps1")
@@ -219,30 +235,33 @@ class ThinkingAlignmentV0421ContractTests(FeatureValidationTest):
 
 
 class TransformersFloorContractTests(FeatureValidationTest):
-    """ASR (Qwen3-ASR-0.6B) requires transformers >= 5.0 — pinned everywhere.
+    """ASR requires transformers >= 5.6 — pinned everywhere.
 
-    v0.4.7: the floor moved from 4.57 to 5.0 — the qwen3_asr module (model +
-    processor for the processor+generate call path in app/asr.py) exists
-    natively from transformers 5.x; no 4.x release contains it."""
+    v0.6.1: the floor moved from 5.0 to 5.6 — ParakeetForTDT (the v0.6.0
+    production ASR engine, app/asr_parakeet.py +
+    models/asr/parakeet-tdt-0.6b-v3) exists only from transformers 5.6.
+    (v0.4.7 note: the old 5.0 floor was for the retired qwen3_asr module
+    — app/asr.py, the non-production migration module, keeps its own
+    historical hint.)"""
 
     def test_requirements_floor(self) -> None:
-        self.assertIn("transformers>=5.0", _read(REPO_ROOT / "requirements.txt"))
+        self.assertIn("transformers>=5.6", _read(REPO_ROOT / "requirements.txt"))
 
     def test_pyproject_floor(self) -> None:
-        self.assertIn("transformers>=5.0", _read(REPO_ROOT / "pyproject.toml"))
+        self.assertIn("transformers>=5.6", _read(REPO_ROOT / "pyproject.toml"))
 
     def test_lock_note_explains_the_voicemem_pin(self) -> None:
         lock = _read(REPO_ROOT / "requirements.lock")
-        self.assertIn("transformers>=5.0", lock)
+        self.assertIn("transformers>=5.6", lock)
         self.assertIn("4.52.3", lock)  # the voicemem pin that caused the outage
 
     def test_installer_guard_step(self) -> None:
         installer = _read_ascii(SCRIPTS / "install_m1.ps1")
         self.assertIn("# 16) transformers OR", installer)
         self.assertIn('pip install "transformers>=$TransformersFloor"', installer)
-        self.assertIn('$TransformersFloor = "5.0"', installer)
+        self.assertIn('$TransformersFloor = "5.6"', installer)
         # tuple-compare assert (string compare would rank "4.9" < "5.0")
-        self.assertIn("v >= (5, 0)", installer)
+        self.assertIn("v >= (5, 6)", installer)
 
     def test_installer_guard_is_the_last_pip_step(self) -> None:
         """The guard must run AFTER voicemem/funasr/speechbrain (any of them

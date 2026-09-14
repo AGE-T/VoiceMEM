@@ -12,7 +12,7 @@ from __future__ import annotations
 import os
 import re
 from dataclasses import dataclass
-from datetime import datetime, timezone
+from datetime import date as _date_cls, datetime, timezone
 from pathlib import Path
 from typing import Any, Protocol, Sequence, runtime_checkable
 
@@ -75,7 +75,17 @@ _DATE_Q_RE = re.compile(
     # _widen_for_time_question 不触发——日程一旦被槽位过滤掉（约饭归 relationships，
     # 问的却是 schedule）就再也捞不回来，实测三条下周日程只剩两条。
     r"|今天|明天|后天|昨天|前天|这周|本周|下周|下星期|下个星期|上周|上个星期"
-    r"|接下来|这几天|安排|日程|行程",
+    r"|接下来|这几天|安排|日程|行程"
+    # [CONTROLLED FORK - patch VM-LOCAL-010] 匈牙利语时间问句线索（外部审计
+    # v0.6.3 CD-3：Parakeet 正确转写 HU，但检索层对 HU 时间问题全盲）。
+    # "mi lesz jövő héten" / "mit mondtam tegnap" 以前都不是 date-问题，
+    # 时间加分与时间扩候选从不触发。匈牙利语带变音符号——\b 在 Python 3
+    # unicode 模式下把 ő/ű/é 当词字符，边界计算正确。
+    r"|\bmikor\b|\bmelyik\s+nap\b|\bmúlt\s+hét\w*\b|\bmúlthéten\b"
+    r"|\bjövő\s+hét\w*\b|\bjövőhéten\b|\bezen\s+a\s+héten\b|\bez\s+a\s+hét\b"
+    r"|\bezhéten\b|\btegnap\b|\btegnapelőtt\b|\bholnap\b|\bholnapután\b"
+    r"|\bhétvég\w*\b|\bnapirend\b|\bbeosztás\b|\bmenetrend\b|\bprogramom\b"
+    r"|\bmúlt\s+hónap\w*\b|\bjövő\s+hónap\w*\b",
     re.I,
 )
 
@@ -118,6 +128,109 @@ def date_overlap_bonus(q_dates: frozenset[str], mem_text: str) -> float:
     if not q_dates:
         return 0.0
     return _DATE_MATCH_WEIGHT if any(d in mem_text for d in q_dates) else 0.0
+
+
+# ── [CONTROLLED FORK - patch VM-LOCAL-010] 多语种日期字面 → date 值 ──────────
+# 外部审计 v0.6.3 CD-3 的另一半：date_overlap_bonus 的字面比对只在问句与
+# 正文**同格式**时才命中（"2026-09-14" 撞不上 "2026. szeptember 14."）。
+# 这里把四种日期家族（ISO / 中文 / 匈牙利语 / 英语）都解析成 date 值，
+# 值级比对与书写格式无关。time_expand 的 ISO 扩展戳与 LLM 归一化产物
+# 在这里都能被解析。
+_MONTHS_HU = {
+    "január": 1, "február": 2, "március": 3, "április": 4, "május": 5,
+    "június": 6, "július": 7, "augusztus": 8, "szeptember": 9,
+    "október": 10, "november": 11, "december": 12,
+}
+_MONTHS_EN = {
+    "jan": 1, "feb": 2, "mar": 3, "apr": 4, "may": 5, "jun": 6, "jul": 7,
+    "aug": 8, "sep": 9, "oct": 10, "nov": 11, "dec": 12,
+}
+_HU_MONTH_ALT = "|".join(_MONTHS_HU)
+_ISO_DATE_RE2 = re.compile(r"\b((?:19|20)\d{2})-(\d{1,2})-(\d{1,2})\b")
+_CJK_YMD_RE = re.compile(r"((?:19|20)\d{2})年(\d{1,2})月(\d{1,2})日")
+_HU_YMD_RE = re.compile(
+    rf"\b((?:19|20)\d{{2}})\.?\s?({_HU_MONTH_ALT})\s?(\d{{1,2}})\.?\b", re.I)
+_HU_MD_RE = re.compile(
+    rf"\b({_HU_MONTH_ALT})\s?(\d{{1,2}})(?:-án|-én|-ára|-áig|-tól|-ig)?\b", re.I)
+_EN_MDY_RE = re.compile(
+    r"\b(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\.?\s+(\d{1,2})"
+    r"(?:st|nd|rd|th)?,?\s+((?:19|20)\d{2})\b", re.I)
+
+
+def parse_date_values(text: str, today: _date_cls | None = None) -> frozenset:
+    """文本里出现的**日期值**（四种格式家族都解析）。无年份的月日按当年补全。
+
+    返回 ``frozenset[date]``。解析失败的片段静默跳过（日期正则宽松，
+    "2026-13-45" 这类不是日期）。"""
+    if not text:
+        return frozenset()
+    today = today or _date_cls.today()
+    out: set = set()
+
+    def _add(y: int, m: int, d: int) -> None:
+        try:
+            out.add(_date_cls(y, m, d))
+        except ValueError:
+            pass
+
+    for y, m, d in _ISO_DATE_RE2.findall(text):
+        _add(int(y), int(m), int(d))
+    for y, m, d in _CJK_YMD_RE.findall(text):
+        _add(int(y), int(m), int(d))
+    for y, mon, d in _HU_YMD_RE.findall(text):
+        _add(int(y), _MONTHS_HU[mon.lower()], int(d))
+    for mon, d in _HU_MD_RE.findall(text):
+        _add(today.year, _MONTHS_HU[mon.lower()], int(d))
+    for mon, d, y in _EN_MDY_RE.findall(text):
+        _add(int(y), _MONTHS_EN[mon.lower()], int(d))
+    return frozenset(out)
+
+
+def query_date_values(query: str, today: _date_cls | None = None) -> frozenset:
+    """问句里出现的日期值（含 time_expand 拼上去的 ISO 扩展戳）。"""
+    return parse_date_values(query, today)
+
+
+def date_overlap_bonus_values(q_values: frozenset, mem_text: str,
+                              today: _date_cls | None = None) -> float:
+    """[VM-LOCAL-010] 值级日期重叠加分：与书写格式无关。
+
+    问句展开出的 date 值（任何格式来源）与记忆正文里解析出的 date 值
+    有交集 → 同一个 _DATE_MATCH_WEIGHT 硬事实加分。旧的字面版
+    ``date_overlap_bonus`` 保留（CJK 字面路径不变，向后兼容）。"""
+    if not q_values:
+        return 0.0
+    mem_vals = parse_date_values(mem_text, today)
+    return _DATE_MATCH_WEIGHT if (q_values & mem_vals) else 0.0
+
+
+# ── [CONTROLLED FORK - patch VM-LOCAL-011] 时效性（recency）加分 ──────────────
+# 外部审计 v0.6.3 CD-4（P1）：observed_at 一路存到库里、进了命中对象，
+# 却从不参与排序——"我最近说过什么" 不偏向新记忆。这里加一个指数衰减的
+# 时效加分（量级与 _TIME_WEIGHT 同级，语义相关的老记忆不会被无脑压死；
+# 30 天半衰期：一周内的观察 ~0.085，一个月 ~0.05，一年 ~0.0）。
+# 未来日期（日程类"下周三体检"）按今天算——它们是最"新鲜"的。
+_RECENCY_WEIGHT = 0.10
+_RECENCY_HALF_LIFE_DAYS = 30.0
+
+
+def recency_bonus(observed_at: str, today: _date_cls | None = None) -> float:
+    """[VM-LOCAL-011] 一条命中的时效加分（事件时间越近越高，无日期 = 0）。
+
+    ``observed_at`` 是 hit 上已归一的 ``YYYY-MM-DD``（事件时间，非写入时间）；
+    旧数据无该字段 → 0.0，排序行为不变。"""
+    s = str(observed_at or "")[:10]
+    if not (len(s) == 10 and s[:4].isdigit() and s[4] == "-"):
+        return 0.0
+    today = today or _date_cls.today()
+    try:
+        d = _date_cls(int(s[:4]), int(s[5:7]), int(s[8:10]))
+    except ValueError:
+        return 0.0
+    days = (today - d).days
+    if days < 0:
+        days = 0
+    return _RECENCY_WEIGHT * (0.5 ** (days / _RECENCY_HALF_LIFE_DAYS))
 
 
 def time_question_kind(query: str) -> str | None:
@@ -187,6 +300,15 @@ class MemorySearchHit:
     #: （新行 id）。行本身保留、可检索（历史），检索排序时排在取代者之后
     #: （当前值优先）。与 right-brain 的 superseded_by 元数据同一语义。
     superseded_by: str = ""
+    #: [CONTROLLED FORK - patch VM-LOCAL-011] 时效加分（事件时间越近越高，
+    #: 见 recency_bonus）。参与排序：base_score + recency_boost。
+    recency_boost: float = 0.0
+    #: [CONTROLLED FORK - patch VM-LOCAL-012] 同一观察被独立确认的次数
+    #: （"我对花生过敏" 说过 5 次 → 5）。首次入库不带该键（渲染端按 1 处理），
+    #: 重复确认经 count_occurrence() 累加。上次观察到的时间另存
+    #: last_observed_at（ISO 时间戳）。
+    occurrence_count: int = 0
+    last_observed_at: str = ""
 
 
 @dataclass

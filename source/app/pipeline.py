@@ -24,13 +24,13 @@ utterance (the mic/VAD loop lives in ``app/main.py``):
    the parallelism keeps the additive M2 latency near zero). The fused
    emotion (spec 8.3.3: 0.6 prosody + 0.4 semantic) is injected into the
    teacher system prompt; a frustrated user also slows the TTS down
-   (Piper ``--length_scale``, spec 8.4). With no analyzer / a failing
+   (TTS pacing — Supertonic speed 1/length_scale, spec 8.4). With no analyzer / a failing
    analyzer the turn runs M1-IDENTICALLY (modularity 8.6 item 5).
 3. Teacher persona system prompt (emotion block only when a fused emotion
    exists).
 4. LLM streaming: llama-server SSE deltas.
 5. Speaking: ``SentenceStream`` cuts speakable chunks; each chunk is
-   language-detected, synthesized by Piper (worker thread, optional emotion
+   language-detected, synthesized by Supertonic 3 (worker thread, optional emotion
    ``length_scale``) and played while the barge-in path polls the VAD
    probability (~20 ms cadence during playback; ~frame-rate approximation
    of the 500 ms sustain window).
@@ -91,7 +91,7 @@ if TYPE_CHECKING:  # pragma: no cover — typing only, never imported at runtime
     from app.audio_io import SpeakerOutput
     from app.llm import LlmClient
     from app.speaker import SpeakerIdentification
-    from app.tts import TtsEngine
+    from app.tts_supertonic import SupertonicTtsEngine as TtsEngine
     from app.vad import SileroVad
     from app.voicemem_bridge import VoiceMemBridge
 
@@ -634,7 +634,7 @@ class VoicePipeline:
         """Stages 4+5: stream the reply, speak chunk by chunk, watch barge-in.
 
         ``length_scale`` (M2): forwarded to every TTS synthesis call (None =
-        piper default). Returns ``(reply_text, barge_in_fired, aborted)``.
+        engine default). Returns ``(reply_text, barge_in_fired, aborted)``.
         """
         stream = SentenceStream(
             first_chunk_chars=self._config.tts_first_chunk_chars,
@@ -690,7 +690,7 @@ class VoicePipeline:
         ``_PLAYBACK_POLL_S`` during playback. ``audio_out=None`` (offline
         audit / latency benchmark) skips playback but still stamps
         ``first_audio_s`` after synthesis. ``length_scale`` (M2) is
-        forwarded to the TTS (None = piper default).
+        forwarded to the TTS (None = engine default).
         """
         if not text or not text.strip():
             return _CHUNK_SKIPPED

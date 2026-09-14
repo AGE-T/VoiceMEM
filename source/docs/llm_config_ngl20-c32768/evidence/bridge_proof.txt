@@ -1,0 +1,7 @@
+=== A) PRODUCTION ENV (env.local.ps1 values dot-sourced) ===
+{"exe": "/home/z/my-project/voicemem-agent/bin", "model": "", "host": "127.0.0.1", "port": 8080, "ctx": 32768, "ngl": 20, "parallel": 1, "temp": 0.7, "ck_k": "q8_0", "ck_v": "q8_0"}
+{"llm_disable_thinking": true, "request_kwargs": {"chat_template_kwargs": {"enable_thinking": false}, "reasoning_effort": "none"}}
+
+=== B) NO ENV (yaml alone) ===
+{"exe": "/home/z/my-project/voicemem-agent/bin", "model": "", "host": "127.0.0.1", "port": 8080, "ctx": 32768, "ngl": 20, "parallel": 1, "temp": 0.7, "ck_k": "q8_0", "ck_v": "q8_0"}
+{"llm_disable_thinking": true, "request_kwargs": {"chat_template_kwargs": {"enable_thinking": false}, "reasoning_effort": "none"}}

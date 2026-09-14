@@ -125,13 +125,17 @@ def _shared_backend(model_dir: str, device: str, dtype: str) -> Any:
         source: Any = path if path.is_dir() and (path / "config.json").is_file() else model_dir
         t0 = time.perf_counter()
         try:
-            processor = AutoProcessor.from_pretrained(source)
+            # [external audit v0.6.3 OFF-1] code-enforced offline load (same
+            # rationale as asr_parakeet: local weights contract, no hidden
+            # network path when the offline env vars are missing).
+            processor = AutoProcessor.from_pretrained(source, local_files_only=True)
             torch_dtype: Any = {
                 "float32": torch.float32,
                 "float16": torch.float16,
                 "bfloat16": torch.bfloat16,
             }.get(dtype, torch.float32)
-            model = AutoModelForRNNT.from_pretrained(source, torch_dtype=torch_dtype)
+            model = AutoModelForRNNT.from_pretrained(
+                source, torch_dtype=torch_dtype, local_files_only=True)
         except Exception as exc:  # noqa: BLE001
             raise AsrError(
                 code=AsrErrorCode.ASR_MODEL_LOAD_ERROR,

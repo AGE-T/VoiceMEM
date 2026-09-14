@@ -454,7 +454,7 @@ def _print_check(config: AgentConfig) -> int:
             print("Eredmény: minden eszköz jelen van. Indítás: scripts/start_agent.ps1")
         return 0
     print("Eredmény: hiányzó eszközök — futtasd a scripts/download_models.ps1-t")
-    print("(a két kézi letöltés: llama.cpp CUDA zip és piper.exe — lásd README).")
+    print("(a kézi letöltés: llama.cpp CUDA zip — lásd README).")
     return 1
 
 
@@ -573,7 +573,7 @@ async def run_real(config: AgentConfig) -> int:
     from app.emotion import EmotionAnalyzer, EmotionMemory
     from app.llm import LlmClient
     from app.speaker import SpeakerEmbedder, SpeakerRecognizer, SpeakerRegistry
-    from app.tts import TtsEngine
+    from app.tts_supertonic import SupertonicTtsEngine as TtsEngine
     from app.vad import SileroVad, VadEvent, VadStateMachine
     from app.voicemem_bridge import VoiceMemBridge
 
@@ -682,7 +682,7 @@ async def run_real(config: AgentConfig) -> int:
         print(f"FIGYELEM: a llama-server nem érhető el: {config.llama_server_health_url}")
         print("          Indítsd el: scripts/start_llama_server.ps1 (külön ablakban).")
     if not tts.is_available():
-        print("FIGYELEM: Piper hangok hiányoznak — a válaszok csak szövegben jelennek meg.")
+        print("FIGYELEM: Supertonic 3 modell hiányzik — a válaszok csak szövegben jelennek meg.")
     if not voicemem.is_available():
         print("FIGYELEM: a voicemem csomag nincs telepítve — hosszú távú memória NÉLKÜL fut.")
 
@@ -801,6 +801,11 @@ async def run_real(config: AgentConfig) -> int:
     print("=" * 72)
     print("VoiceMem M1/M2/M3 — valós mód (beszélj; Ctrl+C a kilépés)")
     print(f"root: {config.root} | llama-server: {config.llama_server_url}")
+    # v0.7.2: a kanonikus LLM-konfiguráció kiírása induláskor (a
+    # llama-server indító EZEKBŐL az értékekből generálja a parancssort —
+    # config/llm_config.yaml az egyetlen forrás)
+    if config.llm_runtime is not None:
+        print(config.llm_config_summary())
     print("=" * 72)
     tasks: list[asyncio.Task[Any]] = []
     try:
@@ -857,11 +862,16 @@ def build_parser() -> argparse.ArgumentParser:
 
 
 def load_config(path: Optional[str]) -> AgentConfig:
-    """YAML (ha van) + env változók + alapértémek sorrend feloldása."""
+    """YAML (ha van) + env változók + alapértémek sorrend feloldása.
+
+    v0.7.2: mindkét ág a kanonikus config/llm_config.yaml-ból materializálja
+    az llm_* értékeket (from_yaml / materialise_llm_runtime).
+    """
     if path:
         return AgentConfig.from_yaml(Path(path))
     config = AgentConfig()
     config.apply_env()
+    config.materialise_llm_runtime()
     return config
 
 

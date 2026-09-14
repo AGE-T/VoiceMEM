@@ -1,0 +1,45 @@
+{
+ "T1_registry": {
+  "engines": [
+   "parakeet",
+   "nemotron"
+  ],
+  "selected": "parakeet",
+  "engine_class": "ParakeetEngine",
+  "PASS": true
+ },
+ "T2_parakeet_real_capture": {
+  "status": "ok",
+  "text": "Ez egy teszt, egy teszt. Most kipróbáljuk, hogy működik-e az ASR-rendszer, de szerintem kurvára nem működik úgy.",
+  "engine_id": "parakeet",
+  "model_id": "nvidia/parakeet-tdt-0.6b-v3",
+  "language": "",
+  "duration_s": 9.984,
+  "recovered_matches_v060_recorded": true,
+  "recorded_transcript": "Ez egy teszt, egy teszt. Most kipróbáljuk, hogy működik-e az ASR-rendszer, de szerintem kurvára nem működik úgy.",
+  "load_plus_transcribe_s": 10.7,
+  "PASS": true
+ },
+ "T3_silero_context_vad": {
+  "model": "silero_vad.onnx (tphakala re-host)",
+  "frames": 312,
+  "frames_above_0.25": 236,
+  "recorded_v060_evidence": "235/312 frames (official 64-sample context)",
+  "PASS": true
+ },
+ "T4_e5_local": {
+  "model_dir": "/home/z/my-project/voicemem-agent/models/embedding/multilingual-e5-small",
+  "dim": 384,
+  "PASS": true
+ },
+ "T5_vendor_pin": {
+  "CONTROLLED_FORK": true,
+  "CONTROLLED_UPSTREAM_COMMIT": "e8384e087bd2f44eb05fc7ae1a3c525ea8244179",
+  "PASS": true
+ },
+ "T6_memory_safety_gates": {
+  "VM-LOCAL-007_delete_default_deny": true,
+  "VM-LOCAL-008_supersession": true,
+  "PASS": true
+ }
+}

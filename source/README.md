@@ -5,8 +5,9 @@ fizetős komponensű** kétnyelvű (magyar + angol) hangügynök, amely a mikrof
 hangszóróig egyetlen gépen fut:
 
 ```
-mikrofon → Silero VAD → Qwen3-ASR → [ECAPA beszélő-azonosítás || emotion2vec+ érzelmi elemzés]
-        → VoiceMem memória (beszélőnkénti tér) → llama-server LLM → Piper TTS → hangszóró
+mikrofon → Silero VAD → NVIDIA Parakeet TDT (v0.6.0: moduláris ASR-motorréteg;
+        selectable: Nemotron streaming) → [ECAPA beszélő-azonosítás || emotion2vec+ érzelmi elemzés]
+        → VoiceMem memória (beszélőnkénti tér) → llama-server LLM → Supertonic 3 TTS → hangszóró
 ```
 
 Az ügynök **tanár-personaként** viselkedik: ha a felhasználó angol nyelvtani hibát
@@ -25,8 +26,15 @@ cache az izolált `models/hf/`-ben él, és minden Python-hívás a repo
 Python-csomagjaitól vagy felhasználói cache-ektől.
 
 Célhardver: **NVIDIA RTX 5070 12 GB (Blackwell, sm_120), 32 GB RAM, Windows 11**.
-Steady VRAM-igény (v0.4.14+, Qwen3.6 35B A3B IQ4_XS ~19 GB MoE, LLAMA_N_GPU_LAYERS=26 reszleges offload: figyelem+KV+compute GPU-n, a tobbi rendszer-RAM-bol; a TENYLEGES merest a scripts\measure_vram.ps1 vegzi), latenciacél: **p50 < 2,0 s,
-p95 < 2,5 s** (beszéd végétől az első hangig). A fejlesztés GPU nélküli Linux
+Steady VRAM-igény (v0.4.14+, Qwen3.6 35B A3B IQ4_XS ~19 GB MoE, LLAMA_N_GPU_LAYERS=20 reszleges offload (mert profil: 20/42 reteg GPU-n): figyelem+KV+compute GPU-n, a tobbi rendszer-RAM-bol; a TENYLEGES merest a scripts\measure_vram.ps1 vegzi), latenciacél: **p50 < 2,0 s,
+p95 < 2,5 s** (beszéd végétől az első hangig).
+[2026-09-13, külső audit LAT-1 — OPERÁTORI DÖNTÉS: a 35B modell MARAD.] A
+`VoiceMEM_Audit_v0.6.3` a terepen mért 30–50 s end-to-end késleltetést
+modell-vs-hardver párosításnak minősítette (a fenti latenciacél ezzel a
+párosítással elérhetetlen). Az operátor a nagy modellt választotta tudatosan
+(minőség > sebesség): nincs modellcsere, nincs célreset; a valós elvárás a
+mért profil szerinti end-to-end idő (TTFT ~4,9 s + TTS), a megfigyelés a
+terepgépen folytatódik. Részletek: `config/voicemem_config.yaml` LLM-blokk. A fejlesztés GPU nélküli Linux
 sandboxban történt; minden nehéz függőség guardolt import — a mock mód és a
 teljes tesztkészlet GPU és hang nélkül is fut.
 
@@ -119,7 +127,7 @@ Pipeline (LOCAL mód):
 ```
 mikrofon (24 kHz PCM a WS-en) → Silero VAD → Qwen3-ASR 0.6B → VoiceMem
   (multilingual E5 small CPU embedding) → Qwen3.6 35B A3B IQ4_XS (llama-server SSE)
-  → Piper HU/EN → 24 kHz PCM vissza a böngészőnek
+  → Supertonic 3 HU/EN → 44.1 kHz → 24 kHz PCM vissza a böngészőnek
 ```
 
 Az UI adottságai:
@@ -214,8 +222,8 @@ Az UI adottságai:
   kanonikus helyre másol. Ha a fájl hiányzik: MEGÁLL — más modell vagy más
   kvantizáció NEM helyettesíti be (a hiányó aktív GGUF hangos LLM-hiba marad,
   nincs visszaesési profil — a hiányzó GGUF hangos LLM ERROR marad). Hardver-igény: 12 GB VRAM + 32 GB RAM →
-  `LLAMA_N_GPU_LAYERS=26` részleges offload (a figyelem + KV cache GPU-n, a
-  többi réteg RAM-ból streamel), kontextus 8192 marad, thinking csatorna KI
+  `LLAMA_N_GPU_LAYERS=20` részleges offload, mért profil (a figyelem + KV cache GPU-n, a
+  többi réteg RAM-ból streamel), kontextus 32768 (mért TTFT-költség ~0 a 8K-hez képest; a prompt-budget 14000 karakter marad), thinking csatorna KI
   (`LLM_DISABLE_THINKING=1` + llama-server `--reasoning off`). A
   rendszerprompt a sikeres Ollama-kísérletek természetes
   hang-asszisztens personája (rövid beszélt fordulók, természetes magyar,
@@ -233,13 +241,13 @@ Az UI adottságai:
   numerikus env-változók elírása név szerinti, érthető hibát ad (nem
   néma default-ot).
 - **Szöveges tesztút**: a szövegmező ugyanazt a backend-pipeline-t hajtja
-  (memória → LLM → Piper), az ASR-t kihagyva; a beszélgetésben narancs
+  (memória → LLM → Supertonic 3), az ASR-t kihagyva; a beszélgetésben narancs
   "Text input · ASR bypassed" jelvény jelzi.
 - **Pipeline debug nézet**: VAD / ASR / Memory / Embedding / LLM / TTS
   soronként ready/processing/error állapot + mért időzítők (WS
   `pipeline_status` + `/api/pipeline`).
 - **Chat nézet**: felhasználói átírás, asszisztens válasz, emotion címke,
-  Top-K memória-visszahívás, Piper hanglejátszás.
+  Top-K memória-visszahívás, Supertonic 3 hanglejátszás.
 - **Memory Space**: létrehozás, váltás, szankenkénti memória, memória-grafikon
   (agytérkép), export — az eredeti UI funkcionalitása változatlanul.
 - M2 emotion (emotion2vec+ + szemantikus fúzió) bekapcsolva marad; M3
@@ -249,7 +257,7 @@ Az UI adottságai:
 
 Manuális smoke test (célgép): `scripts\smoke_test_web.py` — elindítja a
 backendet, kinyitja a böngészőt, és végigvezet a magyar beszédes ellenőrzőlistán
-(átírás, LLM-válasz, Piper lejátszás, memóriabejegyzés, Memory Space, emotion).
+(átírás, LLM-válasz, Supertonic 3 lejátszás, memóriabejegyzés, Memory Space, emotion).
 
 A konzol-agent (korábbi alapértelmezés) elérhető marad: `START.bat cli`.
 
@@ -362,7 +370,7 @@ beégetve.
         |  beszélhető chunkok (frusztrált usernél: --length_scale 1.1)
         v
    +--------------------+
-   | Piper TTS          |  CPU / subprocess — HU: anna (vagy berta/imre), EN: lessac
+   | Supertonic 3 TTS   |  CPU / ONNX Runtime — preset hangok: F1-F5, M1-M5 (HU+EN)
    +--------------------+
         |
         v
@@ -385,8 +393,8 @@ a VoiceMem `_llm_json()`. Az EchoGate eközben loopback
 | Memória-embedding | intfloat/multilingual-e5-small (384 d) | CPU | VoiceMem lokális embedder |
 | Memória | VoiceMem VEZERLT FORRAS (vendor\voicemem, fork @ e8384e0 = upstream v0.0.1; identitas: VOICEMEM_PIN.json; NINCS klónozás) + mem0 + Qdrant embedded | CPU | hosszú távú felhasználói memória |
 | **M2 érzelem** | **emotion2vec/emotion2vec_plus_base (~90M, FP32)** | **CPU (funasr AutoModel)** | **proszódia-elemzés: 9 kategória → fused valence/arousal** |
-| LLM | Qwen3.6 35B A3B IQ4_XS GGUF (v0.4.16: az EGYETLEN LLM, NINCS fallback profil; operator-altal elhelyezett/barhol kivalaszthato GGUF; thinking CSAK kikapcsolva) | GPU (llama.cpp, 8K ctx, q8_0 KV, --reasoning off, ngl 26) | válaszgenerálás, JSON mód |
-| TTS | Piper — hu_HU-anna/berta/imre, en_US-lessac (medium) | CPU (subprocess) | szöveg → beszéd (M2: --length_scale) |
+| LLM | Qwen3.6 35B A3B IQ4_XS GGUF (v0.4.16: az EGYETLEN LLM, NINCS fallback profil; operator-altal elhelyezett/barhol kivalaszthato GGUF; thinking CSAK kikapcsolva) | GPU (llama.cpp, 32K ctx, q8_0 KV, --reasoning off, ngl 20) | válaszgenerálás, JSON mód |
+| TTS | Supertonic 3 (Supertone, ~99M, 31 nyelv: HU+EN; preset F1-F5, M1-M5) | CPU (ONNX Runtime; a GPU az LLM-é marad) | szöveg → beszéd (M2: speed = 1/length_scale) |
 | Hang I/O | sounddevice (PortAudio) | CPU | mikrofon + hangszóró |
 
 ## Követelmények
@@ -443,7 +451,7 @@ A bootstrap/telepítő **18 lépést** futtat le (a felhasználói M0-specifiká
     torchaudio 2.7.0, mind a cu128 indexről, import-utáni verzió-ellenőrzéssel
     és a VoiceMem-telepítés utáni felülírás-guarddal; cc < 12.0 → a telepítés
     SIKERTELEN)
-11. llama.cpp + Piper binárisok letöltése pin-elt GitHub release-ekből → `bin\`
+11. llama.cpp binárisok letöltése pin-elt GitHub release-ből → `bin\` (a TTS a supertonic pip-csomag, NEM bináris)
 12. VoiceMem: `vendor\voicemem` klón a pin-elt refre + `pip install -e` a
     .venv-be
 13. modellletöltés: `scripts\download_models.ps1` (idempotens)
@@ -451,7 +459,7 @@ A bootstrap/telepítő **18 lépést** futtat le (a felhasználói M0-specifiká
     `config\.env.example`-ből
 15. smoke testek: `scripts\verify_m1.ps1 -WithServer` (FAIL → a telepítés
     sikertelen)
-16. licenc-ellenőrzés (LICENSES.md + a Piper hangok `.onnx.json` fájljai)
+16. licenc-ellenőrzés (LICENSES.md + a Supertonic 3 modell-lizenc, OpenRAIL-M)
 17. offline környezet beállítása (HF_HUB_OFFLINE=1, TRANSFORMERS_OFFLINE=1,
     HF_HOME=`<gyökér>\models\hf` — a HF cache izolálva)
 18. végső install report + INSTALL_MANIFEST.json
@@ -467,7 +475,7 @@ végső report minden PASS-ja a 15-17. lépések valódi ellenőrzésére épül
 |----------|-------|
 | `-Root <útvonal>` | a repo-gyökér explicit megadása (alap: a szkript mappájának szülője) |
 | `-SkipModels` | a modellletöltés kihagyása (offline újratelepítéshez) |
-| `-SkipBinaries` | a llama.cpp/Piper binárisletöltés kihagyása (kézzel már telepítve) |
+| `-SkipBinaries` | a llama.cpp binárisletöltés kihagyása (kézzel már telepítve) |
 | `-SkipVoiceMem` | a VoiceMem kihagyása (a verify_m1 jelezni fogja) |
 | `-Force` | a .venv újraépítése + a binárisok újraletöltése (a modelleket NEM törli) |
 | `-ConnectivityAudit` | a 17. lépésben a `offline_check.ps1` audit is lefut (alap: kihagyva) |
@@ -477,7 +485,6 @@ végső report minden PASS-ja a 15-17. lépések valódi ellenőrzésére épül
 | Komponens | Pin | Forrás | Cél |
 |-----------|-----|--------|-----|
 | llama.cpp | tag `b10717` — `llama-b10717-bin-win-cuda-13.3-x64.zip` + `cudart-llama-bin-win-cuda-13.3-x64.zip` (CUDA 13.3 runtime DLL-ek) | github.com/ggml-org/llama.cpp/releases | `bin\` (llama-server.exe + DLL-ek) |
-| Piper | tag `2023.11.14-2` — `piper_windows_amd64.zip` | github.com/rhasspy/piper/releases | `bin\piper.exe` |
 | VoiceMem | **VEZERLT FORK** — a repo-ban szállitott `vendor\voicemem` (alap: upstream commit `e8384e0` = tag v0.0.1) + `pip install -e` + pin-ellenőrzés | a kiadás ZIP tartalmazza (nincs letöltés a telepítéskor) | `vendor\voicemem` — identitás: `VOICEMEM_PIN.json` + `voicemem.CONTROLLED_UPSTREAM_COMMIT` (a manifest a `pin_verified` jelzést rögzíti) |
 | PyTorch | `2.7.0+cu128` (RTX 5070 Blackwell sm_120) | download.pytorch.org/whl/cu128 | `.venv` |
 | funasr (M2) | `1.4.11` — emotion2vec+ futtató, CPU (a requires_dist NEM tartalmaz torch-ot) | pypi.org/project/funasr | `.venv` (a telepítő 13. lépése + trio-guard) |
@@ -486,11 +493,13 @@ végső report minden PASS-ja a 15-17. lépések valódi ellenőrzésére épül
 
 | Modell | Cél |
 |--------|-----|
-| Qwen3-ASR-0.6B | `models\asr\qwen3-asr-0.6b` |
+| NVIDIA Parakeet TDT 0.6B v3 (v0.6.0: a termelési ASR — MODELS.lock.json asr bejegyzés, 6 runtime-fájl ~2,4 GB) | `models\asr\parakeet-tdt-0.6b-v3` |
+| NVIDIA Nemotron 3.5 ASR streaming 0.6B (selectable, CUDA-cél) | `models\asr\nemotron-3.5-asr-streaming-0.6b` |
+| ~~Qwen3-ASR-0.6B~~ (v0.6.0-ben NYUGDÍJAZVA — a régi könyvtár a helyén maradhat, SOHA nem töltődik le automatikusan és a termelési útvonal nem tölti be) | `models\asr\qwen3-asr-0.6b` (legacy) |
 | Qwen3.6 35B A3B IQ4_XS (~19 GB; operator-altal elhelyezett, NEM auto-letoltve; v0.4.17: Ollama sha256-... blob is - magic-alapu azonositassal) | `models\llm\qwen3.6-35b-a3b` (barmelyik fajlnev) VAGY barmelyik meghajto / Ollama-blob (web UI "LLM model" picker / identify_ollama_blob.ps1 -Select / find_qwen_gguf.ps1 -> config/llm_model.json) |
 | multilingual-e5-small | `models\embedding\multilingual-e5-small` |
 | silero-vad v6.2.1 | `models\vad\silero-vad` |
-| Piper hangok: hu_HU-anna/berta/imre + en_US-lessac (`.onnx` + `.onnx.json`) | `models\tts\piper` |
+| Supertonic 3 ONNX assetek: 6 onnx modul + 10 preset hangstílus (OpenRAIL-M) | `models\tts\supertonic-3` |
 | **emotion2vec+ base (M2; model.pt ~1,1 GB + 3 config-fájl)** | **`models\emotion\emotion2vec-plus-base`** |
 | **SpeechBrain ECAPA (M3; embedding_model.ckpt ~79,5 MB + 4 fájl)** | **`models\speaker\ecapa-voxceleb`** |
 | HF cache gyökér (`HF_HOME` / `HF_HUB_CACHE` / `TRANSFORMERS_CACHE`) | `models\hf` |
@@ -515,7 +524,7 @@ CUDA: 12.8
 VoiceMem: 0.0.1
 ASR: Qwen3 ASR 0.6B
 LLM: Qwen3.6 35B A3B IQ4_XS (az EGYETLEN LLM)
-TTS: Piper HU + EN
+TTS: Supertonic 3 (ONNX Runtime CPU)
 VAD: Silero
 Embedding: multilingual E5 small
 Offline: READY
@@ -563,7 +572,7 @@ ellenőrzéseket (a WARN nem buktat meg); a végső összegző sor `VERIFY: PASS
 `VERIFY: FAIL (N hibás ellenőrzés)`, kilépési kód 0 = PASS, 1 = FAIL. Mit
 ellenőriz: a .venv Python-verziója (3.11.x) és a pip, CUDA/torch GPU smoke test
 (valódi mátrixművelet) + compute capability >= 12.0, a modellfájlok (LLM GGUF
-> 1 GB, ASR- és e5-config, silero_vad.onnx, 4 Piper hang `.onnx` +
+> 1 GB, ASR- és e5-config, silero_vad.onnx, Supertonic 3 onnx assetek +
 `.onnx.json`), a VoiceMem-import, az ASR offline betöltése (AutoTokenizer,
 local_files_only), a llama-server blokk (v0.3.3: `-WithServer` esetén a starter
 indítása után a `GET /health`-et legfeljebb 30 s-ig poll-olja — ha HTTP 200,
@@ -874,7 +883,7 @@ gitignore-olt). Windowson az aktív loader a `config/env.local.ps1` — a telep�
 | `HF_HOME`, `HF_HUB_CACHE`, `TRANSFORMERS_CACHE` | env.local.ps1 / .env.example | `models/hf/...` — HF-cache-izoláció a repo gyökerébe |
 | `VOICEMEM_HOME` / `VOICEMEM_MEMORY_ROOT` | env.local.ps1 | repo-gyökér (alap) / `<gyökér>/memory` |
 | `LLAMA_SERVER_HOST/PORT`, `LLAMA_MODEL_PATH` | env.local.ps1 | `127.0.0.1` / `8080` / (v0.4.17: nincs default — a sor kikommentezve; feloldas: config/llm_model.json > LLAMA_MODEL_PATH > operator-dir) |
-| `LLAMA_CONTEXT_SIZE`, `LLAMA_N_GPU_LAYERS`, `LLAMA_CACHE_TYPE_K/V` | env.local.ps1 | 8192 / -1 / q8_0 / q8_0 |
+| `LLAMA_CONTEXT_SIZE`, `LLAMA_N_GPU_LAYERS`, `LLAMA_CACHE_TYPE_K/V` | env.local.ps1 | 32768 / 20 / q8_0 / q8_0 |
 | `OPENAI_BASE_URL`, `OPENAI_MODEL` | env.local.ps1 | `http://localhost:8080/v1` / `qwen3.6-35b-a3b` (dummy API-key, l. .env.example) |
 | `QWEN3_ASR_MODEL_PATH`, `PIPER_VOICES_PATH`, `SILERO_VAD_PATH`, `EMBEDDING_MODEL_PATH` | env.local.ps1 | opcionális modellútvonal-felülírások (a defaultok már az M0-elrendezésre mutatnak) |
 
@@ -917,7 +926,9 @@ C:\VoiceMemAgent\
 ├── app\                      (main.py, pipeline.py, audio_io.py, ... — az M1 pipeline)
 ├── config\                   (voicemem_config.yaml, env.local.ps1, env.local.sh, .env.example)
 ├── models\
-│   ├── asr\qwen3-asr-0.6b\
+│   ├── asr\parakeet-tdt-0.6b-v3\  (v0.6.0 termelési ASR — Parakeet TDT 0.6B v3)
+│   ├── asr\nemotron-3.5-asr-streaming-0.6b\  (selectable streaming motor)
+│   ├── asr\qwen3-asr-0.6b\      (LEGACY — nyugdíjazott, nem termelési; a migrációs modell maradványa)
 │   ├── llm\qwen3.6-35b-a3b\ (Qwen3.6-35B-A3B-IQ4_XS.gguf — az EGYETLEN LLM; a web UI picker barmelyik meghajtorol kivalaszthatja)
 │   ├── tts\piper\            (4 hang: .onnx + .onnx.json)
 │   ├── vad\silero-vad\       (silero_vad.onnx)
@@ -1053,7 +1064,7 @@ teszt (mindhárom a `START.bat` egyetlen dupla kattintásából indul):
   (tipikus ok: a python-bridge config-hiba — „a konfiguráció … nem tölthető
   be python-bridge-en keresztül”), a verify közvetlenül indítja a
   `bin\llama-server.exe`-t a shellből levezetett konfigurációval (ugyanazokkal
-  a flagekkel: `-ngl -1`, `-c 8192`, `--parallel 1`, q8_0 KV-cache,
+  a flagekkel: `-ngl 20`, `-c 32768`, `--parallel 1`, q8_0 KV-cache,
   `--temp 0.7`); a bridge-hiba külön `[WARN]`, nem fatal. A starter maga is
   így viselkedik: bridge-hiba esetén FIGYELEM + közvetlen konfigurációval
   indul, a llama-server meghívása változatlan. A végeredmény hat külön

@@ -49,7 +49,7 @@ class AudioFeatureTest(_EnvNeutralTest):
     def test_logic_audio_config_contract(self):
         cfg = AgentConfig.from_yaml(YAML_PATH)
         self.assertEqual(cfg.sample_rate, 16000)
-        self.assertEqual(cfg.output_sample_rate, 22050)
+        self.assertEqual(cfg.output_sample_rate, 44100)
         self.assertEqual(cfg.channels, 1)
         self.assertEqual(cfg.vad_frame_samples, 512)
         self.assertEqual(cfg.audio_input_device, "", "empty = system default mic")

@@ -1,0 +1,28 @@
+=== tests.validation.test_feature_scripts ===
+Ran 51 tests in 0.051s
+
+OK
+=== tests.unit.test_config ===
+Ran 33 tests in 0.086s
+
+OK
+=== tests.unit.test_prompt_budget ===
+Ran 12 tests in 0.001s
+
+OK
+=== tests.unit.test_llm_reasoning ===
+Ran 22 tests in 0.007s
+
+OK
+=== tests.validation.test_feature_thinking ===
+Ran 26 tests in 0.034s
+
+OK
+=== tests.validation.test_feature_llm ===
+Ran 12 tests in 0.110s
+
+OK
+=== tests.validation.test_feature_offline ===
+Ran 3 tests in 0.010s
+
+OK

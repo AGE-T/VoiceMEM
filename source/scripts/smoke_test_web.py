@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Manual smoke test for the VoiceMem LOCAL web UI (target machine).
 
-Run on the machine with the models installed (GPU, llama-server, Piper):
+Run on the machine with the models installed (GPU, llama-server, Supertonic 3):
 
     .venv\\Scripts\\python.exe scripts\\smoke_test_web.py
     (or: START.bat check runs it as part of the full verification)
@@ -19,7 +19,7 @@ PHASE B (guided, you speak Hungarian):
   6. click "Start talking", then SAY something in Hungarian, e.g.
        "Szia! Peter vagyok, Budapesten lakom, es szeretek futni a Varosligetben."
   7. verify, in the UI: live partial transcript -> final transcript,
-     memory recall panel, assistant reply, Piper audio playback, emotion tag
+     memory recall panel, assistant reply, Supertonic audio playback, emotion tag
   8. type one message in the text box (ASR-bypassed badge must appear)
   9. check the Memory Space tab: the graph grew; create a new space; switch back
 
@@ -184,8 +184,8 @@ MANUAL_STEPS = [
         "assistant replies in Hungarian in the chat + the reply panel.",
     ),
     (
-        "Piper playback",
-        "While the reply streams, you must HEAR the Hungarian voice (Piper). "
+        "Supertonic 3 playback",
+        "While the reply streams, you must HEAR the Hungarian voice (Supertonic 3). "
         "The voice label shows 'Replying'.",
     ),
     (

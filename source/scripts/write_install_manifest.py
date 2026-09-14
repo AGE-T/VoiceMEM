@@ -42,16 +42,29 @@ _SKIPPED_FILENAMES = frozenset({".gitkeep", "README.md", ".download_sources.json
 
 #: Subdirectory of models/ that is a CACHE root (not an asset component);
 #: its contents are huggingface_hub internals, huge and non-authoritative.
-_SKIPPED_MODEL_SUBDIRS = frozenset({"hf"})
+#: v0.6.1: ".cache" added - hf_hub_download/local-dir snapshots keep their
+#: transfer metadata under <target_dir>/.cache/huggingface (internals,
+#: never model assets).
+_SKIPPED_MODEL_SUBDIRS = frozenset({"hf", ".cache"})
 
 #: Known component -> Hugging Face repo mapping (M0 Section 7 layout).
+#: v0.6.1: "asr" now maps to the v0.6.0 production engine (NVIDIA Parakeet
+#: TDT 0.6B v3); the retired Qwen3-ASR dir is attributed precisely by the
+#: per-dir override below so old installs keep truthful provenance.
 _HF_REPO_BY_COMPONENT = {
-    "asr": "Qwen/Qwen3-ASR-0.6B",
+    "asr": "nvidia/parakeet-tdt-0.6b-v3",
     "llm": "bartowski/Qwen_Qwen3.6-35B-A3B-GGUF",
     "embedding": "intfloat/multilingual-e5-small",
     "vad": "snakers4/silero-vad",
-    "tts": "rhasspy/piper-voices",
+    "tts": "supertone-oss-archive/supertonic-3",
     "emotion": None,  # M2 placeholder — no model may ever live here in M0/M1
+}
+
+#: Per-directory repo attribution OVERRIDES for retired/legacy model dirs
+#: (rel path under models/, first TWO segments). Keeps INSTALL_MANIFEST
+#: provenance truthful on machines that still carry the retired weights.
+_HF_REPO_BY_DIR = {
+    ("asr", "qwen3-asr-0.6b"): "Qwen/Qwen3-ASR-0.6B",  # retired v0.6.0
 }
 
 _SHA256_CHUNK = 1 << 20  # 1 MiB chunks: large GGUF files stay memory-safe
@@ -337,18 +350,24 @@ def _collect_models(root: Path) -> list[dict[str, Any]]:
         if not path.is_file():
             continue
         rel = path.relative_to(models_dir)
-        if rel.parts and rel.parts[0] in _SKIPPED_MODEL_SUBDIRS:
+        if rel.parts and (
+            rel.parts[0] in _SKIPPED_MODEL_SUBDIRS or ".cache" in rel.parts
+        ):
             continue
         if path.name in _SKIPPED_FILENAMES:
             continue
         component = rel.parts[0] if rel.parts else "unknown"
         record = sources.get(component)
+        if len(rel.parts) >= 2 and (rel.parts[0], rel.parts[1]) in _HF_REPO_BY_DIR:
+            hf_repo: Optional[str] = _HF_REPO_BY_DIR[(rel.parts[0], rel.parts[1])]
+        else:
+            hf_repo = _HF_REPO_BY_COMPONENT.get(component)
         entry: dict[str, Any] = {
             "component": component,
             "path": (Path("models") / rel).as_posix(),
             "size_bytes": path.stat().st_size,
             "sha256": _sha256(path),
-            "hf_repo": _HF_REPO_BY_COMPONENT.get(component),
+            "hf_repo": hf_repo,
         }
         if isinstance(record, dict):
             entry["source_repo"] = record.get("source_repo")

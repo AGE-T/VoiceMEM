@@ -41,7 +41,10 @@ def _fake_repo(tmp: Path) -> Path:
     root = tmp / "fake-repo"
     (root / "models" / "llm" / "qwen3.6-35b-a3b").mkdir(parents=True)
     (root / "models" / "asr" / "qwen3-asr-0.6b").mkdir(parents=True)
-    (root / "models" / "tts" / "piper").mkdir(parents=True)
+    # v0.6.1: the production engine dir + hf transfer-metadata internals
+    (root / "models" / "asr" / "parakeet-tdt-0.6b-v3").mkdir(parents=True)
+    (root / "models" / "tts" / "supertonic-3" / "onnx").mkdir(parents=True)
+    (root / "models" / "tts" / "supertonic-3" / "voice_styles").mkdir(parents=True)
     (root / "models" / "embedding" / "multilingual-e5-small").mkdir(parents=True)
     (root / "models" / "vad" / "silero-vad").mkdir(parents=True)
     (root / "models" / "hf" / "hub").mkdir(parents=True)
@@ -56,8 +59,19 @@ def _fake_repo(tmp: Path) -> Path:
     (root / "models" / "asr" / "qwen3-asr-0.6b" / "config.json").write_text(
         '{"model_type": "qwen3_asr"}', encoding="utf-8"
     )
-    (root / "models" / "tts" / "piper" / "hu_HU-anna-medium.onnx").write_bytes(b"onnx" * 100)
-    (root / "models" / "tts" / "piper" / "hu_HU-anna-medium.onnx.json").write_text(
+    (root / "models" / "asr" / "parakeet-tdt-0.6b-v3" / "config.json").write_text(
+        '{"model_type": "parakeet_tdt"}', encoding="utf-8"
+    )
+    (root / "models" / "asr" / "parakeet-tdt-0.6b-v3" / "model.safetensors").write_bytes(
+        b"fake-parakeet-weights" * 8
+    )
+    # hf_hub_download local-dir transfer metadata: internals, never a model
+    # asset - the walker must skip .cache at ANY depth (v0.6.1).
+    _cache_dir = root / "models" / "asr" / "parakeet-tdt-0.6b-v3" / ".cache" / "huggingface"
+    (_cache_dir / "download").mkdir(parents=True, exist_ok=True)
+    (_cache_dir / "download" / "541d1f99c6b0.metadata").write_bytes(b"meta")
+    (root / "models" / "tts" / "supertonic-3" / "onnx" / "vocoder.onnx").write_bytes(b"onnx" * 100)
+    (root / "models" / "tts" / "supertonic-3" / "voice_styles" / "F1.json").write_text(
         "{}", encoding="utf-8"
     )
     (root / "models" / "embedding" / "multilingual-e5-small" / "config.json").write_text(
@@ -115,15 +129,18 @@ class BuildManifestTests(unittest.TestCase):
         self.assertEqual(
             paths,
             [
+                "models/asr/parakeet-tdt-0.6b-v3/config.json",
+                "models/asr/parakeet-tdt-0.6b-v3/model.safetensors",
                 "models/asr/qwen3-asr-0.6b/config.json",
                 "models/embedding/multilingual-e5-small/config.json",
                 "models/llm/qwen3.6-35b-a3b/Qwen3.6-35B-A3B-IQ4_XS.gguf",
-                "models/tts/piper/hu_HU-anna-medium.onnx",
-                "models/tts/piper/hu_HU-anna-medium.onnx.json",
+                "models/tts/supertonic-3/onnx/vocoder.onnx",
+                "models/tts/supertonic-3/voice_styles/F1.json",
                 "models/vad/silero-vad/silero_vad.onnx",
             ],
         )
         self.assertNotIn("models/hf/hub/cached-blob.bin", paths)
+        self.assertFalse(any(".cache/" in p for p in paths), ".cache internals leaked")
         self.assertFalse(any(p.endswith(".gitkeep") or p.endswith("README.md") for p in paths))
 
     def test_component_and_hf_repo_mapping(self) -> None:
@@ -139,8 +156,17 @@ class BuildManifestTests(unittest.TestCase):
         )
         self.assertEqual(by_path["models/asr/qwen3-asr-0.6b/config.json"]["component"], "asr")
         self.assertEqual(by_path["models/asr/qwen3-asr-0.6b/config.json"]["hf_repo"], "Qwen/Qwen3-ASR-0.6B")
+        # v0.6.1: the production engine dir attributes to the parakeet repo
         self.assertEqual(
-            by_path["models/tts/piper/hu_HU-anna-medium.onnx"]["hf_repo"], "rhasspy/piper-voices"
+            by_path["models/asr/parakeet-tdt-0.6b-v3/model.safetensors"]["component"], "asr"
+        )
+        self.assertEqual(
+            by_path["models/asr/parakeet-tdt-0.6b-v3/model.safetensors"]["hf_repo"],
+            "nvidia/parakeet-tdt-0.6b-v3",
+        )
+        self.assertEqual(
+            by_path["models/tts/supertonic-3/onnx/vocoder.onnx"]["hf_repo"],
+            "supertone-oss-archive/supertonic-3",
         )
         self.assertEqual(
             by_path["models/vad/silero-vad/silero_vad.onnx"]["hf_repo"], "snakers4/silero-vad"

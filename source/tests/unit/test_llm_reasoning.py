@@ -115,6 +115,9 @@ class ThinkingControlKwargsTests(unittest.TestCase):
         self.assertIs(AgentConfig().llm_disable_thinking, True)
 
     def test_env_override_off(self):
+        # v0.7.2: LLM_DISABLE_THINKING is no longer parsed by apply_env —
+        # the ONE loader (app/llm_config.py) applies it inside
+        # materialise_llm_runtime, exactly as documented (yaml -> env).
         cfg = AgentConfig()
         cfg.llm_disable_thinking = True
         import os
@@ -123,7 +126,13 @@ class ThinkingControlKwargsTests(unittest.TestCase):
         os.environ["LLM_DISABLE_THINKING"] = "0"
         try:
             cfg.apply_env()
+            # the env override alone no longer touches the field ...
+            self.assertIs(cfg.llm_disable_thinking, True)
+            # ... the loader materialises it (thinking ENABLED -> the
+            # request-level suppression disappears)
+            cfg.materialise_llm_runtime()
             self.assertIs(cfg.llm_disable_thinking, False)
+            self.assertEqual(_thinking_control_kwargs(cfg), {})
         finally:
             if old is None:
                 os.environ.pop("LLM_DISABLE_THINKING", None)

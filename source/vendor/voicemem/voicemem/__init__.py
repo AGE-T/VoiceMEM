@@ -85,6 +85,9 @@ CONTROLLED_PATCHES = (
     "VM-LOCAL-007",  # right-brain run_cleanup DELETE: same opt-in gate, default deny (TASK 1.5)
     "VM-LOCAL-008",  # UPDATE non-destructive: append new observation + explicit supersession (TASK 1.5)
     "VM-LOCAL-009",  # permitted left delete cascades cognitive-graph rows (no graph orphans) (TASK 1.5)
+    "VM-LOCAL-010",  # HU/EN temporal cues in time_expand + multilingual date-value parsing (external audit v0.6.3 CD-3)
+    "VM-LOCAL-011",  # recency ranking: observed_at decay bonus in the left-brain hit sort (external audit v0.6.3 CD-4)
+    "VM-LOCAL-012",  # occurrence counting: NONE resolutions increment occurrence_count/last_observed_at (external audit v0.6.3 OCC-1)
     "UPSTREAM-961efe8",  # use the injected embedder everywhere (intent; see VM-LOCAL-001)
     "UPSTREAM-91d2e42",  # vector dimension mismatch guards (logging instead of print)
     "UPSTREAM-f535f9d",  # trait similarity threshold bound to embedder dimensions

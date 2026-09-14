@@ -268,7 +268,7 @@ if ($WebMode) {
             Write-Host ("  VOICEMEM WEB UI: " + $WebUrl)
             Write-Host "  A lap a kovetkezo mukodesre kesz:"
             Write-Host "   - mikrofonvalaszto + teszt (bal panel, Live input)"
-            Write-Host "   - beszeld a mikrofont: VAD -> Qwen3 ASR -> memoria -> Qwen3.6 35B -> Piper"
+            Write-Host "   - beszeld a mikrofont: VAD -> Parakeet ASR -> memoria -> Qwen3.6 35B -> Supertonic 3"
             Write-Host "   - vagy gepyel be szoveget (ASR bypass, hibakereseshez)"
             Write-Host "   - Pipeline panel: VAD/ASR/Memory/Embedding/LLM/TTS allapot + idozitok"
             Write-Host "     es elosutesben: mikrofon-keretek, VAD-szint, esemenylog (v0.4.1)"

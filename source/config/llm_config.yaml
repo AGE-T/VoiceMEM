@@ -1,0 +1,111 @@
+# =============================================================================
+# config/llm_config.yaml — THE canonical LLM runtime configuration (v0.7.2)
+# =============================================================================
+#
+# Single source of truth for every production LLM runtime setting:
+# the llama-server startup command line (scripts/start_llama_server.ps1),
+# the Python LLM client (app/llm.py via AgentConfig), the startup
+# diagnostics (app/main.py, app/web_server.py) and the configuration
+# validation (app/llm_config.py) ALL read THIS file through the ONE loader
+# (app/llm_config.py:load_llm_config). No PowerShell, Python or startup
+# script carries a second copy of these values.
+#
+# PRECEDENCE (explicit, strongest first):
+#   1. THIS FILE — config/llm_config.yaml (the canonical source)
+#   2. Optional environment overrides (single set, applied by the same
+#      loader, never by a second parsing path):
+#        LLAMA_N_GPU_LAYERS   -> llm.gpu_layers
+#        LLAMA_CONTEXT_SIZE   -> llm.context_size
+#        LLAMA_PARALLEL       -> llm.parallel
+#        LLAMA_CACHE_TYPE_K   -> llm.cache.key
+#        LLAMA_CACHE_TYPE_V   -> llm.cache.value
+#        LLM_TEMPERATURE      -> llm.sampling.temperature
+#        LLM_MAX_TOKENS       -> llm.generation.max_tokens
+#        LLM_DISABLE_THINKING -> llm.reasoning.enabled (1 = disabled)
+#        OPENAI_MODEL         -> llm.model (request model identifier)
+#      Every active override is REPORTED at startup (source: env:NAME), so
+#      the effective configuration is never silently different from this
+#      file. config/env.local.ps1 / env.local.sh keep these variables
+#      COMMENTED OUT — they are emergency overrides, not a second source.
+#   3. Built-in defaults in app/llm_config.py (identical to this file —
+#      pinned by tests/unit/test_llm_config.py; used only when this file
+#      is missing entirely, with a loud WARNING).
+#
+# PRODUCED LLAMA-SERVER ARGUMENTS (generated, never hand-written):
+#   gpu_layers:    20    ->   -ngl 20
+#   context_size:  32768 ->   -c 32768
+#   parallel:      1     ->   --parallel 1
+#   cache.key:     q8_0  ->   --cache-type-k q8_0
+#   cache.value:   q8_0  ->   --cache-type-v q8_0
+#   temperature:   0.7   ->   --temp 0.7
+#   reasoning.enabled: false -> --reasoning off (omitted when enabled)
+#
+# MEASURED PROFILE (2026-09-12, identical machine + model — the reason
+# behind these exact values; full evidence: docs/llm_config_ngl20-c32768/):
+#   ngl20 + 8192   TTFT ~4,90 s / total ~7,53 s
+#   ngl20 + 32768  TTFT ~4,89 s / total ~7,82 s
+#   -> the 32K window's measured latency cost is ~0 while production
+#   requests >8K tokens already occurred (context overrun). Target:
+#   32768, NOT 8192. ngl 20 = PARTIAL offload profile: 35B IQ4_XS
+#   (~19 GB) > 12 GB VRAM -> 20/42 layers on the GPU, the rest streamed
+#   from system RAM (RTX 5070). [2026-09-13 external audit LAT-1 —
+#   OPERATOR DECISION: the Qwen3.6 35B A3B IQ4_XS STAYS; no model swap,
+#   no goal reset; quality > speed with this pairing.]
+#
+# Model-path resolution is SEPARATE and unchanged (the GGUF file picker):
+#   config/llm_model.json (web UI selection) > LLAMA_MODEL_PATH env >
+#   a GGUF actually present in models/llm/qwen3.6-35b-a3b/. The `model`
+#   key below is the REQUEST model identifier for /v1/chat/completions,
+#   not a file path.
+#
+# After editing this file, restart START.bat — the llama-server command
+# line, the LLM client, and the startup log all pick the new values up
+# from here (validated; invalid values fail with a named, actionable
+# error and the server does not start with them).
+# =============================================================================
+
+llm:
+  # Request model identifier (served by llama-server; also shown in the
+  # web UI and the startup log). NOT a file path.
+  model: "qwen3.6-35b-a3b"
+
+  # GPU offload: layers moved to the GPU. 20 = the measured partial
+  # offload profile (20/42 on the RTX 5070). 0 = pure CPU. Valid: 0..N.
+  gpu_layers: 20
+
+  # Context window (tokens). llama-server: -c. Measured: 32K costs ~0
+  # extra TTFT vs 8K. Valid: > 0.
+  context_size: 32768
+
+  # Parallel server slots. llama-server: --parallel. 1 = single slot
+  # (the M1 pipeline is a single-session voice loop). Valid: >= 1.
+  parallel: 1
+
+  # KV cache quantisation (llama-server --cache-type-k / --cache-type-v).
+  # q8_0 = 8-bit KV cache: the 32K context fits the VRAM budget.
+  # Supported: f32, f16, bf16, q8_0, q4_0, q4_1, q5_0, q5_1, iq4_nl.
+  cache:
+    key: "q8_0"
+    value: "q8_0"
+
+  sampling:
+    # Generation temperature (llama-server --temp AND the request-level
+    # temperature of app/llm.py). Valid: 0.0 .. 2.0.
+    temperature: 0.7
+
+  reasoning:
+    # false = thinking channel OFF. This ONE flag produces ALL THREE
+    # suppression mechanisms (kept consistent by the single loader):
+    #   * llama-server: --reasoning off
+    #   * request: chat_template_kwargs.enable_thinking = false
+    #   * request: reasoning_effort = "none"
+    # true = thinking enabled (request-level suppression removed; the
+    # server-side flag is omitted). A local voice assistant wants
+    # sub-second first tokens — keep false.
+    enabled: false
+
+  generation:
+    # Reply token budget per request (app/llm.py max_tokens).
+    # NOTE: with reasoning enabled a small budget can be consumed by the
+    # thought channel (0-char replies) — the client detects and reports it.
+    max_tokens: 512

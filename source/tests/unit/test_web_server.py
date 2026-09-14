@@ -322,3 +322,47 @@ class TestNoOpenAi(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class LoopbackHardGuardTests(unittest.TestCase):
+    """[external audit v0.6.3 SEC-1] non-loopback bind is refused at code level.
+
+    The web backend has no authentication and serves a single local user.
+    main() must REFUSE a non-loopback --host (before any component is built)
+    unless VOICEMEM_ALLOW_REMOTE_WEB=1 is set explicitly.
+    """
+
+    def test_non_loopback_bind_refused(self):
+        import os
+
+        from app import web_server as ws
+
+        saved = os.environ.pop("VOICEMEM_ALLOW_REMOTE_WEB", None)
+        try:
+            # Refused FAST, before any component is built (DEMO flags prove
+            # we never reach the component construction on this path).
+            rc = ws.main(["--host", "0.0.0.0", "--mock", "--check"])
+            self.assertEqual(rc, 2)
+            # Loopback stays allowed by default (DEMO --check path).
+            rc_lb = ws.main(["--host", "127.0.0.1", "--mock", "--check"])
+            self.assertNotEqual(rc_lb, 2)
+        finally:
+            if saved is not None:
+                os.environ["VOICEMEM_ALLOW_REMOTE_WEB"] = saved
+
+    def test_explicit_opt_in_passes_the_guard(self):
+        import os
+
+        from app import web_server as ws
+
+        saved = os.environ.get("VOICEMEM_ALLOW_REMOTE_WEB")
+        os.environ["VOICEMEM_ALLOW_REMOTE_WEB"] = "1"
+        try:
+            # The guard passes: the call proceeds past it (--mock --check
+            # builds the DEMO components and exits cleanly).
+            rc = ws.main(["--host", "0.0.0.0", "--mock", "--check"])
+            self.assertNotEqual(rc, 2)
+        finally:
+            os.environ.pop("VOICEMEM_ALLOW_REMOTE_WEB", None)
+            if saved is not None:
+                os.environ["VOICEMEM_ALLOW_REMOTE_WEB"] = saved

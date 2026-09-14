@@ -1,0 +1,16 @@
+=== RECOVERED MODEL INVENTORY (2026-09-11, post-recovery) ===
+models/vad/silero-vad/silero_vad.onnx           2327524 bytes  (tphakala/silero-vad re-host, production source)
+models/asr/parakeet-tdt-0.6b-v3/model.safetensors  2508311120 bytes  (nvidia/parakeet-tdt-0.6b-v3, production ASR)
+models/asr/parakeet-tdt-0.6b-v3/{config,processor_config,tokenizer_config,generation_config}.json + tokenizer.json  (full snapshot minus plots/.eval_results)
+models/hf/models--intfloat--multilingual-e5-small/snapshots/614241f622f53c4eeff9890bdc4f31cfecc418b3/  (E5, production HF_HOME cache layout, test-pinned path)
+  config.json 655B, model.safetensors 470641600B, tokenizer.json 17082730B, sentencepiece.bpe.model 5069051B,
+  tokenizer_config.json 443B, special_tokens_map.json 167B, modules.json 387B, 1_Pooling/config.json,
+  README.md -> ../../blobs/e56327af55e9742caf76bff9ba83b6904cd2003d (blob restored, revision-matched)
+models/tts/piper/hu_HU-anna-medium.onnx 63201294B + .onnx.json 5018B  (rhasspy/piper-voices)
+models/tts/piper/en_US-lessac-medium.onnx 63201294B + .onnx.json 4885B  (rhasspy/piper-voices)
+bin/piper 4999768B + libonnxruntime/libespeak-ng/libpiper_phonemize + espeak-ng-data  (rhasspy/piper 2023.11.14-2, RUNPATH=$ORIGIN — smoke-tested RTF 0.097)
+models/embedding/multilingual-e5-small/  = committed placeholder state (README.md + .gitkeep) as delivered
+models/asr/qwen3-asr-0.6b/               = committed placeholder (retired, README-only) as delivered
+models/emotion/, models/speaker/         = optional M2/M3 placeholders as delivered (degrade, never block)
+models/llm/qwen3.6-35b-a3b/              = operator-placed 19GB GGUF, NEVER sandbox-resident (by design, MODELS.lock llm note)
+/tmp/llama/                              = ephemeral sandbox proof instance (b10717 + qwen3-1.7b stand-in), wiped by the reset, NOT part of the v0.6.0 gate

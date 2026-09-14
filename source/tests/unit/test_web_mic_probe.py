@@ -576,9 +576,8 @@ class TestUiMarkers(unittest.TestCase):
         self.assertIn("constraint={audio:true};", self.PAGE)
 
     def test_version_bumped(self):
-        # v0.6.0: modular ASR engine contract (AudioBuffer -> engine ->
-        # AsrResult), live CHAIN stage states, collapsible panels.
-        self.assertIn("PAGE_VERSION='0.6.0'", self.PAGE)
+        # v0.7.2: the LLM configuration centralisation release.
+        self.assertIn("PAGE_VERSION='0.7.2'", self.PAGE)
 
 
 if __name__ == "__main__":

@@ -17,7 +17,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "voicemem-agent"
-version = "0.6.0"
+version = "0.7.2"
 description = "Fully local HU/EN voice agent with long-term memory - M0/M1"
 requires-python = ">=3.11"
 dependencies = [
@@ -30,11 +30,13 @@ dependencies = [
 # Celgep (Windows 11 + RTX 5070): GPU/hang/kulso engine kotelezok.
 # A torch cu128 wheel kulon indexrol telepitendo (lasd requirements.lock).
 target = [
-    "transformers>=5.0",
+    "transformers>=5.6",
     "onnxruntime>=1.20",
     "sounddevice>=0.5.0",
     "soundfile>=0.12",
     "sentence-transformers>=3.0",
+    # v0.7.0: production TTS (ONNX Runtime CPU, Supertonic 3)
+    "supertonic==1.3.1",
 ]
 
 [tool.setuptools]

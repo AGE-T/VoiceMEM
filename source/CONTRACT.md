@@ -145,16 +145,21 @@ def parse_sse_content_delta(line: str) -> str:
     Unit-tested without any server."""
 ```
 
-### app/tts.py — 7-b — numpy allowed; piper via subprocess
+### app/tts_supertonic.py — 7-b — numpy allowed; supertonic SDK (ONNX CPU)
+
+v0.7.0: a Piper subprocess wrappert VÁLTOTTA a Supertonic 3 engine (a régi
+`app/tts.py` törölve — a git-történelem megőrzi). Az interfész változatlan
+(pipeline/web réteg ugyanúgy hívja), a modell EGYSZER töltődik be lazily és
+életben marad; nincs fallback engine (explicit hiba).
 
 ```python
 class TtsEngine:
-    """Piper subprocess wrapper. Voice per language: config.tts_hu_voice / tts_en_voice,
+    """Supertonic 3 engine (ONNX Runtime CPU). Voice per language: config.tts_hu_voice / tts_en_voice,
     resolved under config.voices_dir (config property)."""
     def __init__(self, config: AgentConfig) -> None: ...
-    def is_available(self) -> bool: ...   # piper executable + both voice onnx files exist
+    def is_available(self) -> bool: ...   # all 6 onnx modules + both default voice styles exist
     def synthesize_to_file(self, text: str, language: str, out_path: Path) -> bool:
-        """Run: <piper> --model <voice.onnx> --output_file <wav>; text via stdin (utf-8).
+        """SDK synthesize (voice_style, lang, steps, speed) -> int16 mono 44.1 kHz WAV;
         Returns success. Timeout 10s, logs stderr on failure."""
     def synthesize(self, text: str, language: str) -> Optional["np.ndarray"]:
         """synthesize_to_file to a tempfile, read WAV via stdlib `wave`,
@@ -352,9 +357,9 @@ Ez a szekció a 10-b ügynökkel (telepítő `.ps1` szkriptek) közös szerződ�
 
 | Komponens | Könyvtár (repo-gyökérhez képest) | Config property | Env felülírás |
 |---|---|---|---|
-| ASR (Qwen3-ASR-0.6B) | `models/asr/qwen3-asr-0.6b/` | `asr_model_dir` | `QWEN3_ASR_MODEL_PATH` |
+| ASR (v0.6.0: NVIDIA Parakeet TDT 0.6B v3 — a termelési motor; a Qwen3-ASR NYUGDÍJAZVA, legacy migrációs anyag) | `models/asr/parakeet-tdt-0.6b-v3/` (parakeet alapértelmezés; selectable: nemotron) | `asr_model_path` override → `MODEL_REGISTRY[asr_engine].local_path` | `ASR_ENGINE` + `ASR_DEVICE` (a `QWEN3_ASR_MODEL_PATH`/`asr_model_dir` CSAK a legacy app/asr.py modulra érvényes) |
 | LLM (Gemma 4 12B QAT Q4_0 — v0.4.3: az EGYETLEN LLM, fallback NINCS) | `models/llm/gemma-4-12b/` | `llm_model_file` | `LLAMA_MODEL_PATH` |
-| TTS (Piper hangok) | `models/tts/piper/` | `voices_dir` | `PIPER_VOICES_PATH` |
+| TTS (Supertonic 3 assetek) | `models/tts/supertonic-3/` | `supertonic_model_dir` | `SUPERTONIC_MODEL_PATH` |
 | VAD (Silero) | `models/vad/silero-vad/silero_vad.onnx` | `silero_vad_path` | `SILERO_VAD_PATH` |
 | Embedding (e5-small) | `models/embedding/multilingual-e5-small/` | `embedding_model_dir` (ÚJ) | `EMBEDDING_MODEL_PATH` |
 | Emotion (M2 placeholder) | `models/emotion/` — M0/M1-ben ÜRES, TILOS modellt tenni ide | — | — |
@@ -362,7 +367,7 @@ Ez a szekció a 10-b ügynökkel (telepítő `.ps1` szkriptek) közös szerződ�
 | Memória | `memory/` (`sqlite/`, `qdrant/`, `backups/`) | `memory_root_path` | `VOICEMEM_MEMORY_ROOT` |
 | Adat | `data/audio/`, `data/benchmarks/` | `data_dir` (ÚJ) | — |
 | Logok | `logs/` | `logs_dir` (ÚJ) | — |
-| Binárisok | `bin/` (llama-server.exe, piper.exe — a telepítő tölti) | `bin_dir` | — |
+| Binárisok | `bin/` (llama-server.exe — a telepítő tölti; TTS bináris NINCS) | `bin_dir` | — |
 | VoiceMem pinned klón | `vendor/voicemem/` (a telepítő klónoz; `pip install -e`) | — | — |
 
 A `default_root()` a REPO-GYÖKÉR (a régi Windows meghajtó-alapú default és a
@@ -538,7 +543,7 @@ a megoldható munkát ("telepítsd kézzel", "futtasd előbb az installert",
 * **Gyorsútvonal (idempotencia, spec 16/29)**: Ha a probe-ok (venv fut,
   `import yaml, numpy, httpx, soundfile, torch`, `huggingface_hub`
   kódtár a .venv-ben (Python API — CLI NEM kell),
-  `bin\llama-server.exe` + `bin\piper.exe`, MODELS.lock-jelenlét, config +
+  `bin\llama-server.exe`, MODELS.lock-jelenlét, config +
   .env) mind rendben ÉS `smoke_tests_passed` → a telepítő kimarad
   ("environment already ready"), csak verify + dispatch fut.
 * **Nehéz útvonal**: bármi hiányzik / első futás / `repair` mód → az
@@ -594,7 +599,7 @@ a megoldható munkát ("telepítsd kézzel", "futtasd előbb az installert",
   (M0 §7 elrendezés), `files`, `snapshot` (true = teljes repo-snapshot;
   jelenlét: `snapshot_probe` fájl + `min_total_mb` összméret-padló),
   `pinned_revision`, `min_bytes` (fájlonkénti minimális méret; GGUF >= 1 GiB).
-* `tools[]`: `component` (llama-server|piper), `provider` github-release,
+* `tools[]`: `component` (llama-server), `provider` github-release,
   `repo`, `tag`, `assets`, `target_dir` = `bin`, `files`. A pin-eknek
   szinkronban kell maradniuk az `install_m1.ps1` fejében lévő változókkal.
 * A bootstrap `Test-ModelsPresent` jelenlét-ellenőrzése CSAK ezt a fájlt
@@ -625,9 +630,10 @@ a megoldható munkát ("telepítsd kézzel", "futtasd előbb az installert",
   Qwen → unsloth (azonos fájlnev, drop-in) → bartowski (alulvonalas fájlnev +
   automatikus átnevezés a kanonikus névre) — a hivatalos Qwen GGUF-repo
   2026-08-31-én élőben ellenőrizve nem elérhető. VAD: tphakala re-host
-  (flat fájl) → eredeti silero repo + VAD-lapítás. Piper hangok:
-  nyelvi-almappás (elsődleges) + flat (fallback) útvonal-próba és lapítás
-  (flatten) a `models\tts\piper` gyökérbe (a config `voices_dir` ezt várja).
+  (flat fájl) → eredeti silero repo + VAD-lapítás. Supertonic 3 (v0.7.0):
+  az archív `supertone-oss-archive/supertonic-3` repo NESTED layout-ját
+  változatlanul tartjuk (`onnx/` + `voice_styles/` — a supertonic SDK így
+  várja; NINCS lapítás, NINCS tükör).
 
 ### Tiltott user-facing üzenetek (spec 3 — a teszt kikényszeríti)
 
@@ -718,7 +724,7 @@ class VoicePipeline:
 # app/tts.py (MockTtsEngine tükrözi)
 def synthesize(self, text, language, length_scale: Optional[float] = None)
 def synthesize_to_file(self, text, language, out_path, length_scale=None)
-    # length_scale=None -> piper default (M1-azonos); --length_scale csak ha nem None
+    # length_scale=None -> engine default speed (M1-azonos); speed=1/length_scale ha nem None
 
 # app/voicemem_bridge.py
 async def store_fact(self, text: str, speaker_id: str = "voice_user") -> None
@@ -858,3 +864,44 @@ interfészek:
 | Tulajdonos | Fájlok |
 |---|---|
 | 21 (main orchestrator) | `app/speaker.py` (új), `app/pipeline.py` (M3-stage + timings/result), `app/config.py` (M3-mezők + speaker_model_dir/registry/check_speaker_assets), `app/voicemem_bridge.py` (per-user facades), `app/mock_components.py` (MockSpeakerRecognizer + routing-rögzítők), `app/main.py` (--speaker-demo, --register-speaker, valós mód, --check), `MODELS.lock.json` + `download_models_hf.py` (speaker bejegyzés), `install_m1.ps1` (20 lépés), `requirements.txt/.lock`, `config/voicemem_config.yaml` (M3-mezők), `models/speaker/README.md`, `LICENSES.md` (M3-táblázat), `README.md` (M3-fejezet), `tests/unit/test_speaker.py`, `tests/integration/test_pipeline_mock.py` (PipelineSpeakerTests + CLI-tesztek), `tests/validation/test_feature_speaker.py`, ez a CONTRACT-addendum |
+
+
+---
+
+## v0.6.4 kiegészítő — külső audit (VoiceMEM_Audit_v0.6.3) maradék-tételek
+
+### F-A: a retrieval-útvonal választása SZÁNDÉKOS (dokumentálva)
+
+A külső audit P1 tétele arra kért: vagy dokumentáld, hogy a CLI bridge és a
+web út miért pont a sima `vm.search()`-et hívja (nem a gazdagabb publikus
+`classify()+search()` kombinációt), vagy kösd be azt. A válasz dokumentálva:
+
+- **Mindkét felszín szándékosan `search()`-et hív.** Az `vm.search()` a
+  core-facade -> `Orchestrator.Search()`, amely BELSŐLEG lefuttatja a saját
+  query-osztályozását / slot-szűkítését / idő-kiterjesztését (l.
+  orchestrator.Search belső lépései), így a "gazdag" viselkedés nem marad ki
+  — csak nem a hívónál történik. A külön publikus `vm.classify()` egy
+  introspektációs/demo API; ha a bridge külön hívná, a query-t kétszer
+  futtatnánk le, és a két osztályozás el is csúszhatna egymástól.
+- A bridge `_feed_user_turn` adapter-táblája csak forward-compat (a pin-elt
+  vendor csomag search-facadéja a hivatalos út — v0.5.1 TASK 1 forenzikus
+  eredmény).
+
+### A beépített javítások (v0.6.4)
+
+| Audit tétel | Érintett fájl(ok) | Mechanizmus |
+|---|---|---|
+| CD-3 (P1) HU/EN időviszonyítás | `vendor/.../leftbrain/time_expand.py` (VM-LOCAL-010), `local_memory_store.py` | HU+EN relatív-idő szótár szóhatárolós regexszel; ISO dátumbélyegek latin betűs kérdéshez; négynyelvű (ISO/CJK/HU/EN) dátum-érték parserek + értékszintű overlap-bónusz; HU időkérdés-jelzők a `_DATE_Q_RE`-ben |
+| CD-4 (P1) recency rangsorolás | `local_memory_store.py` (VM-LOCAL-011), `mem0_backend_store.py` | exponenciálisan csökkenő (30 napos felezési idejű) frissességi bónusz az `observed_at` eseményidőhöz; a sort kulcs `base_score + recency_boost` (a szupersesszió-elsőbbség marad); régi, dátum nélküli sorok 0 bónusz -> viselkedés változatlan |
+| OCC-1 (P2) előfordulásszám | `voice_input.py` (VM-LOCAL-012), `mem0_backend_store.py`, `memory_repository.py` | explicit NONE + omit-NONE útvonalakon pontos-szöveges egyezés esetén `occurrence_count`/`last_observed_at` metaadat-írás (nem-pusztító merge); JSON-tükör ugyanígy |
+| F-B (P1) provenance a renderben | `app/voicemem_bridge.py`, `app/web_server.py` | `[<eseménydátum> \| <N>x confirmed \| superseded \| by X]` suffix minden bal-agyi hit-re (mindkét render-felszínen); UI-payload új mezőkkel |
+| SEC-1 (P2) loopback hard-guard | `app/web_server.py` | nem-loopback bind kódszintű MEGTAGADÁSA, hacsak `VOICEMEM_ALLOW_REMOTE_WEB=1` nincs explicit beállítva |
+| OFF-1 (P2) offline kikényszerítés | `app/asr_parakeet.py`, `app/asr_nemotron.py` | `from_pretrained(local_files_only=True)` — kód, nem csak env |
+| BAT-1 (P2) duplapéldány-guard | `scripts/start_llama_server.ps1` | folyamatszintű guard (Get-CimInstance Win32_Process): betöltés alatt NEM indul második példány, helyette várakozás; `-ForceKillExisting` operátori menekülőút |
+| DOC-1 (P2) BUILD_INFO pontosság | `scripts/build_release_sandbox.py` | a v0.6.4 notes a VALÓS vendor-deltát írja le (VM-LOCAL-007..012), nem "untouched"-et |
+| F-A (P1) retrieval-dokumentáció | ez a fejezet | l. fent |
+| LAT-1 (P1) késleltetés | `config/voicemem_config.yaml`, `README.md` | OPERÁTORI DÖNTÉS rögzítve: a 35B modell marad (minőség > sebesség); nincs modellcsere; a megfigyelés folytatódik |
+
+Nem ebben a buildben kezelt (külső függés): CD-6 mirror-sync (GitHub-token
+visszaállítása után futtatható), SEC-1 további rétegei (auth nem bevezetve —
+egyszemélyes, loopback-re kötött szerver).

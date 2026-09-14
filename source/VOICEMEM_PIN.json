@@ -79,6 +79,33 @@
       "based_on_upstream": "none (new cascade)",
       "divergence": "upstream left delete leaves cognitive-graph rows referencing the dead id; we cascade",
       "summary": "a permitted delete (VM-LOCAL-005 opt-in) also removes memories wrapper rows, entity_memory_links, memory_tags (V2) and graph_entity_memories (slot-split layer) so no stale graph truth survives"
+    },
+    {
+      "id": "VM-LOCAL-010",
+      "summary": "HU/EN relative-time cues in leftbrain/time_expand.py (word-boundary Latin regex, ISO date stamps) + multilingual date-value parsing (ISO/CJK/HU/EN) and value-level date-overlap bonus in local_memory_store.py + Hungarian temporal-question cues in _DATE_Q_RE (external audit v0.6.3 finding CD-3, P1)",
+      "files": [
+        "voicemem/leftbrain/time_expand.py",
+        "voicemem/leftbrain/local_memory_store.py",
+        "voicemem/leftbrain/mem0_backend_store.py"
+      ]
+    },
+    {
+      "id": "VM-LOCAL-011",
+      "summary": "recency ranking: exponentially decaying bonus on the event date (observed_at, 30-day half-life, weight 0.10) added to the left-brain hit sort key (base_score + recency_boost; supersession-first unchanged; undated legacy rows get 0) (external audit v0.6.3 finding CD-4, P1)",
+      "files": [
+        "voicemem/leftbrain/local_memory_store.py",
+        "voicemem/leftbrain/mem0_backend_store.py"
+      ]
+    },
+    {
+      "id": "VM-LOCAL-012",
+      "summary": "occurrence counting: explicit-NONE and omit-NONE resolutions with an exact (normalized) text match against an existing memory increment occurrence_count/last_observed_at via non-destructive metadata merge (Mem0BackendStore.count_occurrence + MemoryRepository facade + JSON mirror) (external audit v0.6.3 finding OCC-1, P2)",
+      "files": [
+        "voicemem/utils/common/voice_input.py",
+        "voicemem/leftbrain/mem0_backend_store.py",
+        "voicemem/leftbrain/memory_repository.py",
+        "voicemem/leftbrain/local_memory_store.py"
+      ]
     }
   ],
   "ported_upstream_fixes": [

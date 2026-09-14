@@ -194,7 +194,18 @@ def _thinking_control_kwargs(config: "AgentConfig") -> dict[str, Any]:
     deprecates one keeps the other working. Controlled by
     ``config.llm_disable_thinking`` (default True — a local voice assistant
     wants sub-second first tokens, not a 10-60 s silent thought process).
+
+    v0.7.2: when the config carries the canonical runtime
+    (``config.llm_runtime``, materialised from config/llm_config.yaml),
+    the kwargs come from ``LlmRuntimeConfig.thinking_control_kwargs()``
+    — the SAME single-source definition the yaml flag and the server-side
+    ``--reasoning`` flag are generated from, so the three can never
+    disagree. The inline fallback below only serves configs constructed
+    without the canonical loader (exotic embedders/tests).
     """
+    runtime = getattr(config, "llm_runtime", None)
+    if runtime is not None:
+        return runtime.thinking_control_kwargs()
     if getattr(config, "llm_disable_thinking", True):
         return {
             "chat_template_kwargs": {"enable_thinking": False},

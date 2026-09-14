@@ -27,15 +27,16 @@ websockets>=13        # uvicorn WS support (bongeszo <-> backend /ws)
 
 # --- TARGET-ONLY (nehez, guardolt import a kodban) --------------------------
 # Ezeket a sandboxba NEM kell telepiteni (nincs GPU / nincs hang).
-transformers>=5.0     # Qwen3-ASR-0.6B betoltese es a processor+generate
-                     # hivasi ut (app/asr.py,
-                     # models/asr/qwen3-asr-0.6b konyvtarbol).
-                     # v0.4.7 FIELD FIX: a qwen3_asr modul NATIVAN csak a
-                     # transformers 5.x-ben letezik (Qwen3ASRForConditional
-                     # Generation + Qwen3ASRProcessor) - a 4.x VALAMENNYI
-                     # verzioja elutasitja a checkpointot, es az ASR pipeline
-                     # hivas sem tamogatott ott. A 16. lepes OR-e es az
-                     # assert ezt a padlot kenyszeri.
+transformers>=5.6     # NVIDIA Parakeet TDT 0.6B v3 (v0.6.0 production ASR)
+                     # betoltese a ParakeetForTDT + AutoProcessor utvonalan
+                     # (app/asr_parakeet.py, models/asr/parakeet-tdt-0.6b-v3,
+                     # MODELS.lock.json asr bejegyzes).
+                     # v0.6.1: a ParakeetForTDT class CSAK a transformers
+                     # >= 5.6-ban letezik - a regebbi 5.x elutasitja (a
+                     # v0.4.7-es 5.0-padlot mar a nyugdijazott Qwen3-ASR
+                     # ut irta elo; app/asr.py mar nem-termellesi migracios
+                     # modul). A 16. lepes OR-e es az assert ezt a padlot
+                     # kenyszeri.
                      # FIGYELEM: a 12. lepes "pip install -e vendor\voicemem"
                      # a vendored pin miatt 4.52.3-ra DOWNGRADELI - az
                      # install_m1.ps1 16. lepeseben egy OR fut ezutan, ami
@@ -45,7 +46,7 @@ transformers>=5.0     # Qwen3-ASR-0.6B betoltese es a processor+generate
 onnxruntime>=1.20     # CPU build (models/vad/silero-vad/silero_vad.onnx).
                      # A Blackwell sm_120 nincs benne a prebuilt GPU
                      # csomagokban -> a CPU futtatas SZANDERKOS
-                     # (VAD + Piper a CPU-n dolgozik, lasd spec 16.2).
+                     # (VAD + Supertonic 3 TTS a CPU-n dolgozik).
 sounddevice>=0.5.0    # mikrofon/hangszoro PortAudio wrapper (app/audio_io.py)
 soundfile>=0.12       # WAV iras/olas (libsndfile) a benchmarkokhoz
 sentence-transformers>=3.0  # multilingual-e5-small embedder
@@ -78,10 +79,16 @@ funasr==1.4.11        # M2: emotion2vec+ base futtato (app/emotion.py,
 # OPCIONALIS: a csomag nelkul az app DEGRADED modban fut (ures memoria-
 # kontextus, egyszer logolja; lasd app/voicemem_bridge.py).
 
-# --- piper-tts - NEM fuggoseg! -----------------------------------------------
-# A TTS a bin/piper.exe SUBPROCESS-en at fut, nem Python-API-bol.
-# Ez a GPL-3.0 engine licenc-elvalasztasa (copyleft izolacio) es a futtatas
-# stabilitasa miatt is jon (nem a venvben fut, kulon binaris).
+# --- supertonic - v0.7.0 PRODUCTION TTS (ONNX Runtime CPU) ------------------
+# Supertone Supertonic 3 open-weight TTS (99M params, 31 nyelv, hu+en;
+# 44.1 kHz 16-bit kimenet). A Piper subprocess-et valtotta ki (v0.7.0).
+# Pin: supertonic==1.3.1 (MIT kod; a modell OpenRAIL-M - l. LICENSES.md).
+# Fuggosegei mar mind jelen vannak (onnxruntime, numpy, soundfile,
+# huggingface-hub). A runtime SOHA nem tolt le modellt
+# (auto_download=False; a modeleket a telepito tolti le a MODELS.lock.json
+# 'tts' bejegyzese szerint a models/tts/supertonic-3 konyvtarba).
+# A repo ARCHIVALT (supertone-oss-archive) - vegleges kulso fuggoseg.
+supertonic==1.3.1     # v0.7.0 production TTS (app/tts_supertonic.py)
 
 # --- speechbrain - M3 (ECAPA speaker embedding, CPU) -------------------------
 # Az M3 beszelo-azonositas futtatoja (app/speaker.py,

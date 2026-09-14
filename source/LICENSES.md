@@ -9,7 +9,7 @@ licenc-tábláját, az M2 kiegészítés az 5.4-es M2 táblát tükrözi (Python
 függőségekkel és a repo saját kódjával kiegészítve).
 
 A kapott binárisokat és modellfájlokat a `scripts/download_models.ps1` (illetve a
-kézi llama.cpp/Piper letöltés) helyezi el — a licencfájlokat a telepítés után
+kézi llama.cpp letöltés) helyezi el — a licencfájlokat a telepítés után
 érdemes még egyszer ellenőrizni a forrásoldalakon.
 
 ## M1 komponens-licenc táblázat
@@ -20,8 +20,8 @@ kézi llama.cpp/Piper letöltés) helyezi el — a licencfájlokat a telepítés
 | 2 | Qwen3-ASR-0.6B | beszéd → szöveg (GPU) | Apache-2.0 | Apache-2.0 | n/a | NEM | NEM | **PASS** |
 | 3 | Gemma 4 12B QAT Q4_0 (GGUF) | válaszgenerálás (LLM, v0.4.3: az EGYETLEN LLM) | n/a (Google kiadás) | Gemma Terms of Use (google/gemma-4-12B-it-qat-q4_0-gguf) | n/a | NEM | NEM | **PASS** |
 | 4 | llama.cpp (llama-server.exe bináris, CUDA 13.3 prebuilt) | LLM backend szerver | MIT | n/a | n/a | NEM | NEM | **PASS** |
-| 5 | Piper engine (piper.exe bináris, subprocess) | szöveg → beszéd (TTS) | GPL-3.0-or-later | n/a | n/a | NEM | NEM | **PASS** |
-| 6 | Piper hangok: hu_HU anna, hu_HU berta, hu_HU imre, en_US lessac (medium) | TTS hangok | n/a | n/a | MIT | NEM | NEM | **PASS** |
+| 5 | **Supertonic 3** (supertone-oss-archive/supertonic-3, ~99M, ONNX; v0.7.0: az EGYETLEN production TTS — a Piper kiváltva) | szöveg → beszéd (TTS, CPU) | MIT (supertonic SDK 1.3.1 mintakód) | **OpenRAIL-M** (használati korlátozásokkal: l. a modjegyzésben) | n/a | NEM | NEM | **PASS** (lokális, offline; a korlátozások a használati-megkötések listáján) |
+| 6 | Supertonic 3 preset hangstílusok (F1–F5, M1–M5, voice_styles/*.json) | TTS hangok | n/a | OpenRAIL-M (a modell részei) | n/a | NEM | NEM | **PASS** |
 | 7 | multilingual-e5-small | memória-embedding (CPU) | Apache-2.0 | Apache-2.0 | n/a | NEM | NEM | **PASS** |
 | 8 | VoiceMem (VEZERLT FORK: vendor/voicemem, alap upstream v0.0.1 = e8384e0; l. VOICEMEM_PIN.json/UPSTREAM_POLICY.md) | hosszú távú memória-keretrendszer | Apache-2.0 | Apache-2.0 (LICENSE megtartva a fork-ban) | n/a | NEM | NEM | **PASS** |
 | 9 | mem0ai (a VoiceMem telepíti) | memória-réteg | Apache-2.0 | n/a | n/a | NEM | NEM | **PASS** |
@@ -65,12 +65,17 @@ ebben a fájlban és a README-ben teljesül).
 
 ## Megjegyzések
 
-- **Piper engine (5. sor)**: az egyetlen copyleft (GPL-3.0-or-later) licenc a
-  készletben. A copyleft **hatását elválasztással kerüljük el**: az app a
-  `piper.exe`-t külön subprocessként hívja (`app/tts.py`), a GPL kód nem
-  linkelődik, nem is importoltatik az MIT app-kóddal — így a mi kódunkra a GPL
-  nem terjed át. Emiatt NEM veszünk fel `piper-tts` Python-csomagot függőségként
-  (lásd requirements.txt).
+- **Supertonic 3 (5. sor, v0.7.0)**: a Piper (GPL-3.0 subprocess-elválasztás)
+  kiváltása után a készletben már NINCS copyleft komponens. A Supertonic SDK
+  mintakódja MIT; a modellsúlyok **OpenRAIL-M** licencűek — ez NEM permissive,
+  hanem egy felelős-használati licenc: kereskedelmi használat engedélyezett,
+  de a szerződéses használati korlátozások (pl. káros/tiltott célú felhasználás
+  tilalma, újra-elosztásnál a használati megkötések továbbvitele) betartása
+  kötelező. A licencszöveg a `models/tts/supertonic-3/LICENSE` fájlban és a
+  HF modellkártyán érhető el; a telepítő (install_m1.ps1 20. lépés) ellenőrzi
+  a fájl meglétét. A repo ARCHIVÁLT (supertone-oss-archive) — fix, nem
+  frissülő külső függőség (pin: supertonic==1.3.1 + revízió
+  aafc6e32416a594460b32413efc49d7fe4ce6d46).
 - **multilingual-e5-small (7. sor)**: a HF-modellkártya Apache-2.0-t jelöl; a
   milestones 5.3-as táblázata a referencia-implementáció kódjára hivatkozva
   MIT-ként szerepelteti — üzleti szempontból mindkettő megfelel (permissive).

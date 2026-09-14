@@ -63,7 +63,7 @@ $env:OPENAI_API_KEY = "not-needed-but-required-by-openai-lib"  # dummy: az opena
 # v0.4.16: az EGYETLEN LLM a Qwen3.6 35B A3B IQ4_XS (l. az LLM-MODELPROFIL
 # blokkot lentebb; NINCS visszaallitasi profil).
 $env:OPENAI_MODEL = "qwen3.6-35b-a3b"     # modellnev a /v1/chat/completions hivasokhoz
-$env:TTS_BACKEND = "local"                        # Piper az OpenAI TTS helyett (lokalis)
+$env:TTS_BACKEND = "local"                        # Supertonic 3 lokal TTS (v0.7.0)
 
 # ---------------------------------------------------------------------------
 # Modellutvonal-felulirasok (OPCIONALIS - kommentben: az AgentConfig
@@ -72,7 +72,9 @@ $env:TTS_BACKEND = "local"                        # Piper az OpenAI TTS helyett 
 # models/llm/qwen3.6-35b-a3b, models/embedding/multilingual-e5-small
 # ---------------------------------------------------------------------------
 # $env:QWEN3_ASR_MODEL_PATH = "$Root\models\asr\qwen3-asr-0.6b"
-# $env:PIPER_VOICES_PATH    = "$Root\models\tts\piper"
+# v0.7.0: a TTS hangok a Supertonic 3 presetjei (F1-F5, M1-M5); a
+# PIPER_VOICES_PATH mar nem hasznalatban (Piper nyugdijazva)
+# $env:SUPERTONIC_MODEL_PATH = "$Root\models\tts\supertonic-3"
 # $env:SILERO_VAD_PATH      = "$Root\models\vad\silero-vad\silero_vad.onnx"
 # $env:EMBEDDING_MODEL_PATH = "$Root\models\embedding\multilingual-e5-small"
 # M2 (emotion2vec) - opcionalis feluliras (az M0/M1-ben kizart funkcio,
@@ -85,13 +87,16 @@ $env:TTS_BACKEND = "local"                        # Piper az OpenAI TTS helyett 
 # llama.cpp szerver (scripts/start_llama_server.ps1 ezeket hasznalja)
 # v0.4.14: az aktiv profil a Qwen3.6 35B A3B IQ4_XS - a modell ~19 GB
 # (IQ4_XS MoE), ami NEM fer bele a 12 GB VRAM-ba, ezert a retegek egy resze
-# a rendszer-RAM-bol (32 GB) streamel: LLAMA_N_GPU_LAYERS=26 reszleges
+# a rendszer-RAM-bol (32 GB) streamel: LLAMA_N_GPU_LAYERS=20 reszleges (mert profil: 20/42 reteg GPU-n)
 # offload (figyelem + KV cache + compute buffer GPU-n, a tobbi CPU-n).
 # Ha a telepitett llama.cpp build tamogatja, a MoE-szintu split a jobb:
 # --n-cpu-moe / --override-tensor "exps=CPU" (expert-tenzorok CPU-ra) -
 # addig is a reteg-szintu offload a biztos, univerzalisan tamogatott ut.
-# Kontextus 8K marad (a v0.4.5 ota a prompt-budget 14000 karakterben
-# korlatozva; nem noveljuk feleslegesen).
+# v0.6.0+ PRODUKCIO (2026-09-12, meresi alapu): KONTEXTUS 32K (32768).
+# A mert tabla: ngl20+8192 TTFT ~4,90s vs ngl20+32768 TTFT ~4,89s -> a 32K
+# kontextus mert koltsege ~0, a 8K-feletti production kerdes mar
+# elofordult (kontextus-tulfutas). A prompt-budget 14000 karakterben
+# szandekosan konzervativ marad (a 32K-ban boven befer).
 # ---------------------------------------------------------------------------
 $env:LLAMA_SERVER_HOST = "127.0.0.1"   # loopback: nincs kuls halozati expozicio
 $env:LLAMA_SERVER_PORT = "8080"
@@ -111,14 +116,22 @@ $env:LLAMA_SERVER_PORT = "8080"
 # utvonalra atirva (a find_qwen_gguf.ps1 -SetEnv es az
 # identify_ollama_blob.ps1 -SetEnv automatikusan atirja/behelyezi):
 # $env:LLAMA_MODEL_PATH = "D:\AI\Models\Qwen3.6-35B-A3B-IQ4_XS.gguf"
-$env:LLAMA_CONTEXT_SIZE = "8192"       # 8K kontextus (parbeszed + memory befer)
-$env:LLAMA_N_GPU_LAYERS = "26"         # RESZLEGES offload: 35B IQ4_XS ~19 GB > 12 GB VRAM
-$env:LLAMA_CACHE_TYPE_K = "q8_0"       # 8-bit KV cache (VRAM-sparelas)
-$env:LLAMA_CACHE_TYPE_V = "q8_0"
-$env:LLM_DISABLE_THINKING = "1"        # Qwen3.6 hibrid-reasoning: thinking csatorna KI
-                                        # (sub-second elso token; a llama-server
-                                        # --reasoning off + a request-szintu
-                                        # chat_template_kwargs egyuttes biztositja)
+# v0.7.2: AZ LLM-ERTEK FELULIRASOK KIKOMMENTEZVE - a kanonikus forras a
+# config/llm_config.yaml (az EGY loader: app/llm_config.py olvassa; a
+# python-bridge ezt materializalja AgentConfig-ba, es a start_llama_server.ps1
+# a parancssort is innen generalja). Ezek a sorok azota DUPLAKATOK voltak -
+# az ertekek azonosak voltak a kanonikus fajllel, de env-szinten felulirtak
+# a yaml provenance-t. VESZ-HELYZET-FELULIRASKENT maradnak itt kikommentezve
+# (ha egy diagnostikai vegen muszaj env-bol allitani: allitsd vissza OKET -
+# indulaskor kiirasra kerul minden aktiv feluliras, sosem csendes).
+# $env:LLAMA_CONTEXT_SIZE = "32768"      # 32K kontextus (mert TTFT-koltseg ~0 vs 8K; >8K production kerdes volt)
+# $env:LLAMA_N_GPU_LAYERS = "20"         # RESZLEGES offload: 35B IQ4_XS ~19 GB > 12 GB VRAM (mert: 20/42 reteg)
+# $env:LLAMA_CACHE_TYPE_K = "q8_0"       # 8-bit KV cache (VRAM-sparelas)
+# $env:LLAMA_CACHE_TYPE_V = "q8_0"
+# $env:LLM_DISABLE_THINKING = "1"        # Qwen3.6 hibrid-reasoning: thinking csatorna KI
+#                                         # (sub-second elso token; a llama-server
+#                                         # --reasoning off + a request-szintu
+#                                         # chat_template_kwargs egyuttes biztositja)
 
 
 # ---------------------------------------------------------------------------
@@ -147,8 +160,8 @@ $env:LLM_DISABLE_THINKING = "1"        # Qwen3.6 hibrid-reasoning: thinking csat
 #     starter tiszta hibaval megall es a pickert javasolja.
 #   $env:OPENAI_MODEL       = "qwen3.6-35b-a3b"
 #   $env:LLAMA_MODEL_PATH   = "<abszolut GGUF/blob utvonal - l. a kikommentezett peldat fent>"
-#   $env:LLAMA_CONTEXT_SIZE = "8192"    # MoE A3B: 8K kontextus fut rajta
-#   $env:LLAMA_N_GPU_LAYERS = "26"      # reszleges offload (12 GB VRAM < ~19 GB modell)
+#   $env:LLAMA_CONTEXT_SIZE = "32768"   # MoE A3B: 32K kontextus (mert TTFT ~0 kulonbseg vs 8K)
+#   $env:LLAMA_N_GPU_LAYERS = "20"      # mert reszleges offload-profil (12 GB VRAM < ~19 GB modell)
 #   $env:LLM_DISABLE_THINKING = "1"     # hibrid-reasoning: thinking csatorna KI
 # ---------------------------------------------------------------------------
 # PyTorch

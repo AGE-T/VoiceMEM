@@ -23,7 +23,7 @@ WHAT IT DOES (first run - the full one-click flow):
   2.  find Python 3.11 (search order: py -3.11, python3.11, python);
       verify 3.11.x AND 64-bit; clean error otherwise (no tracebacks)
   3.  fast probes: .venv health, dependency imports, HF CLI tooling,
-      bin\llama-server.exe + bin\piper.exe, MODELS.lock.json presence
+      bin\llama-server.exe, MODELS.lock.json presence
       check, config\voicemem_config.yaml + .env
   4.  if anything is missing (or first run, or -Mode repair): run the
       idempotent 18-step installer scripts\install_m1.ps1 as a CHILD
@@ -116,7 +116,6 @@ $YamlFile     = Join-Path $Root 'config\voicemem_config.yaml'
 $EnvExample   = Join-Path $Root 'config\.env.example'
 $EnvFile      = Join-Path $Root 'config\.env'
 $LlamaExe     = Join-Path $Root 'bin\llama-server.exe'
-$PiperExe     = Join-Path $Root 'bin\piper.exe'
 $Installer    = Join-Path $Root 'scripts\install_m1.ps1'
 $StartAgent   = Join-Path $Root 'scripts\start_agent.ps1'
 $VerifyM1     = Join-Path $Root 'scripts\verify_m1.ps1'
@@ -424,22 +423,22 @@ function Test-DepsReady {
     # probe. The PyPI voicemem package pins transformers==4.52.3, so an
     # in-place upgraded venv keeps that version FOREVER: an import-only
     # probe passed ("dependencies importable"), the bootstrap SKIPPED the
-    # installer, and step 16 (the v0.4.7 transformers>=5.0 guard) never
-    # ran -> transformers lacks the native qwen3_asr module -> "ASR not
+    # installer, and the step 16 transformers floor guard never
+    # ran -> the production ASR engine class is missing -> "ASR not
     # green", voice mode unavailable, text-only conversation. Exit code 5
     # = importable but older than the floor -> force the installer ->
     # step 16 upgrades it -> ASR loads again (self-healing START.bat).
     # No embedded double quotes (PS 5.1 native-argument quoting); the ''
     # pairs are escaped single quotes for the Python string literals.
-    $TfProbe = 'import sys, transformers; v = tuple(int(x) for x in transformers.__version__.split(''+'')[0].split(''.'')[:2]); sys.exit(0 if v >= (5, 0) else 5)'
+    $TfProbe = 'import sys, transformers; v = tuple(int(x) for x in transformers.__version__.split(''+'')[0].split(''.'')[:2]); sys.exit(0 if v >= (5, 6) else 5)'
     try { & $VenvPython -c $TfProbe *> $null } catch { }
     if ($LASTEXITCODE -eq 0) { return $true }
     if ($LASTEXITCODE -eq 5) {
         $TfVersion = 'unknown'
         try { $TfVersion = ((& $VenvPython -c 'import transformers; print(transformers.__version__)' 2>$null | Out-String)).Trim() } catch { }
         if ([string]::IsNullOrWhiteSpace($TfVersion)) { $TfVersion = 'unknown' }
-        Write-BLog 'WARN' ('transformers ' + $TfVersion + ' < 5.0 in the venv - Qwen3-ASR (qwen3_asr) has no native module with it; installer step 16 will upgrade it automatically')
-        Write-BWarn ('transformers ' + $TfVersion + ' < 5.0 (Qwen3-ASR floor) -> will be upgraded automatically (ASR repair)')
+        Write-BLog 'WARN' ('transformers ' + $TfVersion + ' < 5.6 in the venv - ParakeetForTDT (the v0.6.0 production ASR engine, nvidia/parakeet-tdt-0.6b-v3) does not exist below transformers 5.6; installer step 16 will upgrade it automatically')
+        Write-BWarn ('transformers ' + $TfVersion + ' < 5.6 (Parakeet ASR floor) -> will be upgraded automatically (ASR repair)')
     } else {
         Write-BLog 'WARN' 'transformers import/version probe failed - installer step 16 will repair it'
         Write-BWarn 'transformers missing or broken -> will be installed automatically'
@@ -459,7 +458,9 @@ function Test-HfToolingReady {
 }
 
 function Test-BinariesReady {
-    return ((Test-Path $LlamaExe) -and (Test-Path $PiperExe))
+    # v0.7.0: a TTS mar a supertonic pip-csomag + ONNX modelek (nincs piper.exe);
+    # a binaris-keszlet = a llama-server.
+    return (Test-Path $LlamaExe)
 }
 
 function Test-ModelsPresent {
@@ -560,12 +561,12 @@ function Write-FinalSummary {
     Write-Host 'VoiceMem:'
     Write-Host ("    {0}" -f $VoiceMem)
     Write-Host 'ASR:'
-    Write-Host '    Qwen3 ASR 0.6B'
+    Write-Host '    NVIDIA Parakeet TDT 0.6B v3 (production ASR, v0.6.0 ota)'
     Write-Host 'LLM:'
     Write-Host '    Qwen3.6 35B A3B IQ4_XS (az EGYETLEN LLM - nincs visszaesi profil;'
     Write-Host '    a GGUF barmelyik meghajton: web UI "LLM model" picker / find_qwen_gguf.ps1)'
     Write-Host 'TTS:'
-    Write-Host '    Piper HU + EN'
+    Write-Host '    Supertonic 3 (ONNX Runtime CPU, v0.7.0 ota; Piper nyugdijazva)'
     Write-Host 'Offline runtime:'
     Write-Host '    READY'
     Write-Host 'Smoke tests:'
@@ -659,7 +660,7 @@ try {
     if ($VenvOk) { Write-BOk '.venv ready (Python 3.11)' } else { Write-BWarn '.venv missing or broken -> will be created' }
     if ($DepsOk) { Write-BOk 'dependencies importable' } else { Write-BWarn 'one or more dependencies missing -> will be installed' }
     if ($HfOk) { Write-BOk 'huggingface_hub library available (Python API - no CLI dependency)' } else { Write-BWarn 'huggingface_hub library missing -> will be installed automatically' }
-    if ($BinsOk) { Write-BOk 'bin\llama-server.exe + bin\piper.exe present' } else { Write-BWarn 'runtime binaries missing -> will be downloaded' }
+    if ($BinsOk) { Write-BOk 'bin\llama-server.exe present' } else { Write-BWarn 'runtime binaries missing -> will be downloaded' }
     if ($Models.Ok) {
         Write-BOk ('model set complete: ' + ($Models.Present -join ', '))
     } else {

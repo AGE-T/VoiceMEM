@@ -22,7 +22,8 @@ A 22 LEPES (a felhasznalo specje szerint, pontosan ebben a sorrendben):
       + huggingface_hub KONYVTAR a modellletolteshez (Python API, CLI nelkul)
   10. PyTorch CU128 telepitese + GPU SMOKE TEST
       (mar telepitett es importalhato torch -> skip; cc < 12.0 -> SIKERTELEN)
-  11. llama.cpp + piper binarisok letoltese (pin-elt GitHub release)
+  11. llama.cpp binarisok letoltese (pin-elt GitHub release; a TTS a
+      supertonic pip-csomag + ONNX modellek, mar nem kulon binaris)
   12. VoiceMem: VEZERELT vendor\voicemem (repo-ban) + pip install -e + pin-ellenorzes
   13. onnxruntime telepitese (M1: Silero VAD futtato, CPU - pin-elt 1.23.0;
       v0.3.4 field report #4: sem a requirements.lock aktival sorai, sem a
@@ -32,12 +33,14 @@ A 22 LEPES (a felhasznalo specje szerint, pontosan ebben a sorrendben):
   14. funasr telepitese (M2: emotion2vec+ futtato, CPU; torch-NELKULI dep,
       a cu128 harmast nem bantja - utana trio-guard fut)
   15. speechbrain telepitese (M3: ECAPA beszeloi embedding futtato, CPU)
-  16. transformers or: >= 5.0 (Qwen3-ASR nativ tamogatas; a voicemem pin-jet
-      visszabeszelo csomagok javitasa)
+  16. transformers or: >= 5.6 (Parakeet TDT nativ tamogatas; a voicemem pin-jet
+
+      visszabeszelo csomagok javitasa)
+
   17. modellletoltes: scripts\download_models.ps1 (idempotens, M1+M2 lock)
   18. konfiguracio: config\voicemem_config.yaml + .env a .env.example-bol
   19. smoke testek: scripts\verify_m1.ps1 -WithServer (FAIL -> SIKERTELEN)
-  20. licenc-ellenorzes: LICENSES.md + Piper hang .onnx.json fajlok
+  20. licenc-ellenorzes: LICENSES.md + Supertonic 3 modell-lizenc (OpenRAIL-M)
   21. offline kornyezet: HF_HUB_OFFLINE=1, TRANSFORMERS_OFFLINE=1,
       HF_HOME=$Root\models\hf (a HF cache a repo models\hf ala izolalodik)
   22. vegso install report + INSTALL_MANIFEST.json
@@ -48,7 +51,7 @@ kimenet a 15-17. lepes tenyleges ellenorzesere epul.
 
 KAPCSOLOK:
   -SkipModels        a modellletoltes kihagyasa (offline ujratelepiteshez)
-  -SkipBinaries      a llama.cpp/piper letoltes kihagyasa (mar kezzel telepitve)
+  -SkipBinaries      a llama.cpp letoltes kihagyasa (mar kezzel telepitve)
   -SkipVoiceMem      a VoiceMem kihagyasa (a verify_m1 jelezni fogja)
   -Force             .venv ujraepitese + binarisok ujraletoltese
                      (a modelleket NEM torli - azt a download_models kezeli)
@@ -60,8 +63,6 @@ PIN-ELT VERZIOK (reprodukalhatosag - webes kutatas, 2026-08-31):
                 cuda dll: cudart-llama-bin-win-cuda-13.3-x64.zip (CUDA 13.3 runtime)
                 forras: https://github.com/ggml-org/llama.cpp/releases
                 (a ggerganov/llama.cpp URL ide iranyit at)
-  piper     : tag 2023.11.14-2, asset piper_windows_amd64.zip
-                forras: https://github.com/rhasspy/piper/releases
   VoiceMem  : VEZERELT FORRAS - vendor\voicemem a repo-ban (controlled fork;
                 alap: upstream commit e8384e087bd2f44eb05fc7ae1a3c525ea8244179
                 = tag v0.0.1; identitas: VOICEMEM_PIN.json + UPSTREAM_POLICY.md).
@@ -93,9 +94,6 @@ $LlamaCppTag = "b10717"
 $LlamaCppBinAsset = "llama-b10717-bin-win-cuda-13.3-x64.zip"
 $LlamaCppCudartAsset = "cudart-llama-bin-win-cuda-13.3-x64.zip"
 $LlamaCppBaseUrl = "https://github.com/ggml-org/llama.cpp/releases/download"
-$PiperTag = "2023.11.14-2"
-$PiperAsset = "piper_windows_amd64.zip"
-$PiperBaseUrl = "https://github.com/rhasspy/piper/releases/download"
 # v0.5.0: a VoiceMem VEZERELT FORRAS (vendor\voicemem, l. VOICEMEM_PIN.json) -
 # nincs upstream repo/ref klonozes; az identitast a pin-fajl es a futokori
 # voicemem.CONTROLLED_UPSTREAM_COMMIT adja.
@@ -359,7 +357,7 @@ Write-Step "Projektmappak letrehozasa (idempotens)"
 $Dirs = @(
     "models\asr",
     "models\llm\qwen3.6-35b-a3b",
-    "models\tts\piper",
+    "models\tts\supertonic-3",
     "models\vad\silero-vad",
     "models\embedding\multilingual-e5-small",
     "models\emotion",
@@ -589,11 +587,14 @@ if ($GpuCcMajor -lt 12) {
 }
 
 # ===========================================================================
-# 11) llama.cpp + piper binarisok letoltese (pin-elt release)
+# 11) llama.cpp binarisok letoltese (pin-elt release)
+# v0.7.0: a PIPER BINARIS LETOLTESE TOROLT - a production TTS mar a
+# supertonic==1.3.1 pip-csomag (ONNX Runtime, CPU) + a MODELS.lock.json
+# 'tts' bejegyzese szerint letoltott models\tts\supertonic-3 onnx assetek;
+# nincs kulon TTS binaris, nincs piper.exe, nincs subprocess.
 # ===========================================================================
-Write-Step "llama.cpp + piper binarisok letoltese (pin-elt release)"
+Write-Step "llama.cpp binarisok letoltese (pin-elt release)"
 $LlamaExe = Join-Path $Root "bin\llama-server.exe"
-$PiperExe = Join-Path $Root "bin\piper.exe"
 # v0.3.2: a binaris-ellenorzes DLL-TUDATOS. A v0.3.1 elotti idempotencia csak
 # a llama-server.exe letetet nezte - egy RESZLEGES bin\ (exe megvan, a CUDA
 # DLL-ek nem) atcsuszott, es a llama-server indulaskor NEMA modon halt meg
@@ -609,10 +610,9 @@ $LlamaDllSetOk = ($LlGgmlCudaOk -and $LlCudartOk -and $LlCublasOk)
 if ($SkipBinaries) {
     Write-Host "    -SkipBinaries: a binarisletoltes kihagyva (offline ujratelepiteshez)."
 } else {
-    $NeedLlama = ((-not (Test-Path $LlamaExe)) -or (-not $LlamaDllSetOk) -or $Force)
-    $NeedPiper = ((-not (Test-Path $PiperExe)) -or $Force)
-    if (-not ($NeedLlama -or $NeedPiper)) {
-        Write-Host "    bin\llama-server.exe + CUDA DLL-keszlet es bin\piper.exe mar leteznek - a letoltest atugrom."
+    $NeedLlama = ((-not (Test-Path $LlamaExe)) -or (-not $LlamaDllSetOk)) -or $Force
+    if (-not $NeedLlama) {
+        Write-Host "    bin\llama-server.exe + CUDA DLL-keszlet mar letezik - a letoltest atugrom."
     } else {
         if ($NeedLlama -and (Test-Path $LlamaExe) -and (-not $LlamaDllSetOk)) {
             Write-Host "    FIGYELEM: a bin\llama-server.exe megvan, de a CUDA DLL-keszlet hianyos" -ForegroundColor Yellow
@@ -656,35 +656,11 @@ if ($SkipBinaries) {
             if (-not ($PostGgmlCuda -and $PostCudart -and $PostCublas)) {
                 Fail-Install "A kicsomagolas utan a CUDA DLL-keszlet hianyos (ggml-cuda/cudart/cublas nem talalhato a bin\ mappaban)." "Valoszinuleg megvaltozott a pin-elt llama.cpp release asset-strukturaja - nyisd meg a https://github.com/ggml-org/llama.cpp/releases oldalt, es hasonlitsd ossze a(z) $LlamaCppTag asset-jeit a szkript fejeben pin-elt nevekkel."
             }
+            # v0.7.1 (field report #5): a v0.7.0-es piper-eltavolitas egy zarojelet
+            # too many vett ki - ez a sor zarja az if ($NeedLlama) blokkjat
+            # (a Windows PowerShell 5.1 parser a v0.7.0-ban elutasitotta az
+            # egesz szkriptet). scripts/ps_lint.py most gyartas elott is ellenorzi.
             Write-Host "    bin\llama-server.exe + CUDA DLL-ek rendben (ggml-cuda/cudart/cublas ellenorzve)."
-        } else {
-            Write-Host "    llama-server.exe mar letezik - csak a piper letoltese fut le."
-        }
-        if ($NeedPiper) {
-            $PiperUrl = "$PiperBaseUrl/$PiperTag/$PiperAsset"
-            Write-Host ("    Letoltes : {0}" -f $PiperUrl)
-            try {
-                Invoke-WebRequest -Uri $PiperUrl -OutFile (Join-Path $StageDir $PiperAsset) -UseBasicParsing
-            } catch {
-                $PpHint = "Kezi letoltes: " + $PiperUrl + " -> csomagold ki, a piper.exe keruljon a bin\ mappaba, majd ujra: install_m1.ps1 -SkipBinaries"
-                Fail-Install ("A piper letoltese nem sikerult: {0}" -f $_.Exception.Message) $PpHint
-            }
-            $PiperStage = Join-Path $StageDir "piper"
-            New-Item -ItemType Directory -Path $PiperStage -Force | Out-Null
-            Write-Host "    Kicsomagolas..."
-            Expand-Archive -Path (Join-Path $StageDir $PiperAsset) -DestinationPath $PiperStage -Force
-            $PiperFound = Get-ChildItem -Path $PiperStage -Recurse -Filter "piper.exe" | Select-Object -First 1
-            if (-not $PiperFound) {
-                Fail-Install "A piper zip-ben nem talalhato piper.exe." "Kezi telepites: csomagold ki a zip-et, es a piper.exe-t (a melle hallo dll-ekkel, adatokkal) masold a bin\ mappaba."
-            }
-            # A piper.exe teljes konyvtarat masoljuk (dll-ek + espeak-ng adatok).
-            Copy-Item -Path (Join-Path $PiperFound.Directory.FullName "*") -Destination (Join-Path $Root "bin") -Recurse -Force
-            if (-not (Test-Path $PiperExe)) {
-                Fail-Install "A masolas utan sem talalhato a bin\piper.exe."
-            }
-            Write-Host "    bin\piper.exe rendben."
-        } else {
-            Write-Host "    piper.exe mar letezik - a letoltese kihagyva."
         }
         try {
             Remove-Item -Path $StageDir -Recurse -Force -ErrorAction SilentlyContinue
@@ -713,15 +689,32 @@ if ($SkipVoiceMem) {
     }
     Write-Host "    Vezelt VoiceMem forras: vendor\voicemem (pin: $VoiceMemUpstreamCommit)."
 
-    # A pin-fajl es a vendor foltok jelenlete ellenorzese (a manifest rogzi a tenyleges ertekeket).
+    # v0.6.2 (FIELD REPORT - kritikus javitas): a pin JSON-ben az
+    # upstream_commit a "provenance" blokkon BELUL van, nem a gyokerben.
+    # A regi kod a pin JSON gyokerben kereste az upstream_commit-ot, ami
+    # PowerShell ConvertFrom-Json-nel MINDIG $null-t ad - igy a 12. lepes
+    # egy TOKELETES pin-fajl eseten is determinisztikusan elhalt (az
+    # idempotens bootstrap v0.6.1-ig sosem futtatta le ezt a lepest, ezert
+    # rejtve maradt). Javitva: a tenyleges utvonal, es a hibauzenet most
+    # kiirja a tenylegesen olvasott erteket is.
+    $PinJson = $null
     try {
         $PinJson = Get-Content -Path $VmPinFile -Raw -Encoding UTF8 | ConvertFrom-Json
     } catch {
         $PinJson = $null
     }
-    if ($null -eq $PinJson -or $PinJson.upstream_commit -ne $VoiceMemUpstreamCommit) {
-        Fail-Install "A VOICEMEM_PIN.json hianyzik vagy nem a vart upstream commit-et rogziti (vart: $VoiceMemUpstreamCommit)." "A vendor\voicemem es a VOICEMEM_PIN.json egy zaros paros - telepitsd a teljes repot egyben (release ZIP)."
+    $PinCommit = ""
+    if ($null -ne $PinJson) {
+        $PinCommit = [string]$PinJson.provenance.upstream_commit
     }
+    if ($PinCommit -ne $VoiceMemUpstreamCommit) {
+        $PinCommitShown = $PinCommit
+        if ([string]::IsNullOrWhiteSpace($PinCommitShown)) {
+            $PinCommitShown = "<hianyzik / serult / nem olvashato>"
+        }
+        Fail-Install ("A VOICEMEM_PIN.json hianyzik, serult, vagy nem a vart upstream commit-et rogziti (vart: $VoiceMemUpstreamCommit; olvasott: $PinCommitShown).") "A vendor\voicemem es a VOICEMEM_PIN.json egy zaros paros - telepitsd a teljes repot egyben (release ZIP)."
+    }
+    Write-Host "    VoiceMem pin-fajl OK (provenance.upstream_commit == $VoiceMemUpstreamCommit)."
 
     # v0.4.7: a vendor KINAI trait/emocio-extrakcios promptjanak angolositasa
     # (scripts\patch_voicemem_english.py, idempotens). A vezerelt farban a folt
@@ -893,24 +886,24 @@ if (-not (Test-TorchTrio)) {
 }
 
 # ===========================================================================
-# 16) transformers OR (v0.4.7): >= 5.0 - a Qwen3-ASR qwen3_asr modul nativan
-#     a transformers 5.x-ben letezik (4.57 NEM tartalmazza); az app/asr.py a
-#     processor + generate hivasi utat hasznalja, amihez a nativ modul kell.
+# 16) transformers OR (v0.6.1): >= 5.6 - a ParakeetForTDT class (a v0.6.0
+#     production ASR nvidia/parakeet-tdt-0.6b-v3, app/asr_parakeet.py)
+#     CSAK a transformers >= 5.6-ban letezik; regebbi verzioval az ASR
 # ===========================================================================
-Write-Step "transformers or (>= 5.0: Qwen3-ASR tamogatas - voicemem pin-javitas)"
+Write-Step "transformers or (>= 5.6: Parakeet TDT tamogatas - voicemem pin-javitas)"
 # v0.4.4 FIELD REPORT: a 12. lepes "pip install -e vendor\voicemem" a vendored
 # csomag pyproject.toml-ja miatt a transformers-t 4.52.3-ra DOWNGRADELI - az
 # a verzio NEM ismeri a qwen3_asr architekturat, igy a Qwen3-ASR-0.6B (ASR
 # modell) SOHA nem toltodik be ("ASR nem zold a UI-on"). A 14/15. lepesek
 # fuggosegei (funasr/speechbrain) is eltolhetik. Az or ezert az UTOLSO
-# pip-lepes utan fut, es az 5.0+ kotelezo also padlot kenyszeri a venvbe.
+# pip-lepes utan fut, es az 5.6+ kotelezo also padlot kenyszeri a venvbe.
 # v0.4.5: a bootstrap.ps1 dependency-probe most VERZIO-ERZEKENY (a
 # voicemem PyPI pin miatt visszamarado 4.52.3-et kiszuri), igy egy
 # meglevo venven ez a lepes AUTOMATIKUSAN lefut - nem kell repair mod.
-$TransformersFloor = "5.0"
+$TransformersFloor = "5.6"
 & $VenvPython -m pip install "transformers>=$TransformersFloor"
 if ($LASTEXITCODE -ne 0) {
-    Fail-Install "A transformers >= $TransformersFloor telepitese nem sikerult (a Qwen3-ASR qwen3_asr architekturahoz EZ KELL - nelkule az ASR nem toltodik be)." "Ujrafuttatas (idempotens), vagy inditsd ujra a START.bat-ot (repair)."
+    Fail-Install "A transformers >= $TransformersFloor telepitese nem sikerult (a ParakeetForTDT classhoz EZ KELL - nelkule a production ASR motor nem toltodik be)." "Ujrafuttatas (idempotens), vagy inditsd ujra a START.bat-ot (repair)."
 }
 $TfVersion = (& $VenvPython -c "import transformers; print(transformers.__version__)" 2>$null)
 if ($LASTEXITCODE -ne 0) {
@@ -918,11 +911,11 @@ if ($LASTEXITCODE -ne 0) {
 }
 # Verzio-ASSERT tuple-osszehasonlitassal (NE string-hasonlitas: "4.9" < "5.0"
 # stringkent hamisul meg) - kesz allapotban soha nem bukhat el:
-& $VenvPython -c "import sys, transformers; v = tuple(int(x) for x in transformers.__version__.split('+')[0].split('.')[:2]); sys.exit(0 if v >= (5, 0) else 1)"
+& $VenvPython -c "import sys, transformers; v = tuple(int(x) for x in transformers.__version__.split('+')[0].split('.')[:2]); sys.exit(0 if v >= (5, 6) else 1)"
 if ($LASTEXITCODE -ne 0) {
-    Fail-Install ("A transformers verzio a or utan is < 5.0 ({0}) - a Qwen3-ASR nem toltodik be vele." -f $TfVersion) "Valamelyik csomag (voicemem pin / funasr / speechbrain fuggoseg) visszabeszelte. Kezzel: .venv\Scripts\python.exe -m pip install "transformers>=5.0" es ujrafuttatas."
+    Fail-Install ("A transformers verzio a or utan is < 5.6 ({0}) - a Parakeet ASR motor nem toltodik be vele." -f $TfVersion) "Valamelyik csomag (voicemem pin / funasr / speechbrain fuggoseg) visszabeszelte. Kezzel: .venv\Scripts\python.exe -m pip install "transformers>=5.6" es ujrafuttatas."
 }
-Write-Host ("    transformers {0} rendben (>= 5.0: a qwen3_asr modul nativan betoltodik)." -f $TfVersion)
+Write-Host ("    transformers {0} rendben (>= 5.6: a ParakeetForTDT class betoltodik)." -f $TfVersion)
 
 # ===========================================================================
 # 17) Modellek letoltese (scripts\download_models.ps1, idempotens)
@@ -982,36 +975,21 @@ if ($LASTEXITCODE -ne 0) {
 # ===========================================================================
 # 20) Licenc-ellenorzes
 # ===========================================================================
-Write-Step "Licenc-ellenorzes (LICENSES.md + Piper hang-konfigok)"
+Write-Step "Licenc-ellenorzes (LICENSES.md + Supertonic 3 modell-lizenc)"
 $LicFile = Join-Path $Root "LICENSES.md"
 if (-not (Test-Path $LicFile)) {
     Fail-Install "Hianyzik a LICENSES.md a repo gyokerben (repo-fajl)." "git checkout -- LICENSES.md vagy ujra-clone, majd ujrafuttatas."
 }
 Write-Host "    LICENSES.md rendben."
-$VoiceNames = @("hu_HU-anna-medium", "hu_HU-berta-medium", "hu_HU-imre-medium", "en_US-lessac-medium")
-$VoiceJsonOk = $true
-foreach ($V in $VoiceNames) {
-    $JsonPath = Join-Path $Root ("models\tts\piper\{0}.onnx.json" -f $V)
-    if (-not (Test-Path $JsonPath)) {
-        $VoiceJsonOk = $false
-        Write-Host ("    HIANYZIK: {0}" -f $JsonPath)
-    } else {
-        try {
-            $FirstLine = Get-Content -Path $JsonPath -TotalCount 1
-            if (-not $FirstLine) {
-                $VoiceJsonOk = $false
-                Write-Host ("    URES/olvashatatlan: {0}" -f $JsonPath)
-            }
-        } catch {
-            $VoiceJsonOk = $false
-            Write-Host ("    Olvashatatlan: {0}" -f $JsonPath)
-        }
-    }
+# v0.7.0: a Supertonic 3 modell OpenRAIL-M licencu - a modell-lizenc
+# fajlnak a models\tts\supertonic-3 konyvtarban kell lennie (a letolto
+# masolja), az OpenRAIL-M hasznalati korlatozasok pedig a LICENSES.md-ben
+# vannak dokumentalva. A SDK minta-kod MIT.
+$SupertonicLic = Join-Path $Root "models\tts\supertonic-3\LICENSE"
+if (-not (Test-Path $SupertonicLic)) {
+    Fail-Install "Hianyzik a Supertonic 3 modell-lizenc fajl (models\tts\supertonic-3\LICENSE, OpenRAIL-M)." "Futtasd ujra a scripts\download_models.ps1-t (idempotens; a letolto a LICENSE-t is masolja)."
 }
-if (-not $VoiceJsonOk) {
-    Fail-Install "Legalabb egy Piper hang .onnx.json fajl hianyzik vagy olvashatatlan." "Futtasd ujra a scripts\download_models.ps1-t (idempotens)."
-}
-Write-Host "    Minden Piper hang .onnx.json olvashato. License: PASS"
+Write-Host "    Supertonic 3 LICENSE (OpenRAIL-M) megtalalhato. License: PASS"
 
 # ===========================================================================
 # 21) Offline kornyezet beallitasa
@@ -1075,9 +1053,9 @@ Write-Host "torchvision: $TorchvisionVer"
 Write-Host "torchaudio: $TorchaudioVer"
 Write-Host "CUDA: $CudaVer"
 Write-Host "VoiceMem: $VmInfo"
-Write-Host "ASR: Qwen3 ASR 0.6B"
+Write-Host "ASR: NVIDIA Parakeet TDT 0.6B v3 (production, v0.6.0 ota)"
 Write-Host "LLM: Qwen3.6 35B A3B IQ4_XS (az EGYETLEN LLM; a GGUF operator altal elhelyezendo/barhol kivalaszthato - l. config/env.local.ps1 + a web UI LLM model pickere; NINCS visszaesi profil)"
-Write-Host "TTS: Piper HU + EN"
+Write-Host "TTS: Supertonic 3 (ONNX Runtime CPU, v0.7.0 ota; Piper nyugdijazva)"
 Write-Host "VAD: Silero"
 Write-Host "Embedding: multilingual E5 small"
 Write-Host "Offline: READY"

@@ -71,14 +71,14 @@ class DefaultsTests(unittest.TestCase):
             cfg = AgentConfig()
         self.assertEqual(cfg.validate(), [])
         self.assertEqual(cfg.sample_rate, 16000)
-        self.assertEqual(cfg.output_sample_rate, 22050)
+        self.assertEqual(cfg.output_sample_rate, 44100)
         self.assertEqual(cfg.voicemem_mode, "text_mode")
         self.assertTrue(cfg.enable_emotion)   # M2 default: on (8.6 flag)
         self.assertTrue(cfg.enable_speaker)   # M3 default: on (9.5 flag)
         self.assertEqual(cfg.vad_frame_samples, 512)      # 32 ms @ 16 kHz
         self.assertEqual(cfg.asr_chunk_samples, 9600)     # 600 ms @ 16 kHz
         self.assertEqual(cfg.llama_server_port, 8080)
-        self.assertEqual(cfg.asr_model_name, "Qwen/Qwen3-ASR-0.6B")
+        self.assertEqual(cfg.asr_model_name, "nvidia/parakeet-tdt-0.6b-v3")
         self.assertEqual(cfg.llama_server_url, "http://127.0.0.1:8080/v1")
         self.assertEqual(cfg.llama_server_health_url, "http://127.0.0.1:8080/health")
 
@@ -100,7 +100,7 @@ class DefaultsTests(unittest.TestCase):
                 cfg = AgentConfig()
             root = cfg.root
             self.assertEqual(cfg.models_dir, root / "models")
-            self.assertEqual(cfg.voices_dir, root / "models" / "tts" / "piper")
+            self.assertEqual(cfg.supertonic_model_dir, root / "models" / "tts" / "supertonic-3")
             self.assertEqual(
                 cfg.silero_vad_path, root / "models" / "vad" / "silero-vad" / "silero_vad.onnx"
             )
@@ -161,7 +161,7 @@ class DefaultsTests(unittest.TestCase):
         with patch.dict(os.environ, neutral_env()):
             cfg = AgentConfig(model_root="m", data_root="d", logs_root="l")
         self.assertEqual(cfg.models_dir, cfg.root / "m")
-        self.assertEqual(cfg.voices_dir, cfg.root / "m" / "tts" / "piper")
+        self.assertEqual(cfg.supertonic_model_dir, cfg.root / "m" / "tts" / "supertonic-3")
         self.assertEqual(cfg.embedding_model_dir, cfg.root / "m" / "embedding" / "multilingual-e5-small")
         self.assertEqual(cfg.data_dir, cfg.root / "d")
         self.assertEqual(cfg.logs_dir, cfg.root / "l")
@@ -355,7 +355,7 @@ class FromYamlTests(unittest.TestCase):
                 "llama_server_port: 9999",
                 "vad_threshold: 0.62",
                 "llm_temperature: 0.3",
-                "tts_hu_voice: hu_HU-test-medium",
+                "tts_hu_voice: M3",
             ]
         )
         with tempfile.TemporaryDirectory() as tmp:
@@ -365,8 +365,13 @@ class FromYamlTests(unittest.TestCase):
                 cfg = AgentConfig.from_yaml(path)
         self.assertEqual(cfg.llama_server_port, 9999)
         self.assertAlmostEqual(cfg.vad_threshold, 0.62)
-        self.assertAlmostEqual(cfg.llm_temperature, 0.3)
-        self.assertEqual(cfg.tts_hu_voice, "hu_HU-test-medium")
+        # v0.7.2 centralisation: llm_* VALUE fields come from the canonical
+        # config/llm_config.yaml (the repo file — the loader falls back to
+        # <root>/config/ when the temp dir has no llm_config.yaml sibling),
+        # NOT from the voicemem yaml's flat llm keys (0.3 is overridden).
+        self.assertAlmostEqual(cfg.llm_temperature, 0.7)
+        self.assertIsNotNone(cfg.llm_runtime)
+        self.assertEqual(cfg.tts_hu_voice, "M3")
         self.assertEqual(cfg.validate(), [])
 
     def test_from_yaml_ignores_unknown_keys(self) -> None:
@@ -404,7 +409,10 @@ class FromYamlTests(unittest.TestCase):
             with patch.dict(os.environ, neutral_env()):
                 cfg = AgentConfig.from_yaml(path)
         self.assertEqual(cfg.llama_server_port, 7777)
-        self.assertEqual(cfg.llm_parallel, 2)          # app: section IS loaded
+        # v0.7.2: llm values are materialised from the canonical
+        # llm_config.yaml (1) — the app: section's llm_parallel is NO LONGER
+        # an authoritative copy (it used to win with 2).
+        self.assertEqual(cfg.llm_parallel, 1)
         self.assertEqual(cfg.model_root, "models")     # field default, not leaked
         self.assertEqual(cfg.memory_root, "")
         self.assertEqual(cfg.data_root, "data")
@@ -455,7 +463,7 @@ class RootResolutionTests(unittest.TestCase):
             self.assertEqual(cfg.root, Path(tmp))
             self.assertEqual(cfg.bin_dir, Path(tmp) / "bin")
             self.assertEqual(cfg.models_dir, Path(tmp) / "models")
-            self.assertEqual(cfg.voices_dir, Path(tmp) / "models" / "tts" / "piper")
+            self.assertEqual(cfg.supertonic_model_dir, Path(tmp) / "models" / "tts" / "supertonic-3")
             self.assertEqual(cfg.memory_root_path, Path(tmp) / "memory")
 
     def test_apply_env_updates_root(self) -> None:
@@ -489,7 +497,7 @@ class RuntimeAssetsTests(unittest.TestCase):
                 assets = cfg.check_runtime_assets()
         self.assertEqual(
             set(assets),
-            {"llama_model", "piper_executable", "silero_vad", "hu_voice", "en_voice", "asr_model"},
+            {"llama_model", "supertonic_model", "silero_vad", "hu_voice", "en_voice", "asr_model"},
         )
         self.assertTrue(all(isinstance(v, bool) for v in assets.values()))
 
@@ -497,7 +505,6 @@ class RuntimeAssetsTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             with patch.dict(os.environ, neutral_env(VOICEMEM_HOME=tmp)):
                 cfg = AgentConfig()
-                piper_name = "piper.exe" if platform.system() == "Windows" else "piper"
                 # v0.4.17: the LLM asset must be a VALID GGUF for the
                 # operator-dir scan to accept it (magic decides).
                 import struct
@@ -507,12 +514,29 @@ class RuntimeAssetsTests(unittest.TestCase):
                 llm_file.write_bytes(
                     b"GGUF" + struct.pack("<IIQQ", 3, 0, 0, 0) + b"\x00" * 32
                 )
+                # v0.7.0: TTS assets are the Supertonic 3 onnx modules +
+                # the default preset voice-style JSONs.
+                st_dir = cfg.supertonic_model_dir
+                (st_dir / "onnx").mkdir(parents=True, exist_ok=True)
+                for name in (
+                    "tts.json",
+                    "unicode_indexer.json",
+                    "duration_predictor.onnx",
+                    "text_encoder.onnx",
+                    "vector_estimator.onnx",
+                    "vocoder.onnx",
+                ):
+                    (st_dir / "onnx" / name).write_bytes(b"x" * 16)
+                (st_dir / "voice_styles").mkdir(parents=True, exist_ok=True)
                 files = [
-                    cfg.bin_dir / piper_name,
+                    st_dir / "onnx" / "vocoder.onnx",
                     cfg.silero_vad_path,
-                    cfg.voices_dir / f"{cfg.tts_hu_voice}.onnx",
-                    cfg.voices_dir / f"{cfg.tts_en_voice}.onnx",
-                    cfg.asr_model_dir / "config.json",
+                    cfg.supertonic_voices_dir / f"{cfg.tts_hu_voice}.json",
+                    cfg.supertonic_voices_dir / f"{cfg.tts_en_voice}.json",
+                    # v0.6.1: readiness follows the SELECTED engine dir
+                    # (parakeet default) - the legacy qwen dir no longer
+                    # satisfies the asr_model asset (field-report fix).
+                    cfg.models_dir / "asr" / "parakeet-tdt-0.6b-v3" / "config.json",
                     llm_file,
                 ]
                 for asset in files:

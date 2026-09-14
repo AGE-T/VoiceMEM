@@ -82,7 +82,7 @@ v0.3.3 FIX (celgepi field report #3): a KEZI tesztek bizonyitottak, hogy a
         LLAMA_N_GPU_LAYERS / LLAMA_CONTEXT_SIZE / LLAMA_CACHE_TYPE_K /
         LLAMA_CACHE_TYPE_V
       A llama-server MEGHIVASA VALTOZATLAN: ugyanaz az exe, ugyanaz a
-      parancssor (-ngl -1, -c 8192, --parallel 1, q8_0 KV cache, --temp 0.7,
+      parancssor (-ngl 20, -c 32768, --parallel 1, q8_0 KV cache, --temp 0.7,
       --metrics, --no-webui), ugyanaz a viselkedes.
   (b) a .venv hianya es a DLL-elozetes-ellenorzes talalata is csak FIGYELEM
       (nem fatal): a nev-alapu DLL-ellenorzes becsles - a vegso igazsag a
@@ -93,32 +93,45 @@ v0.3.3 FIX (celgepi field report #3): a KEZI tesztek bizonyitottak, hogy a
       ha a llama-server folyamat tenylegesen leallt ES a /health nem valt
       elerhetove a timeouton belul.
 
-KONFIGURACIO-VEZERELT: a szerver MINDEN parametere a config\voicemem_config.yaml
--bol valtozik ki. PowerShellben nincs nativ YAML, ezert PYTHON-BRIDGE: a
-.venv pythonja az app.config.AgentConfig.from_yaml segitsegevel JSON-re forditja
-a konfigot, a szkript pedig ConvertFrom-Json-nel veszi fel. A bridge a
+KONFIGURACIO-VEZERELT (v0.7.2: KANONIKUS LLM-KONFIG): a szerver MINDEN
+LLM-ertek-parametere (-ngl, -c, --parallel, --cache-type-k/-v, --temp,
+--reasoning) a KANONIKUS config\llm_config.yaml-bol GENERALODIK - az az
+EGYETLEN operator-altal szerkesztheto LLM-konfiguracios forras (l. a fajl
+fejlecat: precedencia, env-felulirasok, ervenyes ertekek). PowerShellben
+nincs nativ YAML, ezert PYTHON-BRIDGE: a .venv pythonja az
+app.config.AgentConfig.from_yaml -> materialise_llm_runtime uton (az EGY
+loader: app/llm_config.py) JSON-re forditja a konfigot, a szkript pedig
+ConvertFrom-Json-nel veszi fel, es a parancssort a JSON-bol EPITI FEL - a
+ps1-ben NINCS masodik, kezzel irt ertekmasolat. A bridge a
 repo-gyokerbol fut (Push-Location $Root), a YAML-relativ utvonal miatt.
 
-LLAMA_* env-valtozok: ha a PS-sessionben mar be vannak allitva (pl. a
-config\env.local.ps1 dot-source-olasa utan), azok az AgentConfig.apply_env()
--ben AUTOMATIKUSAN feluliraskent alkalmazodnak - a gyerekfolyamat orokli a
-PS env-jet, igy ehhez a szkripthez SEMMI teendo nincs (a bridge mar
-figyelembe veszi oket).
+LLAMA_* / LLM_* env-valtozok (v0.7.2): a az LLM-ERTEK-felulirasok
+(LLAMA_CONTEXT_SIZE, LLAMA_N_GPU_LAYERS, LLAMA_PARALLEL,
+LLAMA_CACHE_TYPE_K/V, LLM_TEMPERATURE, LLM_MAX_TOKENS,
+LLM_DISABLE_THINKING, OPENAI_MODEL) mar CSAK az app/llm_config.py
+ENV_OVERRIDES tablajan keresztul ervenyesulnek (validacioval es
+provenance-riporttal - minden aktiv feluliras indulaskor kiirasra kerul).
+A PS-sessionben beallitott valtozokat a gyerekfolyamat orokli, a bridge
+mar figyelembe veszi oket. A LLAMA_SERVER_HOST/PORT es a LLAMA_MODEL_PATH
+kulon mechanizmus (kotes + modellut-feloldas), nem LLM-ertek.
 
 Miert ezek a flagek (mind a b10717 --help szerint tamogatott):
-  --cache-type-k/-v q8_0 : 8-bit KV cache - a 8K kontextus VRAM-igenyet
+  --cache-type-k/-v q8_0 : 8-bit KV cache - a 32K kontextus VRAM-igenyet
                      kb. a felere csokkenti, minosegromlas nelkul.
-  -ngl -1          : minden reteg GPU-ra (RTX 5070, sm_120 native CUDA build).
-  -c 8192          : 8K kontextus-ablak (a 12B instruct modellhez is eleg).
+  -ngl 20          : mert RESZLEGES offload-profil: 20/42 reteg GPU-ra (RTX 5070, sm_120 native CUDA build).
+  -c 32768         : 32K kontextus-ablak (mert TTFT-koltseg ~0 vs 8K; >8K kerdes elofordult).
   --parallel 1     : parhuzamos szerver-slotok szama (config: llm_parallel).
   --temp 0.7       : mintaveteli homerseklet (config: llm_temperature).
   --metrics        : /metrics endpoint a benchmarkokhoz (llm_benchmark.py).
   --no-webui       : nem kell a beepitett webes felulet.
-  --reasoning off  : (v0.4.4) a chat-handler enable_thinking defaultja
-                    TRUE lenne; a hibrid-reasoning modell gondolkodasi
-                    csatornaja ilyenkor elnyeli a teljes valaszt (ures content).
-                    Az off minden klienstol vegig tartja a gyors,
-                    nem-gondolkodo valaszmodot.
+  --reasoning off  : (v0.7.2: GENERALT a kanonikus llm.reasoning.enabled
+                    = false-bol; v0.4.4 tortenetelo) a chat-handler
+                    enable_thinking defaultja TRUE lenne; a hibrid-reasoning
+                    modell gondolkodasi csatornaja ilyenkor elnyeli a teljes
+                    valaszt (ures content). Az off minden klienstol vegig
+                    tartja a gyors, nem-gondolkodo valaszmodot. Ha a
+                    configban llm.reasoning.enabled: true all, a flag
+                    ELHAGYASRA kerul (a thinking csatorna nyitva).
   --host 127.0.0.1 : loopback - kulso halozati expozicio nincs (offline garancia).
 
 ROBUSZTUSSAG (v0.3.1 - "ne csak javitsd, hanem tedd robusztussra"):
@@ -141,9 +154,10 @@ ROBUSZTUSSAG (v0.3.1 - "ne csak javitsd, hanem tedd robusztussra"):
      leallitas, a gyerekfolyamat is leall)
   10. sikertelenseeg: egyertelmuen FAIL + a tenyleges hibauzenet
 
-VRAM megjegyzes (v0.4.14, Qwen3.6 35B A3B IQ4_XS): a modell ~19 GB
-(IQ4_XS MoE), ami NEM fer a 12 GB VRAM-ba - LLAMA_N_GPU_LAYERS=26
-reszleges offload (figyelem + KV cache q8_0 + compute buffer GPU-n, a
+VRAM megjegyzes (v0.4.14, Qwen3.6 35B A3B IQ4_XS; v0.6.0+ mert profil): a
+modell ~19 GB (IQ4_XS MoE), ami NEM fer a 12 GB VRAM-ba -
+LLAMA_N_GPU_LAYERS=20 reszleges offload (mert: 20/42 reteg;
+figyelem + KV cache q8_0 + compute buffer GPU-n, a
 tobbseg rendszer-RAM-bol streamel). A TENYLEGES merest a
 scripts\measure_vram.ps1 vegzi. Ha a tamogatott MoE-szintu split
 (--n-cpu-moe / --override-tensor "exps=CPU") elerheto a buildben, az a
@@ -169,7 +183,11 @@ Windows-1252-kent olvasna az ekezetes karaktereket.
 #>
 param(
     [string]$Root = "",
-    [int]$WaitSec = 150
+    [int]$WaitSec = 150,
+    # v0.6.4 (BAT-1, kulso audit): osszes futto llama-server.exe leallitasa
+    # elinditas ELOTT (operatori menekulout elakadt peldanyra; a normal
+    # inditas innentol SOHA nem indit masodik peldanyt - l. a folyamat-guardot).
+    [switch]$ForceKillExisting
 )
 
 $ErrorActionPreference = "Continue"
@@ -241,8 +259,16 @@ if root and root not in sys.path:
 from app.config import AgentConfig
 
 c = AgentConfig.from_yaml(os.path.join(root, "config", "voicemem_config.yaml"))
+# v0.7.2: az llm_* ERTEKEK a kanonikus config/llm_config.yaml-bol
+# materializalodnak (AgentConfig.materialise_llm_runtime -> az EGY loader:
+# app/llm_config.py); a "reasoning" flag is innen jon ("off" = a thinking
+# csatorna KI, "" = a flag elhagyasa = thinking BE van kapcsolva).
+runtime = getattr(c, "llm_runtime", None)
 print(json.dumps({
-    "exe": str(c.piper_exe_path.parent),
+    # v0.7.1 (field report #5): AgentConfig.bin_dir - a Piper-kori
+    # exe-path attributum a v0.7.0-ben megszunt (Piper nyugdijazva), a
+    # ezert minden inditaskor FIGYELMEZTETESSEL a shell-alapertekekre esett vissza.
+    "exe": str(c.bin_dir),
     "model": (str(c.llm_model_file) if c.llm_model_file else ""),
     "host": c.llama_server_host,
     "port": c.llama_server_port,
@@ -252,6 +278,10 @@ print(json.dumps({
     "temp": c.llm_temperature,
     "ck_k": c.llm_cache_type_k,
     "ck_v": c.llm_cache_type_v,
+    "reasoning": (runtime.reasoning_server_arg if runtime is not None
+                   else ("off" if getattr(c, "llm_disable_thinking", True) else "")),
+    "source": (str(runtime.config_path) if runtime is not None and runtime.config_path
+               else ""),
 }))
 '@
     # v0.3.4 (field report #4): at `python -c $Bridge` the PowerShell 5.1
@@ -289,18 +319,24 @@ print(json.dumps({
     }
 }
 if ($null -eq $Cfg) {
-    # --- KOZVETLEN (shell) konfiguracio: a config alapertekeivel AZONOS
-    # ertekek (+ az apply_env altal olvasott LLAMA_* env felulirasok).
-    # A llama-server meghivasa (flagek, modell, -ngl -1) VALTOZATLAN.
+    # --- KOZVETLEN (shell) VESZELYTORZS-konfiguracio (v0.7.2): a
+    # python-bridge nem elerheto (hibas/hianyzo .venv) es a kanonikus
+    # config/llm_config.yaml NEM olvashato bePowerShell-bol (a YAML-parse
+    # a python resze). Ezek a beepitett alapertekek AZONOAK az
+    # app/llm_config.py DEFAULT_PROFILE-lal - VESZELYTORZS, nem
+    # operator-altal szerkesztheto masodik konfiguracio (l. a FIGYELEM
+    # kiirast lent). A LLAMA_SERVER_HOST/PORT es LLAMA_MODEL_PATH env
+    # felulirasok azert tovabbra is ervenyesek (kotes + modellut -
+    # kulon mechanizmus, nem LLM-ertek).
     $FbHost = "127.0.0.1"
     if ($env:LLAMA_SERVER_HOST) { $FbHost = [string]$env:LLAMA_SERVER_HOST }
     $FbPort = "8080"
     if ($env:LLAMA_SERVER_PORT) { $FbPort = [string]$env:LLAMA_SERVER_PORT }
     $FbModel = Join-Path $Root "models\llm\qwen3.6-35b-a3b\Qwen3.6-35B-A3B-IQ4_XS.gguf"
     if ($env:LLAMA_MODEL_PATH) { $FbModel = $env:LLAMA_MODEL_PATH }
-    $FbNgl = "26"   # v0.4.14: aktiv profil = 35B IQ4_XS (~19 GB) > 12 GB VRAM -> partial offload
+    $FbNgl = "20"   # v0.6.0+ mert profil: 35B IQ4_XS (~19 GB) > 12 GB VRAM -> partial offload (20/42)
     if ($env:LLAMA_N_GPU_LAYERS) { $FbNgl = [string]$env:LLAMA_N_GPU_LAYERS }
-    $FbCtx = "8192"
+    $FbCtx = "32768"
     if ($env:LLAMA_CONTEXT_SIZE) { $FbCtx = [string]$env:LLAMA_CONTEXT_SIZE }
     $FbCkK = "q8_0"
     if ($env:LLAMA_CACHE_TYPE_K) { $FbCkK = [string]$env:LLAMA_CACHE_TYPE_K }
@@ -317,9 +353,15 @@ if ($null -eq $Cfg) {
         temp = "0.7"
         ck_k = $FbCkK
         ck_v = $FbCkV
+        reasoning = "off"
+        source = "built-in emergency defaults"
     }
     Write-Host ""
-    Write-Host "Konfiguracio: KOZVETLEN (shell) - a config\voicemem_config.yaml alapertekei:"
+    Write-Host "FIGYELEM: a kanonikus config\llm_config.yaml NEM olvashato be (python-bridge" -ForegroundColor Yellow
+    Write-Host "         hiba / hianyzo .venv) - a beepitett VESZELYTORZS-alapertekek indulnak" -ForegroundColor Yellow
+    Write-Host "         (azonosok az app/llm_config.py DEFAULT_PROFILE-lal). Ezek NEM az" -ForegroundColor Yellow
+    Write-Host "         operator altal szerkesztheto konfiguracio - javitsd a .venv-t," -ForegroundColor Yellow
+    Write-Host "         hogy a kanonikus fajl ervenyesuljon: scripts\install_m1.ps1" -ForegroundColor Yellow
 } else {
     Write-Host ""
     Write-Host "Konfiguracio a config\voicemem_config.yaml-bol (python-bridge, env felulirasokkal):"
@@ -355,6 +397,19 @@ Write-Host ("    modell : {0}" -f $Cfg.model)
 Write-Host ("    cim    : http://{0}:{1} (loopback)" -f $Cfg.host, $Cfg.port)
 Write-Host ("    ctx    : {0} | ngl: {1} | parallel: {2} | temp: {3}" -f $Cfg.ctx, $Cfg.ngl, $Cfg.parallel, $Cfg.temp)
 Write-Host ("    KV     : k={0} v={1}" -f $Cfg.ck_k, $Cfg.ck_v)
+# v0.7.2: a reasoning flag es a konfig-forras is kiirasra kerul (a bridge a
+# kanonikus config/llm_config.yaml-bol hozza; vesarhelyzetben a beepitett
+# alapertekek - l. fent a FIGYELEM blokkot)
+$CfgReasoning = [string]$Cfg.reasoning
+if ($CfgReasoning -eq "") {
+    Write-Host "    reason : (nincs flag - a thinking csatorna NYITVA, config llm.reasoning.enabled: true)"
+} else {
+    Write-Host ("    reason : --reasoning {0}" -f $CfgReasoning)
+}
+$CfgSource = [string]$Cfg.source
+if ($CfgSource -ne "") {
+    Write-Host ("    forras : {0}" -f $CfgSource)
+}
 Write-Host ("    modellut forrasa: {0}" -f $ModelSource)
 
 # ---------------------------------------------------------------------------
@@ -528,6 +583,21 @@ function Test-LlamaServesModel {
 }
 
 # ---------------------------------------------------------------------------
+# v0.6.4 (BAT-1, kulso audit v0.6.3): folyamatlista-seged. A Get-CimInstance
+# a megbizhato ut (nev szerint, WMI-bol); ha a WMI (Win32_Process) nem
+# elerheto, Get-Process a visszailleszked - mindkettonek van .ProcessId.
+# ---------------------------------------------------------------------------
+function Get-LlamaServerProcesses {
+    try {
+        return @(Get-CimInstance -ClassName Win32_Process -Filter "Name = 'llama-server.exe'" -ErrorAction Stop)
+    } catch {
+        try {
+            return @(Get-Process -Name llama-server -ErrorAction SilentlyContinue)
+        } catch { return @() }
+    }
+}
+
+# ---------------------------------------------------------------------------
 # v0.4.17: BETOLTES-BIZONYITEK. A felhasznalo kovetelmenye: "prove that
 # llama-server actually loads the exact identified file - verify the actual
 # # running llama-server process and its loaded model". Harom fuggetlen
@@ -668,6 +738,58 @@ function Stop-LlamaServerOnPort {
     return $Stopped
 }
 
+# ---------------------------------------------------------------------------
+# v0.6.4 (BAT-1, kulso audit v0.6.3): FOLYAMATSZINTU DUPLAPELDANY-GUARD.
+# A /health-alapu idempotens ag "vak" a modellbetoltes percere: a szerver
+# CSAK a betoltes vegen valaszol a /health-re, addig a port uresnek tunik.
+# Ebben az ablakban egy masodik START.bat egy MASODIK llama-server.exe-t
+# inditott (terei riport: Task Manager screenshot, ket ~19 GB-os peldany a
+# 12 GB VRAM mellett). MOST: ha BARMELY llama-server.exe folyamat fut:
+#   - /health mar 200 -> az eredeti idempotens ag kezele (modellellenorzessel)
+#   - /health meg nem 200 -> BETOLTES van folyamatban: NEM inditunk ujat,
+#     varunk ra (max ~5 perc), es ha felfutott, bizonyitekkal kilepunk;
+#     ha kozben kilepett -> friss inditas; ha nem valaszolt -> hiba + a ket
+#     operatori lehetoseg kiirasa (ujra vagy -ForceKillExisting).
+# ---------------------------------------------------------------------------
+if ($ForceKillExisting) {
+    $All = @(Get-LlamaServerProcesses)
+    if ($All.Count -gt 0) {
+        Write-Host ("FIGYELEM (-ForceKillExisting): {0} darab llama-server folyamat leallitasa..." -f $All.Count) -ForegroundColor Yellow
+        foreach ($P0 in $All) { try { Stop-Process -Id $P0.ProcessId -Force -ErrorAction SilentlyContinue } catch { } }
+        Start-Sleep -Seconds 2
+    }
+} elseif (@(Get-LlamaServerProcesses).Count -gt 0 -and -not (Test-LlamaHealth -H $Cfg.host -P $Cfg.port -TimeoutSec 2)) {
+    $FirstProc = @(Get-LlamaServerProcesses)[0]
+    $FirstPid = 0
+    try { $FirstPid = [int]$FirstProc.ProcessId } catch { }
+    Write-Host ""
+    Write-Host ("PASS (folyamat-guard): egy llama-server mar fut/betoltodik (PID: {0}) - NEM inditok masodik peldanyt." -f $FirstPid) -ForegroundColor Green
+    Write-Host "      A modell ~19 GB: a betoltes percekig tart. Varakozas a /health 200-ra..."
+    $GuardEnd = (Get-Date).AddSeconds([Math]::Max([int]$WaitSec, 300))
+    $GuardHealthy = $false
+    while ((Get-Date) -lt $GuardEnd) {
+        if (@(Get-LlamaServerProcesses).Count -eq 0) {
+            Write-Host "      A korabbi peldany kilepett a betoltes kozben - friss inditas indul."
+            break
+        }
+        if (Test-LlamaHealth -H $Cfg.host -P $Cfg.port -TimeoutSec 2) { $GuardHealthy = $true; break }
+        Start-Sleep -Seconds 5
+    }
+    if ($GuardHealthy) {
+        $Proof = Invoke-LlamaLoadProof -ModelPath ([string]$Cfg.model)
+        Write-LlamaResolvedMarker -ModelPath ([string]$Cfg.model) -ServedId $Proof.served `
+            -ModelSource $ModelSource -LogFound $Proof.log_found -LogLine $Proof.log_line `
+            -CompletionOk $Proof.completion_ok -CompletionReply $Proof.completion_reply
+        Write-Host ("PASS: a meglevo llama-server felfutott a http://{0}:{1} cimen (/health 200)." -f $Cfg.host, $Cfg.port) -ForegroundColor Green
+        exit 0
+    }
+    Write-Host "HIBA: a korabbi llama-server a varakozas alatt sem valaszolt a /health-re." -ForegroundColor Red
+    Write-Host "      Ket lehetoseg:" -ForegroundColor Red
+    Write-Host "      (a) varj tovabb, majd futtasd ujra a START.bat-ot (a guard megint varni fog)" -ForegroundColor Red
+    Write-Host "      (b) eroltetett ujrainditas: powershell -NoProfile -ExecutionPolicy Bypass -File scripts\start_llama_server.ps1 -ForceKillExisting" -ForegroundColor Red
+    exit 1
+}
+
 if (Test-LlamaHealth -H $Cfg.host -P $Cfg.port -TimeoutSec 3) {
     $ServedId = Get-LlamaServedModel -H $Cfg.host -P $Cfg.port
     $ServesOk = Test-LlamaServesModel -ServedId $ServedId -ExpectedModelPath ([string]$Cfg.model) -ExpectedName ([string]$env:OPENAI_MODEL)
@@ -746,20 +868,24 @@ $LlamaArgs = @(
     "--cache-type-v", [string]$Cfg.ck_v,
     "--temp", [string]$Cfg.temp,
     "--metrics",
-    "--no-webui",
-    # v0.4.4: a b10717 llama-server chat-handler enable_thinking DEFAULTJA
-    # TRUE - a hibrid-reasoning sablonok ilyenkor NYITVA hagyjak a thought
-    # csatornat a generacios promptban, a modell a gondolkodasi csatornaban
-    # valaszol, a szerver azt reasoning_content-be kuldi es a content URES
-    # marad (a v0.4.3-as "minden valasz 0 karakter" mezo-mode kieses).
-    # --reasoning off = szerveroldali default MINDEN kliensre (a voicemem
-    # csomag sajat OpenAI-lib hivasait is vedi, amik nem tudnak
-    # request-szintu kwargs-ot kuldeni). Az app raadasul request-szintu
-    # chat_template_kwargs / reasoning_effort "none"-t is kuld
-    # (app/llm.py _thinking_control_kwargs) - a ket mechanizmus ugyanazt
-    # az enable_thinking=false allapotot allitja be, nem utkozik.
-    "--reasoning", "off"
+    "--no-webui"
 )
+# v0.7.2: a --reasoning flag GENERALT ertek - a kanonikus
+# config/llm_config.yaml llm.reasoning.enabled mezojebol (a python-bridge
+# hozza: "off" = thinking KI, "" = a flag elhagyasa = thinking BE). A
+# v0.4.4-es tortenetello: a b10717 llama-server chat-handler
+# enable_thinking DEFAULTJA TRUE - a hibrid-reasoning sablonok ilyenkor
+# NYITVA hagyjak a thought csatornat, a modell a gondolkodasi csatornaban
+# valaszol, a szerver azt reasoning_content-be kuldi es a content URES
+# marad (a v0.4.3-as "minden valasz 0 karakter" kieses). --reasoning off =
+# szerveroldali default MINDEN kliensre (a voicemem csomag sajat
+# OpenAI-lib hivasait is vedi); az app raadasul request-szintu
+# chat_template_kwargs / reasoning_effort "none"-t is kuld (a ket
+# mechanizmus ugyanazt az enable_thinking=false allapotot allitja be).
+$ReasoningFlag = [string]$Cfg.reasoning
+if ($ReasoningFlag -ne "") {
+    $LlamaArgs += @("--reasoning", $ReasoningFlag)
+}
 
 Write-Host ""
 Write-Host "llama-server inditasa:"

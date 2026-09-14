@@ -436,6 +436,84 @@ def vsm_event_count(vsm: Any) -> int:
 
 
 # ═══════════════════════════════════════════════════════════════════════════
+# Parakeet engine: placeholder-load contract (v0.6.1 delivery hotfix)
+# ═══════════════════════════════════════════════════════════════════════════
+
+
+class ParakeetPlaceholderLoadTests(unittest.TestCase):
+    """v0.6.1: README-only placeholder dir must fail with the ACTIONABLE
+    load error (the field report's cryptic 'Unrecognized processing class').
+
+    The stage still FAILS — this pins the no-fallback contract AND the
+    diagnostic precision, never a silent success or an engine switch.
+    """
+
+    def test_placeholder_dir_raises_actionable_load_error(self) -> None:
+        import tempfile
+
+        with tempfile.TemporaryDirectory() as tmp:
+            placeholder = Path(tmp) / "parakeet-tdt-0.6b-v3"
+            placeholder.mkdir()
+            (placeholder / "README.md").write_text(
+                "placeholder (release ZIP layout)", encoding="utf-8"
+            )
+            cfg = _cfg(asr_model_path=str(placeholder))
+            engine = select_engine(cfg)
+            with self.assertRaises(AsrError) as ctx:
+                engine.load()
+            self.assertEqual(ctx.exception.code, AsrErrorCode.ASR_MODEL_LOAD_ERROR)
+            self.assertEqual(ctx.exception.reason, "model_unavailable")
+            # actionable: names the dir AND the one-click repair path
+            self.assertIn("config.json", ctx.exception.detail)
+            self.assertIn("START.bat", ctx.exception.detail)
+            self.assertIn(str(placeholder), ctx.exception.detail)
+
+    def test_missing_dir_same_actionable_error(self) -> None:
+        cfg = _cfg(asr_model_path="/nonexistent/asr/parakeet-dir")
+        engine = select_engine(cfg)
+        with self.assertRaises(AsrError) as ctx:
+            engine.load()
+        self.assertEqual(ctx.exception.code, AsrErrorCode.ASR_MODEL_LOAD_ERROR)
+        self.assertIn("START.bat", ctx.exception.detail)
+
+    def test_transcribe_maps_placeholder_to_error_result(self) -> None:
+        """The web leg receives an AsrResult error (never a raise, never
+        an empty-success) — the honest ASR ERROR chip, with the hint."""
+        import tempfile
+
+        with tempfile.TemporaryDirectory() as tmp:
+            placeholder = Path(tmp) / "parakeet-tdt-0.6b-v3"
+            placeholder.mkdir()
+            (placeholder / ".gitkeep").write_bytes(b"")
+            cfg = _cfg(asr_model_path=str(placeholder))
+            engine = select_engine(cfg)
+            result = engine.transcribe(
+                AudioBuffer.from_float(
+                    np.zeros(16000, dtype=np.float32), 16000
+                )
+            )
+            self.assertEqual(result.status, AsrResultStatus.ERROR)
+            self.assertEqual(result.engine_id, "parakeet")
+            self.assertIn("START.bat", result.error.detail)
+
+    def test_readiness_check_follows_selected_engine_dir(self) -> None:
+        """config.check_runtime_assets()['asr_model'] must reflect the
+        SELECTED engine dir (the v0.6.0 field bug: it checked the retired
+        legacy qwen dir and reported a false positive)."""
+        import tempfile
+
+        with tempfile.TemporaryDirectory() as tmp:
+            placeholder = Path(tmp) / "parakeet-tdt-0.6b-v3"
+            placeholder.mkdir()
+            cfg = _cfg(asr_model_path=str(placeholder))
+            self.assertFalse(cfg.check_runtime_assets()["asr_model"])
+        # the REAL repo model dir (sandbox has the downloaded weights)
+        real = _cfg()
+        expected = (_PARAKEET_DIR / "config.json").is_file()
+        self.assertEqual(real.check_runtime_assets()["asr_model"], expected)
+
+
+# ═══════════════════════════════════════════════════════════════════════════
 # Parakeet engine: real inference (model-gated)
 # ═══════════════════════════════════════════════════════════════════════════
 

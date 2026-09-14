@@ -100,16 +100,45 @@ def _shared_backend(model_dir: str, device: str, dtype: str) -> Any:
             return cached
         AutoProcessor, ParakeetForTDT = _parakeet_classes()
         path = Path(model_dir)
-        source: Any = path if path.is_dir() and (path / "config.json").is_file() else model_dir
+        # v0.6.1: explicit placeholder/dir check BEFORE from_pretrained. A
+        # README-only placeholder dir (the shipped release layout) makes
+        # AutoProcessor raise a cryptic "Unrecognized processing class"
+        # ValueError; this pre-check turns it into the actionable load
+        # error the field actually needs (download hint, NO fallback).
+        if not path.is_dir() or not (path / "config.json").is_file():
+            raise AsrError(
+                code=AsrErrorCode.ASR_MODEL_LOAD_ERROR,
+                stage="engine_load",
+                engine="parakeet",
+                reason=REASON_MODEL_UNAVAILABLE,
+                detail=(
+                    f"model directory {model_dir} does not contain "
+                    "config.json - the Parakeet weights are not present; "
+                    "run START.bat (the bootstrap auto-downloads "
+                    "nvidia/parakeet-tdt-0.6b-v3 per MODELS.lock.json) or "
+                    "scripts\\download_models.ps1 --only asr"
+                ),
+                diagnostics={"model_dir": str(model_dir), "device": device},
+            )
+        source: Any = path
         t0 = time.perf_counter()
         try:
-            processor = AutoProcessor.from_pretrained(source)
+            # [external audit v0.6.3 OFF-1] code-enforced offline load: the
+            # production contract is LOCAL weights (MODELS.lock + bootstrap
+            # download) - relying on HF_HUB_OFFLINE/TRANSFORMERS_OFFLINE env
+            # alone meant a missing env var silently opened a network
+            # round-trip (or an unclear hub error) on the field machine.
+            # local_files_only=True fails fast and locally when the weights
+            # are not on disk, with no hidden network path. The env vars
+            # remain as defense-in-depth, not as the mechanism.
+            processor = AutoProcessor.from_pretrained(source, local_files_only=True)
             torch_dtype: Any = {
                 "float32": torch.float32,
                 "float16": torch.float16,
                 "bfloat16": torch.bfloat16,
             }.get(dtype, torch.float32)
-            model = ParakeetForTDT.from_pretrained(source, torch_dtype=torch_dtype)
+            model = ParakeetForTDT.from_pretrained(
+                source, torch_dtype=torch_dtype, local_files_only=True)
         except Exception as exc:  # noqa: BLE001 - mapped below
             raise AsrError(
                 code=AsrErrorCode.ASR_MODEL_LOAD_ERROR,

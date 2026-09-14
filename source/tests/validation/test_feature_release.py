@@ -64,9 +64,14 @@ STAGED_FILES = (
 #: stages a .gitkeep placeholder + the repo README.md in each). Must mirror
 #: the placeholder list of scripts/build_release.ps1 (step 4a/8).
 PLACEHOLDER_DIRS = (
+    # v0.6.1: the two v0.6.0 engine dirs joined the shipped skeleton
+    # (production parakeet + selectable nemotron); the retired qwen dir
+    # still ships as the legacy migration-module placeholder.
+    "models/asr/parakeet-tdt-0.6b-v3",
+    "models/asr/nemotron-3.5-asr-streaming-0.6b",
     "models/asr/qwen3-asr-0.6b",
     "models/llm/qwen3.6-35b-a3b",
-    "models/tts/piper",
+    "models/tts/supertonic-3",
     "models/vad/silero-vad",
     "models/embedding/multilingual-e5-small",
     "models/hf",

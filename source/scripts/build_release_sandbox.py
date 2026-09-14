@@ -34,8 +34,8 @@ from pathlib import Path
 REPO = Path(__file__).resolve().parent.parent
 RELEASES = REPO / "releases"
 
-NEW_VERSION = "0.6.0"
-PREV_VERSION = "0.5.2"
+NEW_VERSION = "0.7.2"
+PREV_VERSION = "0.7.1"
 ZIP_NAME = f"VoiceMemAgent_v{NEW_VERSION}.zip"
 
 PLACEHOLDER_DIRS = [
@@ -43,7 +43,7 @@ PLACEHOLDER_DIRS = [
     "models/asr/parakeet-tdt-0.6b-v3",     # v0.6.0: the DEFAULT production ASR engine
     "models/asr/nemotron-3.5-asr-streaming-0.6b",  # v0.6.0: selectable streaming engine (CUDA target)
     "models/llm/qwen3.6-35b-a3b",   # v0.4.14: the ONE AND ONLY LLM dir (README + .gitkeep; the GGUF is operator-placed, any drive - v0.4.16 picker)
-    "models/tts/piper",
+    "models/tts/supertonic-3",   # v0.7.0: Supertonic 3 onnx assets (installer downloads; Piper retired)
     "models/vad/silero-vad",
     "models/embedding/multilingual-e5-small",
     "models/hf",
@@ -63,40 +63,36 @@ ROOT_FILES = [
 ]
 
 NOTES = (
-    "v0.6.0 TASK A/B - MODULAR ASR ENGINE ARCHITECTURE + UI OBSERVABILITY. "
-    "FORENSIC ROOT CAUSES (measured on the real Windows capture "
-    "upload/asr_test_last.wav): (1) the production Silero VAD fed 512-sample "
-    "windows WITHOUT the official 64-sample rolling context - prob_max "
-    "0.0031 vs 1.000 with the official OnnxWrapper contract (235/312 frames "
-    "speech, 2 natural segments) - the deaf VAD was the root of the v0.4.13 "
-    "never-detects-speech report, the v0.4.14 energy-fallback hack and the "
-    "fragmented ~320-384 ms utterances; (2) the Qwen3-ASR-0.6B integration "
-    "returns repetition garbage on valid speech - retired, not tuned. The "
-    "browser->server audio chain was ACQUITTED (r=0.998). NEW ARCHITECTURE "
-    "(app/asr_core.py): canonical AudioBuffer, single AsrResult contract, "
-    "structured AsrError codes, descriptive-only AsrCapability, "
-    "MODEL_REGISTRY (parakeet default, nemotron selectable) + select_engine "
-    "with NO engine fallback and explicit ASR_ENGINE/ASR_DEVICE; engine "
-    "adapters: parakeet (transformers-native, offline; start/feed/finish "
-    "raise - non-streaming by contract), nemotron (TRUE cache-aware "
-    "streaming bridged into the official generate() cadence). VAD fix: "
-    "official context feed; FusedVad + vad_energy_fallback DELETED. Qwen "
-    "removed from production (not in the registry, not imported); app/asr.py "
-    "kept only as the clearly-marked non-production migration module. Web "
-    "server: engine-contract ASR leg, generic stage events (mic|vad|asr|"
-    "voicemem|e5|llm|tts x started|completed|failed). Web UI: live CHAIN "
-    "states (IDLE/WORKING/DONE/ERROR, late stages never DONE after an early "
-    "failure), ASR transcript in chat with the generic AsrResult dict, "
-    "collapsible MIC diagnostics + LLM panels with bounded internal scroll. "
-    "MEASUREMENT-BASED SELECTION: parakeet default (HU WER 17.1% vs 43.4% "
-    "nemotron on the identical 9-file corpus, same CPU RTF 0.80, real "
-    "capture 11.8% vs 41.2%, 9/9 stability, 0 empty outputs). Gate: 627 "
-    "unit tests 0 failures (3 stale tests realigned to the new contract, "
-    "not weakened), integration 75/0/0 re-run, vendor/ untouched (Memory "
-    "Safety freeze held), ESLint clean, e2e fake-mic browser turn verified "
-    "end-to-end. Details: docs/TASK_A_ASR_GATE.md; evidence: "
-    "data/asr_forensics_report.json, data/asr_bench/*, "
-    "data/asr_benchmark_{parakeet,nemotron}.json."
+    "v0.7.2 LLM-KONFIGURACIO KANONIZALASA (operator order: CENTRALISE LLM "
+    "CONFIGURATION). THE ONE FILE: config/llm_config.yaml - the single "
+    "operator-editable source for every production LLM runtime value "
+    "(model, gpu_layers 20, context_size 32768, parallel 1, cache "
+    "q8_0/q8_0, temperature 0.7, max_tokens 512, reasoning.enabled "
+    "false). THE ONE LOADER: app/llm_config.py (typed LlmRuntimeConfig, "
+    "validation with NAMED actionable errors, provenance, "
+    "llama_server_args() generation, thinking_control_kwargs(), "
+    "summary_lines(), the llama-server startup-log cross-check "
+    "match_llama_server_log - fail-closed). CONSUMERS ALL WIRED: "
+    "AgentConfig.from_yaml -> materialise_llm_runtime() (every llm_* "
+    "field comes FROM the canonical file; the duplicate env parsing in "
+    "apply_env RETIRED); stale dataclass defaults fixed (8192/-1 -> "
+    "32768/20); app/llm.py thinking kwargs delegate to the canonical "
+    "runtime; scripts/start_llama_server.ps1 generates the command line "
+    "from the bridge JSON (the hardcoded --reasoning off and fallback "
+    "values RETIRED - the direct fallback is an explicit emergency path "
+    "with a loud warning, values identical to DEFAULT_PROFILE); startup "
+    "logs print the full equivalent LLM configuration (main.py + "
+    "web_server.py); duplicate copies REMOVED (voicemem_config.yaml llm_* "
+    "keys, env.local.ps1 active value assignments commented out). "
+    "Precedence EXPLICIT: yaml > documented env overrides (reported at "
+    "startup, never silent) > built-in defaults. MIGRATION EQUIVALENCE: "
+    "the effective production values are UNCHANGED (20/32768/1/q8_0/"
+    "q8_0/0.7/512/thinking off) - identical runtime behaviour. Tests: "
+    "test_llm_config.py 44 -> 48 tests (all green), test_config.py + "
+    "test_llm_reasoning.py + test_feature_thinking.py realigned to the "
+    "centralized contract. Operator effect: change gpu_layers/context_"
+    "size/parallel/cache/temperature/max_tokens/thinking in ONE file and "
+    "restart START.bat."
 )
 #: v0.6.0 markers: the modular ASR engine contract - asr_core (AudioBuffer,
 #: AsrResult, AsrError, registry, select_engine), the two NVIDIA adapters,
@@ -150,7 +146,7 @@ V060_MARKERS = {
         "const CHAIN_LIVE={}",
         "renderChainErrorLine",
         "stage_event",
-        "PAGE_VERSION='0.6.0'",
+        "PAGE_VERSION='0.7.2'"
         "micDiagHead",
         "llmColHead",
     ],
@@ -170,8 +166,315 @@ V060_MARKERS = {
     ],
 }
 
+#: v0.6.1 markers: the DELIVERY-LAYER hotfix - the bootstrap manifest
+#: finally lists the production ASR (the v0.6.0 release shipped the modular
+#: engine but the MODELS.lock.json asr entry still said Qwen, so the field
+#: bootstrap never downloaded parakeet and the runtime failed with the
+#: cryptic "Unrecognized processing class"). Merged LAST.
+V061_MARKERS = {
+    "MODELS.lock.json": [
+        "nvidia/parakeet-tdt-0.6b-v3",
+        "541d1f99c6b0c3cd0b11a95167540bb8edefd82b",
+    ],
+    "scripts/download_models_hf.py": [
+        "nvidia/parakeet-tdt-0.6b-v3",
+    ],
+    "scripts/bootstrap.ps1": [
+        "(5, 6)",
+    ],
+    "scripts/install_m1.ps1": [
+        "5.6",
+    ],
+    "scripts/verify_m1.ps1": [
+        "parakeet-tdt-0.6b-v3",
+    ],
+    "requirements.txt": [
+        "transformers>=5.6",
+    ],
+    "app/asr_parakeet.py": [
+        "does not contain",
+        "MODELS.lock.json",
+    ],
+    "app/config.py": [
+        "_selected_asr_model_present",
+    ],
+    "scripts/write_install_manifest.py": [
+        "nvidia/parakeet-tdt-0.6b-v3",
+    ],
+}
+
+#: v0.6.2 markers: the installer step-12 pin-read fix + the production-ASR
+#: banners. The pin check must read provenance.upstream_commit (a root-level
+#: read is always $null -> deterministic step-12 failure on every first real
+#: installer run); the bootstrap/install summaries must name Parakeet, not
+#: the retired Qwen3 ASR. Merged LAST (overrides every older block).
+V062_MARKERS = {
+    "scripts/install_m1.ps1": [
+        "$PinJson.provenance.upstream_commit",
+        "v0.6.2 (FIELD REPORT",
+        "NVIDIA Parakeet TDT 0.6B v3",
+        "olvasott: $PinCommitShown",
+    ],
+    "scripts/bootstrap.ps1": [
+        "NVIDIA Parakeet TDT 0.6B v3",
+    ],
+    "tests/unit/test_voicemem_controlled.py": [
+        "InstallerPinReadRegressionTests",
+        "test_step12_passes_on_the_real_pin_file",
+        "test_step12_fails_loudly_on_a_wrong_commit",
+    ],
+    "web/voicemem.html": [
+        "PAGE_VERSION='0.7.2'"
+    ],
+}
+
+#: v0.6.3 markers: the ALL-IN-ONE LLM profile baked into the release ZIP
+#: (the former separate LLMConfig package applied at build time). Every
+#: production-config surface must carry the measured profile ngl20 + 32K,
+#: and the decision evidence must ship inside the ZIP under docs/.
+#: Merged LAST (overrides every older block for the same file).
+V063_MARKERS = {
+    "config/voicemem_config.yaml": [
+        "llm_context_size: 32768",
+        "llm_n_gpu_layers: 20",
+        "PRODUKCIÓS LLM-PROFIL",
+    ],
+    "config/env.local.ps1": [
+        'LLAMA_CONTEXT_SIZE = "32768"',
+        'LLAMA_N_GPU_LAYERS = "20"',
+    ],
+    "config/env.local.sh": [
+        "LLAMA_CONTEXT_SIZE=32768",
+        "LLAMA_N_GPU_LAYERS=20",
+    ],
+    "scripts/start_llama_server.ps1": [
+        '$FbNgl = "20"',
+        '$FbCtx = "32768"',
+        "--reasoning\", \"off\"",
+    ],
+    "scripts/verify_m1.ps1": [
+        '"-ngl", "20"',
+        '"-c", "32768"',
+    ],
+    "web/voicemem.html": [
+        "PAGE_VERSION='0.7.2'"
+    ],
+    "docs/llm_config_ngl20-c32768/identity.json": [
+        "ngl20 + 32768 context",
+    ],
+    "docs/llm_config_ngl20-c32768/RECOVERY.md": [
+        "n_gpu_layers 26 -> 20",
+        "context 8192 -> 32768",
+    ],
+}
+
+#: v0.6.4 markers: the external-audit fixes (CD-3 HU/EN temporal,
+#: CD-4 recency sort, OCC-1 occurrence counting, F-B provenance render,
+#: SEC-1 loopback guard, OFF-1 local_files_only, BAT-1 process guard)
+#: inside the release ZIP.
+V064_MARKERS = {
+    "vendor/voicemem/voicemem/leftbrain/time_expand.py": [
+        "_LATIN_SPANS",
+        "tegnapel\u0151tt",
+        "next week",
+        "VM-LOCAL-010",
+    ],
+    "vendor/voicemem/voicemem/leftbrain/local_memory_store.py": [
+        "def parse_date_values",
+        "def date_overlap_bonus_values",
+        "def recency_bonus",
+        "VM-LOCAL-011",
+        "occurrence_count",
+    ],
+    "vendor/voicemem/voicemem/leftbrain/mem0_backend_store.py": [
+        "def count_occurrence",
+        "h.base_score + h.recency_boost",
+        "VM-LOCAL-012",
+    ],
+    "vendor/voicemem/voicemem/leftbrain/memory_repository.py": [
+        "def count_occurrence",
+        "VM-LOCAL-012",
+    ],
+    "vendor/voicemem/voicemem/utils/common/voice_input.py": [
+        'r.event == "NONE" and r.memory_id',
+        "omit-NONE",
+    ],
+    "vendor/voicemem/voicemem/__init__.py": [
+        "VM-LOCAL-010",
+        "VM-LOCAL-011",
+        "VM-LOCAL-012",
+    ],
+    "app/voicemem_bridge.py": [
+        "def hit_provenance_suffix",
+    ],
+    "app/web_server.py": [
+        "VOICEMEM_ALLOW_REMOTE_WEB",
+        "def hit_provenance_suffix",
+    ],
+    "app/asr_parakeet.py": [
+        "local_files_only=True",
+    ],
+    "app/asr_nemotron.py": [
+        "local_files_only=True",
+    ],
+    "scripts/start_llama_server.ps1": [
+        "function Get-LlamaServerProcesses",
+        "[switch]$ForceKillExisting",
+    ],
+    "tests/unit/test_time_expand_hu.py": [
+        "class TimeExpandHungarianTests",
+    ],
+    "tests/integration/test_memory_safety.py": [
+        "class OccurrenceExplicitNoneTests",
+        "class OccurrenceOmitNoneTests",
+    ],
+    "CONTRACT.md": [
+        "v0.6.4 kieg\u00e9sz\u00edt\u0151",
+    ],
+    "README.md": [
+        "OPER\u00c1TORI D\u00d6NT\u00c9S",
+    ],
+}
+
 #: v0.4.3-era retired-model markers were REMOVED in v0.4.16 (single-model policy;
 #: the self-check now asserts their ABSENCE instead - see V0416_ABSENT_FILES).
+
+#: v0.7.0 markers: the Supertonic 3 TTS migration - the engine adapter,
+#: the no-fallback contract, the config/voice-settings/web integration,
+#: the MODELS.lock archive entry, and the Piper retirement, inside the ZIP.
+V070_MARKERS = {
+    "app/tts_supertonic.py": [
+        "TTS engine = Supertonic 3",
+        "auto_download=False",
+        "class SupertonicTtsEngine",
+        "_speed_from_length_scale",
+        "no fallback",
+        "_trim_edge_silence",
+        "voice: Optional[str] = None",
+    ],
+    "app/config.py": [
+        "supertonic3",
+        "supertonic_model_dir",
+        "supertonic_voices_dir",
+        "output_sample_rate must be 44100",
+    ],
+    "app/voice_settings.py": [
+        "DEFAULT_HU_VOICE = \"F1\"",
+        "language-AGNOSTIC",
+    ],
+    "app/web_server.py": [
+        "from app.tts_supertonic import SupertonicTtsEngine as TtsEngine",
+        "Supertonic 3 model assets incomplete",
+    ],
+    "config/voicemem_config.yaml": [
+        "tts_engine: \"supertonic3\"",
+        "supertonic_steps: 8",
+        "output_sample_rate: 44100",
+    ],
+    "MODELS.lock.json": [
+        "supertone-oss-archive/supertonic-3",
+        "aafc6e32416a594460b32413efc49d7fe4ce6d46",
+    ],
+    "requirements.lock": [
+        "supertonic==1.3.1",
+    ],
+    "scripts/download_models_hf.py": [
+        "supertone-oss-archive/supertonic-3",
+    ],
+    "scripts/install_m1.ps1": [
+        "supertonic",
+    ],
+    "tests/unit/test_tts_supertonic.py": [
+        "class SupertonicEngineTests",
+        "class TrimSilenceTests",
+    ],
+    "LICENSES.md": [
+        "OpenRAIL-M",
+    ],
+    "web/voicemem.html": [
+        "PAGE_VERSION='0.7.2'",
+        "Supertonic 3 since v0.7.0",
+        "Preview this voice (local Supertonic 3)",
+    ],
+}
+
+#: v0.7.1 markers: the installer parse-fix hotfix - the restored closing
+#: brace + hotfix comment in install_m1.ps1, the bin_dir bridge fix in
+#: start_llama_server.ps1, and the ps_lint guard itself, inside the ZIP.
+#: NOTE: "web/voicemem.html" is deliberately NOT a key here - the dict
+#: merge in the self-check loop replaces whole entries per file, and
+#: V070's html marker set must stay the effective one.
+V071_MARKERS = {
+    "scripts/install_m1.ps1": [
+        "supertonic",  # kept from V070 (this entry replaces it in the merge)
+        "v0.7.1 (field report #5): a v0.7.0-es piper-eltavolitas",
+        "scripts/ps_lint.py most gyartas elott is ellenorzi",
+    ],
+    "scripts/start_llama_server.ps1": [
+        "v0.7.1 (field report #5): AgentConfig.bin_dir",
+        '"exe": str(c.bin_dir),',
+    ],
+    "scripts/ps_lint.py": [
+        "def check_ps_source",
+        "PS7_ONLY_OPERATORS",
+        "v0.7.1 field report",
+    ],
+    "tests/validation/test_feature_scripts.py": [
+        "test_logic_all_ps1_are_structurally_balanced",
+        "ps_lint",
+    ],
+}
+
+
+#: v0.7.2 markers: the canonical LLM configuration - the yaml file, the
+#: ONE loader, the AgentConfig wiring, the generated command line, the
+#: startup summary, and the removed duplicate copies, inside the ZIP.
+V072_MARKERS = {
+    "config/llm_config.yaml": [
+        "THE canonical LLM runtime configuration",
+        "gpu_layers: 20",
+        "context_size: 32768",
+        "reasoning:",
+        "enabled: false",
+    ],
+    "app/llm_config.py": [
+        "the ONE loader (v0.7.2)",
+        "def load_llm_config",
+        "def llama_server_args",
+        "def match_llama_server_log",
+        "ENV_OVERRIDES",
+    ],
+    "app/config.py": [
+        "def materialise_llm_runtime",
+        "cfg.materialise_llm_runtime(config_dir=path.parent)",
+        "v0.7.2 — REMOVED duplicate LLM VALUE parsing",
+    ],
+    "app/llm.py": [
+        "v0.7.2: when the config carries the canonical runtime",
+        "return runtime.thinking_control_kwargs()",
+    ],
+    "app/main.py": [
+        "config.materialise_llm_runtime()",
+        "config.llm_config_summary()",
+    ],
+    "app/web_server.py": [
+        "cfg.materialise_llm_runtime()",
+        "cfg.llm_config_summary()",
+    ],
+    "scripts/start_llama_server.ps1": [
+        "$LlamaArgs += @(\"--reasoning\", $ReasoningFlag)",
+        '"reasoning": (runtime.reasoning_server_arg',
+        "reasoning = \"off\"",
+    ],
+    "config/voicemem_config.yaml": [
+        "KANONIKUS FORRÁS KÖLTÖZÖTT",
+    ],
+    "tests/unit/test_llm_config.py": [
+        "test_from_yaml_materialises_the_canonical_runtime",
+        "test_canonical_values_beat_voicemem_yaml_duplicates",
+        "test_thinking_kwargs_come_from_the_runtime_single_source",
+    ],
+}
 
 #: v0.4.4 field-fix markers: the thinking suppression (all layers), the
 #: transformers floor + installer guard, and the E5 local pin.
@@ -195,11 +498,14 @@ V044_MARKERS = {
         "llm_disable_thinking",
     ],
     "scripts/start_llama_server.ps1": [
-        '"--reasoning", "off"',
+        # v0.7.2 realignment: the flag is GENERATED from the canonical
+        # config (llm.reasoning.enabled=false -> --reasoning off via the
+        # bridge + $ReasoningFlag); the hardcoded literal is retired.
+        '$LlamaArgs += @("--reasoning", $ReasoningFlag)',
     ],
     "scripts/install_m1.ps1": [
         "$TransformersFloor",
-        "v >= (5, 0)",
+        "v >= (5, 6)",
     ],
     "scripts/verify_m1.ps1": [
         '"chat_template_kwargs":{"enable_thinking":false}',
@@ -213,10 +519,14 @@ V044_MARKERS = {
         "LLM_DISABLE_THINKING",
     ],
     "requirements.txt": [
-        "transformers>=5.0",
+        "transformers>=5.6",
     ],
-    "config/voicemem_config.yaml": [
-        "llm_disable_thinking: true",
+    "config/llm_config.yaml": [
+        # v0.7.2 realignment: the thinking flag moved to the canonical
+        # llm_config.yaml (llm.reasoning.enabled: false = thinking OFF,
+        # the single switch behind the server flag + request kwargs);
+        # the voicemem_config.yaml duplicate key is REMOVED.
+        "enabled: false",
     ],
 }
 
@@ -233,9 +543,9 @@ V045_MARKERS = {
     "scripts/bootstrap.ps1": [
         "$TfProbe",
         "transformers.__version__",
-        "(5, 0)",
+        "(5, 6)",
         "else 5",
-        "Qwen3-ASR",
+        "ParakeetForTDT",
     ],
     "scripts/install_m1.ps1": [
         "22 lepes, idempotens",
@@ -269,8 +579,10 @@ V046_MARKERS = {
     "app/speaker.py": [
         "embed_windows",
     ],
-    "app/tts.py": [
-        "stop raced with spawn",
+    "app/tts_supertonic.py": [
+        "TTS engine = Supertonic 3",
+        "no fallback",
+        "voice: Optional[str] = None",
     ],
     "app/main.py": [
         "forced_end",
@@ -306,20 +618,20 @@ V047_MARKERS = {
     ],
     "scripts/install_m1.ps1": [
         "patch_voicemem_english.py",
-        '$TransformersFloor = "5.0"',
+        '$TransformersFloor = "5.6"',
     ],
     "scripts/bootstrap.ps1": [
         "patch_voicemem_english.py",
-        "v >= (5, 0)",
+        "v >= (5, 6)",
     ],
     "scripts/start_agent.ps1": [
         "localise_memories.py",
     ],
     "requirements.txt": [
-        "transformers>=5.0",
+        "transformers>=5.6",
     ],
     "pyproject.toml": [
-        "transformers>=5.0",
+        "transformers>=5.6",
     ],
 }
 
@@ -493,7 +805,7 @@ V0414_MARKERS = {
     "config/env.local.ps1": [
         'OPENAI_MODEL = "qwen3.6-35b-a3b"',
         "Qwen3.6-35B-A3B-IQ4_XS.gguf",
-        'LLAMA_N_GPU_LAYERS = "26"',
+        'LLAMA_N_GPU_LAYERS = "20"',
         'LLM_DISABLE_THINKING = "1"',
         "EGYETLEN profil",   # v0.4.16: single-profile wording (was: VISSZAILLESZTETT profil)
     ],
@@ -801,7 +1113,7 @@ V0419_MARKERS = {
         "type:'mic_probe'",
         'id="micProbeBtn"',
         'id="micDiag"',
-        "PAGE_VERSION='0.6.0'",
+        "PAGE_VERSION='0.7.2'"
     ],
     "app/web_server.py": [
         "def _mic_probe_core(",
@@ -858,7 +1170,7 @@ V0420_MARKERS = {
         "test_label_lands_in_result_and_log_line",
         "test_http_probe_carries_the_ab_label",
         "test_mic_probe_frame_carries_the_ab_label",
-        "PAGE_VERSION='0.6.0'",
+        "PAGE_VERSION='0.7.2'"
     ],
 }
 
@@ -1345,8 +1657,9 @@ def build() -> int:
             if voice_settings_mod not in names:
                 raise AssertionError("self-check: app/voice_settings.py missing from the ZIP")
             vs_src = zf.read(voice_settings_mod).decode("utf-8", errors="replace")
-            for m in ("hu_HU-anna-medium", "hu_HU-berta-medium", "hu_HU-imre-medium",
-                      "en_US-lessac-medium", "Szia Thomas, ez egy hangteszt."):
+            # v0.7.0: Supertonic presets (F1-F5, M1-M5) replaced the Piper
+            # voice ids; the preview sentence stays the task sentence.
+            for m in ("F1", "M1", "Nyugodt n\u0151i", "Szia Thomas, ez egy hangteszt."):
                 if m not in vs_src:
                     raise AssertionError(f"self-check: voice_settings.py lacks marker {m!r}")
             lock = zf.read(root_prefix + "MODELS.lock.json").decode("utf-8", errors="replace")
@@ -1406,9 +1719,11 @@ def build() -> int:
                     raise AssertionError(
                         f"self-check: runtime state {runtime_state} must NOT ship in the ZIP"
                     )
-            tts_src = zf.read(root_prefix + "app/tts.py").decode("utf-8", errors="replace")
+            tts_src = zf.read(root_prefix + "app/tts_supertonic.py").decode("utf-8", errors="replace")
             if "voice: Optional[str] = None" not in tts_src:
-                raise AssertionError("self-check: tts.py lacks the voice override parameter")
+                raise AssertionError("self-check: tts_supertonic.py lacks the voice override parameter")
+            if "auto_download=False" not in tts_src:
+                raise AssertionError("self-check: tts_supertonic.py must keep offline loading (auto_download=False)")
             # v0.4.4: the three field fixes must ship in full
             for rel, markers in V044_MARKERS.items():
                 src = zf.read(root_prefix + rel).decode("utf-8", errors="replace")
@@ -1507,7 +1822,7 @@ def build() -> int:
                             f"self-check: {rel} lacks v0.4.11 marker {m!r}"
                         )
             # v0.4.12: stale-page detection + raw capture + send-as-turn
-            for rel, markers in {**V0412_MARKERS, **V0413_MARKERS, **V0414_MARKERS, **V0415_MARKERS, **V0416_MARKERS, **V0417_MARKERS, **V0418_MARKERS, **V0419_MARKERS, **V0420_MARKERS, **V0421_MARKERS, **V050_MARKERS, **V052_MARKERS, **V060_MARKERS}.items():
+            for rel, markers in {**V0412_MARKERS, **V0413_MARKERS, **V0414_MARKERS, **V0415_MARKERS, **V0416_MARKERS, **V0417_MARKERS, **V0418_MARKERS, **V0419_MARKERS, **V0420_MARKERS, **V0421_MARKERS, **V050_MARKERS, **V052_MARKERS, **V060_MARKERS, **V061_MARKERS, **V062_MARKERS, **V063_MARKERS, **V064_MARKERS, **V070_MARKERS, **V071_MARKERS, **V072_MARKERS}.items():
                 src_text = zf.read(root_prefix + rel).decode("utf-8", errors="replace")
                 for m in markers:
                     if m not in src_text:
@@ -1548,6 +1863,28 @@ def build() -> int:
                     raise AssertionError(
                         f"self-check: v0.6.0 file missing from the ZIP: {must}"
                     )
+            # v0.7.0: the Supertonic 3 TTS migration must ship
+            for must in (
+                "app/tts_supertonic.py",
+                "tests/unit/test_tts_supertonic.py",
+                "tests/unit/test_voice_settings.py",
+                "tests/validation/test_feature_tts.py",
+                "tests/benchmark/tts_benchmark.py",
+                "scripts/validate_supertonic.py",
+                "scripts/asr_roundtrip_tts.py",
+                "models/tts/supertonic-3/README.md",
+                "models/tts/supertonic-3/.gitkeep",
+            ):
+                if root_prefix + must not in names:
+                    raise AssertionError(
+                        f"self-check: v0.7.0 file missing from the ZIP: {must}"
+                    )
+            # v0.7.0: the RETIRED Piper module must NOT ship
+            if root_prefix + "app/tts.py" in names:
+                raise AssertionError(
+                    "self-check: app/tts.py (Piper) must NOT ship - the "
+                    "production TTS is Supertonic 3 (no fallback)"
+                )
             # v0.4.15: the exact-Qwen-GGUF discovery script must ship
             for must in (
                 "scripts/find_qwen_gguf.ps1",
@@ -1590,6 +1927,44 @@ def build() -> int:
             ).decode("ascii", errors="replace")
             if starter_src.replace("\r\n", "\n").count("\n") and "\r\n" not in starter_src:
                 raise AssertionError("self-check: start_llama_server.ps1 lost its CRLF endings")
+            # v0.7.1 (field report #5): every zipped .ps1 must pass the
+            # PowerShell structural lint (brace/string/here-string balance,
+            # PS7-only operator scan). The v0.7.0 build shipped
+            # install_m1.ps1 with ONE missing closing brace and only the
+            # target machine's Windows PowerShell 5.1 parser caught it -
+            # this check makes that defect class unshippable forever.
+            sys.path.insert(0, str(REPO / "scripts"))
+            from ps_lint import check_ps_source  # repo-local stdlib tokenizer
+
+            installer_src = zf.read(root_prefix + "scripts/install_m1.ps1")
+            if b"\r\n" not in installer_src:
+                raise AssertionError(
+                    "self-check: install_m1.ps1 lost its CRLF endings"
+                )
+            ps1_names = [
+                n for n in names
+                if n.startswith(root_prefix) and n.endswith(".ps1")
+            ]
+            if len(ps1_names) < 10:
+                raise AssertionError(
+                    "self-check: implausibly few .ps1 files in the ZIP"
+                )
+            for n in ps1_names:
+                raw = zf.read(n)
+                if b"piper_exe_path" in raw:
+                    raise AssertionError(
+                        f"self-check: {n} references the removed "
+                        "AgentConfig.piper_exe_path attribute"
+                    )
+                lint_problems = check_ps_source(
+                    raw.decode("ascii", errors="replace")
+                )
+                if lint_problems:
+                    raise AssertionError(
+                        f"self-check: {n} fails the PowerShell structural "
+                        f"lint (would be a ParserError on Windows): "
+                        f"{lint_problems[:3]}"
+                    )
     except AssertionError as exc:
         zip_path.unlink(missing_ok=True)
         print(f"BUILD FAILED - self-check: {exc} (the zip was deleted)")

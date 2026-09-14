@@ -9,7 +9,7 @@ and contract level - every test runs in the dependency-free sandbox:
   verify-and-adjust instruction;
 * the pipeline runs the prosody stage parallel with VoiceMem and only
   forwards a fused emotion into the prompt (source-scan contract);
-* TTS length_scale plumbing: piper gets --length_scale only when set;
+* TTS length_scale plumbing: the engine slows speech only when set;
 * MODELS.lock.json ships the M2 emotion entry with a >1 GB model.pt
   floor, and the downloader's default lock stays in sync with the repo
   lock;
@@ -36,7 +36,7 @@ from tests.validation._report import FeatureValidationTest
 REPO_ROOT = Path(__file__).resolve().parents[2]
 EMOTION_PY = REPO_ROOT / "app" / "emotion.py"
 PIPELINE_PY = REPO_ROOT / "app" / "pipeline.py"
-TTS_PY = REPO_ROOT / "app" / "tts.py"
+TTS_PY = REPO_ROOT / "app" / "tts_supertonic.py"
 TEACHER_PY = REPO_ROOT / "app" / "teacher_persona.py"
 MAIN_PY = REPO_ROOT / "app" / "main.py"
 MODELS_LOCK = REPO_ROOT / "MODELS.lock.json"
@@ -153,9 +153,12 @@ class EmotionFeatureTest(FeatureValidationTest):
         self.assertIsNone(result.to_dict()["emotion"])
 
     def test_logic_tts_length_scale(self):
+        # v0.7.0: the Piper --length_scale flag became the Supertonic speed
+        # mapping (1/length_scale, clamped to the SDK band 0.7-2.0).
         source = _read(TTS_PY)
-        self.assertIn("--length_scale", source)
         self.assertIn("length_scale: Optional[float] = None", source)
+        self.assertIn("1.0 / float(length_scale)", source)
+        self.assertIn("_speed_from_length_scale", source)
 
     def test_logic_main_wiring(self):
         source = _read(MAIN_PY)

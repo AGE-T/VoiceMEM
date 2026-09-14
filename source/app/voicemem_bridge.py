@@ -91,6 +91,35 @@ def clean_rb_content(content: str) -> str:
     return t.strip()
 
 
+def hit_provenance_suffix(h: Any) -> str:
+    """[external audit v0.6.3 F-B] provenance suffix for a left-brain hit.
+
+    The render used to drop everything but the text: the event date, how
+    many times the observation was independently confirmed, and whether it
+    has been superseded never reached the persona. Now each fact line may
+    carry a compact ``[<event date> | <N>x confirmed | superseded | by X]``
+    suffix so the reply model can reason about freshness, confidence and
+    currency. Raw cosine scores are deliberately NOT shown (noise for the
+    reply model); occurrence count is the audit's OCC-1 signal.
+    """
+    bits: list[str] = []
+    obs = str(getattr(h, "observed_at", "") or "")[:10]
+    if len(obs) == 10 and obs[4] == "-":
+        bits.append(obs)
+    try:
+        occ = int(getattr(h, "occurrence_count", 0) or 0)
+    except (TypeError, ValueError):
+        occ = 0
+    if occ > 1:
+        bits.append(f"{occ}x confirmed")
+    if str(getattr(h, "superseded_by", "") or "").strip():
+        bits.append("superseded")
+    attr = str(getattr(h, "attributed_to", "") or "").strip()
+    if attr and attr not in ("user", ""):
+        bits.append(f"by {attr}")
+    return f" [{' | '.join(bits)}]" if bits else ""
+
+
 #: Adapter table for the VoiceMem streaming feed. The installed version may
 #: expose any of these entry points (checked in order, hasattr-guarded).
 #: v0.5.1 (TASK 1 forensic fix): the PINNED vendor (e8384e0) exposes none of
@@ -748,10 +777,13 @@ def _extract_memory_context(result: Any) -> str:
     rb_hits = getattr(result, "rb_hits", None)
     if hits is not None or rb_hits is not None:
         parts: list[str] = []
+        # [external audit v0.6.3 F-B] provenance suffix per hit: event date,
+        # confirmation count, supersession status, attribution (see
+        # hit_provenance_suffix). Mirrors the web path exactly.
         for h in (hits or [])[:5]:
             t = (getattr(h, "text", "") or "").strip()
             if t:
-                parts.append(f"- {t}")
+                parts.append(f"- {t}{hit_provenance_suffix(h)}")
         for h in (rb_hits or [])[:3]:
             t = clean_rb_content(getattr(h, "content", "") or "").strip()
             if t:

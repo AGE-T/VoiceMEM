@@ -210,7 +210,7 @@ class SpeakerOutput:
     never crashes the conversation loop. ``play_async`` wraps ``play`` in
     ``asyncio.to_thread``; ``stop`` aborts in-flight playback (used on barge-in)
     and is a safe no-op when nothing plays or sounddevice is unavailable. The
-    default rate is ``config.output_sample_rate`` (22050, Piper native rate);
+    default rate is ``config.output_sample_rate`` (44100, Supertonic 3 native rate);
     pass ``sample_rate`` per call to override.
     """
 

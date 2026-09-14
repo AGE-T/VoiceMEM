@@ -345,7 +345,7 @@ button{cursor:pointer;background:none;border:none}
 .asrt-send{display:flex;align-items:center;gap:8px;margin-bottom:7px;flex-wrap:wrap}
 .asrt-send .btn{padding:5px 12px;font-size:11.5px}
 .asrt-sent{font-size:11px;color:#a2e3bf}
-/* v0.4.2: Voice selection (Piper) — mode + per-language voice + preview */
+/* v0.4.2: Voice selection (Supertonic 3 presets) — mode + per-language voice + preview */
 .voicebar{display:flex;flex-direction:column;gap:6px;margin:0 0 10px;padding:8px 10px;
   border:1px solid var(--line);border-radius:10px;background:rgba(127,127,127,.05)}
 .vrow{display:flex;align-items:center;gap:8px;flex-wrap:wrap;min-width:0}
@@ -552,16 +552,16 @@ button{cursor:pointer;background:none;border:none}
         <div class="vrow">
           <label for="voiceHuSel" data-i18n="voiceHu">Hungarian Voice</label>
           <select class="sel" id="voiceHuSel" data-i18n-title="voiceSelTitle"
-                  title="Piper voice for Hungarian replies"></select>
+                  title="Supertonic 3 preset voice for Hungarian replies"></select>
           <button class="btn sm" id="voiceHuPrev" data-i18n-title="voicePrevTitle"
-                  title="Preview this voice (local Piper)">▶</button>
+                  title="Preview this voice (local Supertonic 3)">▶</button>
         </div>
         <div class="vrow">
           <label for="voiceEnSel" data-i18n="voiceEn">English Voice</label>
           <select class="sel" id="voiceEnSel" data-i18n-title="voiceSelTitle"
-                  title="Piper voice for English replies"></select>
+                  title="Supertonic 3 preset voice for English replies"></select>
           <button class="btn sm" id="voiceEnPrev" data-i18n-title="voicePrevTitle"
-                  title="Preview this voice (local Piper)">▶</button>
+                  title="Preview this voice (local Supertonic 3)">▶</button>
         </div>
       </div>
       <div class="llmbar" id="llmbar">
@@ -914,13 +914,13 @@ const I18N = {
     /* v0.4.1: visible chain diagnostics */
     asrEmpty:'Speech detected ({0} s) but the transcript was empty — see the ASR row in the Pipeline panel.',
     asrEmptyReason:'Speech detected ({0} s), ASR failed: {1}',
-    /* v0.4.2: Piper voice selection */
+    /* v0.4.2: preset voice selection (Supertonic 3 since v0.7.0) */
     voiceMode:'Voice',
     voiceModeTitle:'Auto: the reply language picks the voice. Hungarian/English: always that voice.',
     voiceAuto:'Auto', voiceLangHu:'Hungarian', voiceLangEn:'English',
     voiceHu:'Hungarian Voice', voiceEn:'English Voice',
-    voiceSelTitle:'Piper voice for replies',
-    voicePrevTitle:'Preview this voice (local Piper)',
+    voiceSelTitle:'Supertonic 3 preset voice for replies',
+    voicePrevTitle:'Preview this voice (local Supertonic 3)',
     voiceSaved:'Voice selection saved: {0}',
     voiceSaveFailed:'Could not save the voice selection: {0}',
     voicePrevFailed:'Voice preview failed: {0}',
@@ -2048,7 +2048,7 @@ const SAMPLE_RATE=24000;          // must match the backend WEB_SAMPLE_RATE
    capture fixes, because the browser was still running the v0.4.9 JS).
    The page also reports itself to the backend on /api/lang, so the field log
    names the page version. Update this together with VERSION/pyproject. */
-const PAGE_VERSION='0.6.0';
+const PAGE_VERSION='0.7.2';
 let ws=null, live=false, paused=false;
 
 /* --- Playback ------------------------------------------------------ */
@@ -2945,14 +2945,14 @@ if(navigator.mediaDevices&&navigator.mediaDevices.addEventListener){
   });
 }
 
-/* --- Voice selection (Piper, v0.4.2) --------------------------------
+/* --- Voice selection (Supertonic 3 presets, v0.4.2 UI / v0.7.0 engine) ---
    Three dropdowns: Voice mode (Auto/Hungarian/English) + the Hungarian voice
    + the English voice. The options come from the backend /api/voice (= the
-   Piper voices installed on this machine), shown with friendly names
+   Supertonic 3 presets installed on this machine), shown with friendly names
    (Anna/Berta/Imre/Lessac), not file names. Every change POSTs /api/voice,
    and the backend writes config/voice_settings.json — the selection survives
    a restart, it is not only held in browser memory. The ▶ button makes the
-   selected voice synthesise a short preview locally via Piper. */
+   selected voice synthesise a short preview locally via Supertonic 3. */
 let voiceSettings=null, voiceBusy=false;
 const voiceModeSel=$('voiceModeSel'), voiceHuSel=$('voiceHuSel'),
       voiceEnSel=$('voiceEnSel'), voiceActive=$('voiceActive');
@@ -4111,7 +4111,7 @@ ensureSpaceObj(activeSpace);
 buildGraph(activeSpace);
 renderAll();
 loadSpaces().then(loadMemories);
-/* Voice selection: populate the dropdowns from the backend (installed Piper
+/* Voice selection: populate the dropdowns from the backend (installed Supertonic 3 preset
    voices + the persisted selection) as soon as the page opens. */
 loadVoiceSettings();
 /* LLM model selection (v0.4.16): status + persisted selection from the

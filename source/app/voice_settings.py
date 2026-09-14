@@ -1,21 +1,27 @@
-"""Piper voice selection settings (UI task: selectable assistant voices).
+"""Supertonic 3 voice selection settings (UI task: selectable assistant voices).
+
+v0.7.0: the Voice section now selects Supertonic 3 preset voice styles
+(``F1``–``F5``, ``M1``–``M5``) instead of Piper voices. Every preset
+speaks BOTH Hungarian and English (the model is multilingual; the voice
+is a style embedding, not a per-language model), so the per-language
+selectors are a UI preference, not a technical constraint.
 
 The Voice section of the web UI exposes three controls:
 
 * ``mode``      — ``auto`` | ``hu`` | ``en`` (default ``auto``)
-* ``hu_voice``  — which Hungarian Piper voice speaks Hungarian replies
-* ``en_voice``  — which English Piper voice speaks English replies
+* ``hu_voice``  — which preset speaks Hungarian replies
+* ``en_voice``  — which preset speaks English replies
 
 Resolution rule (:meth:`VoiceSettings.resolve`):
 
-* ``auto`` — the ACTUAL RESPONSE LANGUAGE decides: a Hungarian reply uses the
-  selected Hungarian voice, an English reply the selected English voice.
-* ``hu``   — every reply is spoken with the selected Hungarian voice.
-* ``en``   — every reply is spoken with the selected English voice.
+* ``auto`` — the ACTUAL RESPONSE LANGUAGE decides: a Hungarian reply uses
+  the selected Hungarian preset, an English reply the English preset.
+* ``hu``   — every reply is spoken with the selected Hungarian preset.
+* ``en``   — every reply is spoken with the selected English preset.
 
 Runtime flow (web backend): LLM response -> language detection ->
-:meth:`VoiceSettings.resolve` -> Piper -> audio. Nothing here touches the
-network; Piper is a local subprocess.
+:meth:`VoiceSettings.resolve` -> Supertonic 3 -> audio. Nothing here touches
+the network; Supertonic runs ONNX Runtime locally (app/tts_supertonic.py).
 
 PERSISTENCE: selections are stored in ``config/voice_settings.json`` (next to
 ``voicemem_config.yaml``) so they survive an application restart. The file is
@@ -23,6 +29,10 @@ small, JSON, written atomically and read leniently (a corrupt/missing file
 falls back to the config defaults, never blocks startup). The absolute
 override env ``VOICEMEM_VOICE_SETTINGS`` redirects the file (tests, exotic
 installs) without touching the root layout.
+
+v0.7.0 MIGRATION: a legacy ``voice_settings.json`` written by the Piper era
+(``hu_HU-anna-medium`` etc.) fails validation and falls back to the Supertonic
+default — the old ids simply do not exist as presets.
 """
 
 from __future__ import annotations
@@ -42,20 +52,27 @@ logger = logging.getLogger(__name__)
 #: Voice language modes offered by the UI.
 VOICE_MODES = ("auto", LANG_HU, LANG_EN)
 
-#: Installed Piper voices (MODELS.lock.json tts entry) with friendly labels.
-#: The primary UI label is ALWAYS the friendly name; the Piper file stem is
-#: only an internal identifier.
+#: Supertonic 3 preset voices (voice_styles/*.json in the model dir) with
+#: friendly labels. The primary UI label is the preset id + character; the
+#: character descriptions follow the official voices documentation
+#: (supertonic-py docs/voices.md).
 VOICE_LABELS: dict[str, str] = {
-    "hu_HU-anna-medium": "Anna",
-    "hu_HU-berta-medium": "Berta",
-    "hu_HU-imre-medium": "Imre",
-    "en_US-lessac-medium": "Lessac",
+    "F1": "F1 · Nyugodt női",
+    "F2": "F2 · Derűs női",
+    "F3": "F3 · Beszélő női",
+    "F4": "F4 · Magabiztos női",
+    "F5": "F5 · Kedves női",
+    "M1": "M1 · Élénk férfi",
+    "M2": "M2 · Mély férfi",
+    "M3": "M3 · Tekintélyes férfi",
+    "M4": "M4 · Barátságos férfi",
+    "M5": "M5 · Meleg férfi",
 }
 
-DEFAULT_HU_VOICE = "hu_HU-anna-medium"
-DEFAULT_EN_VOICE = "en_US-lessac-medium"
+DEFAULT_HU_VOICE = "F1"
+DEFAULT_EN_VOICE = "F1"
 
-#: Preview sentences (local Piper only, no network).
+#: Preview sentences (local Supertonic only, no network).
 PREVIEW_SENTENCES: dict[str, str] = {
     LANG_HU: "Szia Thomas, ez egy hangteszt.",
     LANG_EN: "Hello Thomas, this is a voice test.",
@@ -66,19 +83,22 @@ SETTINGS_RELPATH = Path("config") / "voice_settings.json"
 
 
 def voice_label(voice_id: str) -> str:
-    """Friendly display name for a Piper voice id (``hu_HU-anna-medium`` -> ``Anna``)."""
+    """Friendly display name for a preset id (``F1`` -> "F1 · Nyugodt női")."""
     if voice_id in VOICE_LABELS:
         return VOICE_LABELS[voice_id]
-    stem = str(voice_id).removesuffix(".onnx")
-    # hu_HU-anna-medium -> "Anna"; unknown-voice -> "Unknown voice"
-    parts = stem.split("-")
-    core = parts[1] if len(parts) >= 2 else stem
-    return core[:1].upper() + core[1:] if core else stem
+    stem = str(voice_id).strip()
+    return stem if stem else "Unknown voice"
 
 
 def language_of_voice(voice_id: str) -> str:
-    """Language tag of a Piper voice id (``hu_*`` -> ``hu``, everything else -> ``en``)."""
-    return LANG_HU if str(voice_id).startswith("hu_") else LANG_EN
+    """Language tag of a voice selection.
+
+    Supertonic presets are language-agnostic (every preset speaks both hu and
+    en), so this reports the UI-side grouping of the id: preset ids are valid
+    for BOTH languages; the return value only feeds the legacy per-language
+    validation fallbacks (``_first_of_language`` keeps working unchanged).
+    """
+    return LANG_EN if str(voice_id).startswith("en_") else LANG_HU
 
 
 def language_name(language: str) -> str:
@@ -87,15 +107,15 @@ def language_name(language: str) -> str:
 
 
 def available_voices(config: AgentConfig) -> list[str]:
-    """Voice ids of the LOCALLY INSTALLED Piper voices (voices_dir *.onnx stems).
+    """Preset ids of the LOCALLY INSTALLED voice styles (voice_styles/*.json).
 
-    When no voice is installed (DEMO mode / piper missing) the four standard
-    ids are returned so the UI stays usable; synthesis then reports the real
+    When none is installed (DEMO mode / assets missing) the full preset list
+    is returned so the UI stays usable; synthesis then reports the real
     availability separately.
     """
     try:
-        voices_dir = config.voices_dir
-        installed = sorted(path.stem for path in voices_dir.glob("*.onnx"))
+        voices_dir = config.supertonic_voices_dir
+        installed = sorted(path.stem for path in voices_dir.glob("*.json"))
     except Exception:  # noqa: BLE001 - config paths must never crash the UI
         installed = []
     return installed or list(VOICE_LABELS)
@@ -109,7 +129,7 @@ def _first_of_language(ids: list[str], language: str) -> Optional[str]:
 
 
 class VoiceSettings:
-    """Persisted Piper voice selection (mode + per-language voice)."""
+    """Persisted Supertonic preset selection (mode + per-language preset)."""
 
     def __init__(
         self,
@@ -131,9 +151,15 @@ class VoiceSettings:
     # -- validation ----------------------------------------------------------- #
 
     def _validated(self, voice_id: str, language: str) -> str:
-        """Keep *voice_id* when installed and of *language*; else fall back."""
+        """Keep *voice_id* when it is an installed preset; else fall back.
+
+        Supertonic presets are language-AGNOSTIC (every preset speaks both
+        hu and en), so any installed preset is valid for either selector;
+        legacy Piper ids (``hu_HU-…``/``en_US-…``) simply do not exist as
+        presets and fail this check — the v0.7.0 migration path.
+        """
         voice_id = str(voice_id or "").strip()
-        if voice_id in self.available and language_of_voice(voice_id) == language:
+        if voice_id in self.available:
             return voice_id
         fallback = _first_of_language(self.available, language)
         if fallback is not None:
@@ -229,10 +255,13 @@ class VoiceSettings:
     # -- UI payload ------------------------------------------------------------------ #
 
     def catalog(self) -> dict[str, list[str]]:
-        """Installed voice ids split by language (UI dropdown contents)."""
-        hu = [v for v in self.available if language_of_voice(v) == LANG_HU]
-        en = [v for v in self.available if language_of_voice(v) == LANG_EN]
-        return {LANG_HU: hu, LANG_EN: en}
+        """Installed preset ids per language (UI dropdown contents).
+
+        Every Supertonic preset speaks both languages, so BOTH dropdowns
+        offer the full preset list.
+        """
+        presets = list(self.available)
+        return {LANG_HU: presets, LANG_EN: presets}
 
     def to_dict(self) -> dict[str, Any]:
         """Full /api/voice payload (settings + catalog + labels)."""
@@ -251,8 +280,8 @@ class VoiceSettings:
 
 
 def _real_voices_installed(config: AgentConfig) -> bool:
-    """True when at least one Piper .onnx voice file exists on disk."""
+    """True when at least one Supertonic voice-style JSON exists on disk."""
     try:
-        return any(config.voices_dir.glob("*.onnx"))
+        return any(config.supertonic_voices_dir.glob("*.json"))
     except Exception:  # noqa: BLE001
         return False

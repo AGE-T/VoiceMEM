@@ -24,13 +24,13 @@
   "models": [
     {
       "component": "asr",
-      "hf_repo": "Qwen/Qwen3-ASR-0.6B",
-      "path": "models/asr/qwen3-asr-0.6b/config.json",
+      "hf_repo": "nvidia/parakeet-tdt-0.6b-v3",
+      "path": "models/asr/parakeet-tdt-0.6b-v3/config.json",
       "sha256": "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
       "size_bytes": 1234,
       "source_commit": null,
-      "source_repo": "Qwen/Qwen3-ASR-0.6B",
-      "source_revision": "main"
+      "source_repo": "nvidia/parakeet-tdt-0.6b-v3",
+      "source_revision": "541d1f99c6b0c3cd0b11a95167540bb8edefd82b"
     },
     {
       "component": "llm",

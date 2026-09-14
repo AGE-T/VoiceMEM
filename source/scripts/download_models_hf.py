@@ -33,8 +33,7 @@ What this script does (all driven by MODELS.lock.json, schema_version 2):
          sha256 (v0.4.16: the LLM is NOT auto-downloaded - see the llm note).
          NO alternate LLM, LLM FALLBACK: NONE); the VAD keeps its
          mirror (tphakala re-host ->
-         silero original with flatten; piper voices: nested repo path ->
-         flat layout fallback) - the one-click rule is preserved.
+         silero original with flatten) - the one-click rule is preserved.
   3. RETRY: every download is retried (default 3 attempts, 5s/15s
      backoff). ``hf_hub_download``/``snapshot_download`` RESUME broken
      transfers automatically, so a re-run continues where it stopped.
@@ -90,13 +89,37 @@ REPO_DEFAULT_LOCK: Dict[str, Any] = {
     "models": [
         {
             "component": "asr",
-            "repo": "Qwen/Qwen3-ASR-0.6B",
-            "target_dir": "models/asr/qwen3-asr-0.6b",
-            "files": ["(full repo snapshot)"],
-            "snapshot": True,
-            "snapshot_probe": "config.json",
-            "min_total_mb": 500,
-            "pinned_revision": "main",
+            "_note": (
+                "v0.6.0 production ASR: NVIDIA Parakeet TDT 0.6B v3 "
+                "(transformers ParakeetForTDT >= 5.6; app/asr_parakeet.py "
+                "engine-registry path; asr_engine default 'parakeet'). "
+                "The 6 transformers runtime files only - the repo GGUF is "
+                "a llama.cpp artifact, not needed. Qwen3-ASR was RETIRED "
+                "in v0.6.0; the retired models/asr/qwen3-asr-0.6b dir is "
+                "left in place, never auto-downloaded. v0.6.1 hotfix: the "
+                "lock previously pointed at the retired Qwen repo, so "
+                "parakeet was never fetched (field report)."
+            ),
+            "repo": "nvidia/parakeet-tdt-0.6b-v3",
+            "target_dir": "models/asr/parakeet-tdt-0.6b-v3",
+            "files": [
+                "config.json",
+                "generation_config.json",
+                "model.safetensors",
+                "processor_config.json",
+                "tokenizer.json",
+                "tokenizer_config.json",
+            ],
+            "snapshot": False,
+            "pinned_revision": "541d1f99c6b0c3cd0b11a95167540bb8edefd82b",
+            "min_bytes": {
+                "config.json": 500,
+                "generation_config.json": 100,
+                "model.safetensors": 2500000000,
+                "processor_config.json": 100,
+                "tokenizer.json": 1000000,
+                "tokenizer_config.json": 200,
+            },
         },
         {
             "component": "embedding",
@@ -169,29 +192,56 @@ REPO_DEFAULT_LOCK: Dict[str, Any] = {
         },
         {
             "component": "tts",
-            "repo": "rhasspy/piper-voices",
-            "target_dir": "models/tts/piper",
+            "_note": (
+                "v0.7.0 PRODUCTION TTS: Supertonic 3 (ONNX Runtime CPU, "
+                "hu+en among 31 languages, 44.1 kHz 16-bit; Piper retired, "
+                "NO fallback). Source: the archive namespace "
+                "supertone-oss-archive/supertonic-3 (repo archived July 23, "
+                "2026 / Sep 9, 2026; treat as a FIXED external dependency). "
+                "Nested layout kept (onnx/ + voice_styles/) - the supertonic "
+                "SDK (pip, pinned 1.3.1) loads from model_dir; runtime is "
+                "fully offline (auto_download=False). Hashes: "
+                "models/tts/supertonic-3/ASSET_MANIFEST.json."
+            ),
+            "repo": "supertone-oss-archive/supertonic-3",
+            "target_dir": "models/tts/supertonic-3",
             "files": [
-                "hu_HU-anna-medium.onnx",
-                "hu_HU-anna-medium.onnx.json",
-                "hu_HU-berta-medium.onnx",
-                "hu_HU-berta-medium.onnx.json",
-                "hu_HU-imre-medium.onnx",
-                "hu_HU-imre-medium.onnx.json",
-                "en_US-lessac-medium.onnx",
-                "en_US-lessac-medium.onnx.json",
+                "onnx/tts.json",
+                "onnx/unicode_indexer.json",
+                "onnx/duration_predictor.onnx",
+                "onnx/text_encoder.onnx",
+                "onnx/vector_estimator.onnx",
+                "onnx/vocoder.onnx",
+                "voice_styles/M1.json",
+                "voice_styles/M2.json",
+                "voice_styles/M3.json",
+                "voice_styles/M4.json",
+                "voice_styles/M5.json",
+                "voice_styles/F1.json",
+                "voice_styles/F2.json",
+                "voice_styles/F3.json",
+                "voice_styles/F4.json",
+                "voice_styles/F5.json",
             ],
             "snapshot": False,
-            "pinned_revision": "main",
+            "pinned_revision": "aafc6e32416a594460b32413efc49d7fe4ce6d46",
             "min_bytes": {
-                "hu_HU-anna-medium.onnx": 1048576,
-                "hu_HU-anna-medium.onnx.json": 1,
-                "hu_HU-berta-medium.onnx": 1048576,
-                "hu_HU-berta-medium.onnx.json": 1,
-                "hu_HU-imre-medium.onnx": 1048576,
-                "hu_HU-imre-medium.onnx.json": 1,
-                "en_US-lessac-medium.onnx": 1048576,
-                "en_US-lessac-medium.onnx.json": 1,
+                "onnx/tts.json": 4000,
+                "onnx/unicode_indexer.json": 100000,
+                "onnx/duration_predictor.onnx": 1000000,
+                "onnx/text_encoder.onnx": 10000000,
+                "onnx/vector_estimator.onnx": 100000000,
+                "onnx/vocoder.onnx": 50000000,
+                "voice_styles/M1.json": 1000,
+                "voice_styles/M2.json": 1000,
+                "voice_styles/M3.json": 1000,
+                "voice_styles/M4.json": 1000,
+                "voice_styles/M5.json": 1000,
+                "voice_styles/F1.json": 1000,
+                "voice_styles/F2.json": 1000,
+                "voice_styles/F3.json": 1000,
+                "voice_styles/F4.json": 1000,
+                "voice_styles/F5.json": 1000,
             },
         },
     ],
@@ -332,7 +382,7 @@ def sha256_of(path: Path) -> str:
 
 
 def flatten_nested(root_dir: Path) -> int:
-    """Move files from subdirectories into root_dir (piper/vad layout).
+    """Move files from subdirectories into root_dir (VAD layout).
 
     Idempotent: files already at the root are untouched; a target
     collision is skipped (first file wins). Returns moved file count.
@@ -365,25 +415,6 @@ def flatten_nested(root_dir: Path) -> int:
             pass
     return moved
 
-
-def piper_nested_path(flat_name: str) -> str:
-    """Map a flat piper voice file name to its nested HF repo path.
-
-    'hu_HU-anna-medium.onnx' -> 'hu/hu_HU/anna/medium/hu_HU-anna-medium.onnx'
-    'en_US-lessac-medium.onnx.json' -> 'en/en_US/lessac/medium/en_US-...'
-    """
-    stem = flat_name
-    for suffix in (".onnx.json", ".onnx"):
-        if stem.endswith(suffix):
-            stem = stem[: -len(suffix)]
-            break
-    lang, _speaker, _quality = stem.split("-", 2)
-    top = lang.split("_")[0]
-    # e.g. 'hu/hu_HU/anna/medium/hu_HU-anna-medium.onnx'
-    return "%s/%s/%s/%s/%s" % (top, lang, _speaker, _quality, flat_name)
-
-
-# ------------------------------------------------------------ verification ---
 
 def min_bytes_map(entry: Dict[str, Any]) -> Dict[str, int]:
     result: Dict[str, int] = {}
@@ -621,22 +652,20 @@ class ModelDownloader:
         return False
 
     def _download_tts(self, entry: Dict[str, Any]) -> bool:
+        """v0.7.0: Supertonic 3 assets - NESTED layout, no flatten.
+
+        The supertonic SDK expects ``onnx/`` + ``voice_styles/`` inside the
+        model dir; hf_hub_download(local_dir=...) already writes nested repo
+        paths as-is, so this is a straight per-file download at the pinned
+        archive revision. NEVER called from the runtime - setup time only.
+        """
         target = self.root / str(entry["target_dir"])
         revision = entry.get("pinned_revision") or "main"
         repo = str(entry["repo"])
         ok_all = True
-        for flat_name in [str(f) for f in entry.get("files", [])]:
-            nested = piper_nested_path(flat_name)
-            if self._hub_file(repo, nested, target, revision):
-                continue
-            _print_flush("[INFO] piper flat-path fallback for: %s" % flat_name)
-            if self._hub_file(repo, flat_name, target, revision):
-                continue
-            ok_all = False
-        moved = flatten_nested(target)
-        if moved:
-            _print_flush("[OK  ] piper voices flattened: %d file(s) moved "
-                         "to models/tts/piper/." % moved)
+        for rel_path in [str(f) for f in entry.get("files", [])]:
+            if not self._hub_file(repo, rel_path, target, revision):
+                ok_all = False
         return ok_all
 
     def _download_generic(self, entry: Dict[str, Any]) -> bool:
@@ -674,7 +703,13 @@ class ModelDownloader:
             "vad": self._download_vad,
             "tts": self._download_tts,
         }.get(component, self._download_generic)
-        if component in ("asr", "embedding"):
+        # v0.6.1: "asr" REMOVED from the forced-snapshot list. The handler
+        # override silently bypassed the lock's snapshot flag for the ASR
+        # component (the delivery-manifest blind spot that kept the retired
+        # Qwen snapshot downloading while parakeet was never fetched). The
+        # lock entry is now the single source of truth: snapshot=false ->
+        # per-file hf_hub_download (6 parakeet runtime files, no GGUF).
+        if component == "embedding":
             handler = self._download_snapshot
         ok = handler(entry)
         problems = verify_entry(self.root, entry)

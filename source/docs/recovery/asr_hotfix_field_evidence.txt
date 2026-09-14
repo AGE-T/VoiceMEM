@@ -1,0 +1,42 @@
+v0.6.1 ASR DELIVERY HOTFIX — FIELD EVIDENCE (2026-09-11, user upload)
+
+USER REPORT (verbatim):
+  "Én még a start.bat ot indítva azt látom, hogy asr : qwen. Nem töltődik le az nvidia modell."
+  ("Starting start.bat I still see asr: qwen. The NVIDIA model doesn't download.")
+
+FIELD MACHINE: F:\Voicemem\VoiceMemAgent, Windows 11, RTX 5070 (12227 MiB),
+Python 3.11.9, transformers >= 5.6 (ParakeetForTDT importable - the failure
+happened at from_pretrained, past the import), llama-server serving the
+pinned Qwen3.6 35B A3B IQ4_XS blob (afc7238a...), LLM startup probe OK,
+Silero VAD with the official 64-sample rolling context (v0.6.0 code CONFIRMED
+running on the field: "512-sample frames + 64-sample rolling context"),
+MixPre line-in capture working (mic rms 0.047, VAD speech start level 0.83).
+
+bootstrap.log (field):
+  [OK] model set complete: asr, embedding, emotion, speaker, vad, tts
+  [INFO] Step 3/5: environment already ready - skipping the installer
+    -> the presence check passed on the RETIRED qwen dir (present from the
+    pre-v0.6.0 install); parakeet was NEVER in the manifest, so the
+    idempotent bootstrap never fetched it.
+
+web-server.log (field, the failure chain):
+  2026-09-11 14:18:57,942 INFO __main__: [chain] speech start (level 0.83)
+  2026-09-11 14:19:00,380 INFO __main__: [chain] speech end (2432 ms of speech)
+  2026-09-11 14:19:00,381 INFO __main__: [chain] stage asr started: transcribing utterance
+  2026-09-11 14:19:00,386 INFO __main__: [chain] stage asr FAILED: ASR_MODEL_LOAD_ERROR (model_unavailable) transcription failed
+  2026-09-11 14:19:00,386 INFO __main__: [chain] ASR EMPTY after 2432 ms of speech: loading F:\Voicemem\VoiceMemAgent\models\asr\parakeet-tdt-0.6b-v3 failed: Unrecognized processing class in F:\Voicemem\V
+  2026-09-11 14:19:00,390 INFO __main__: empty utterance dumped: F:\Voicemem\VoiceMemAgent\logs\last_empty_utterance.wav (2432 ms, reason=loading ... failed: Unre)
+    -> HONEST failure (no fallback, later stages blocked) but the message was
+    cryptic; the empty utterance WAV (uploaded) contains the 2432 ms of real
+    speech the field tried to transcribe.
+
+UI (uploaded screenshot, VLM-extracted):
+  "UI v0.6.0 / backend v0.6.0 ... ASR ERROR 5 ms ... ASR : ERROR — model_unavailable ·
+   loading F:\Voicemem\VoiceMemAgent\models\asr\parakeet-tdt-0.6b-v3 failed:
+   Unrecognized processing class in F:\Voicemem\V ..."
+
+ROOT CAUSE (sandbox-proven): the v0.6.0 release shipped the modular ASR app
+layer but the DELIVERY manifest (MODELS.lock.json asr entry + the downloader's
+self-heal default + its forced-snapshot 'asr' handler override) still pointed
+at the retired Qwen/Qwen3-ASR-0.6B. See asr_hotfix_reproduction.txt for the
+byte-exact sandbox reproduction of the cryptic error.

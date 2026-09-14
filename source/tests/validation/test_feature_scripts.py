@@ -97,6 +97,36 @@ class ScriptsFeatureTest(FeatureValidationTest):
                 f"{path.name} must be pure ASCII for PowerShell 5.1",
             )
 
+    def test_logic_all_ps1_are_structurally_balanced(self):
+        """v0.7.1 field report guard: every .ps1 must be PS 5.1 parse-clean.
+
+        The v0.7.0 release shipped install_m1.ps1 with ONE missing closing
+        brace (the piper-removal edit took out one brace too many); the
+        sandbox has no Windows PowerShell, so nothing parsed the script
+        before shipping and the target machine's bootstrap died with
+        ``ParserError: Missing closing '}'``. scripts/ps_lint.py tokenizes
+        PowerShell source (strings, here-strings, comments, nesting) well
+        enough to catch exactly this defect class - every repo script AND
+        config/env.local.ps1 must lint clean from now on, both here (gate)
+        and in the release build self-check (zipped copies).
+        """
+        import sys as _sys
+
+        _sys.path.insert(0, str(SCRIPTS_DIR))
+        from ps_lint import check_ps_file  # noqa: E402  (repo-local stdlib tool)
+
+        targets = sorted(SCRIPTS_DIR.glob("*.ps1")) + [
+            REPO_ROOT / "config" / "env.local.ps1"
+        ]
+        self.assertGreater(len(targets), 0, "no .ps1 files found to lint")
+        for path in targets:
+            problems = check_ps_file(path)
+            self.assertEqual(
+                problems, [],
+                f"{path.relative_to(REPO_ROOT)} fails the PowerShell "
+                f"structural lint: {problems}",
+            )
+
     def test_logic_gate_scripts_avoid_ps7_syntax(self):
         """run_tests.ps1 / build_release.ps1 must run on PowerShell 5.1.
 
@@ -375,7 +405,7 @@ class StartupHealthFirstV033Tests(FeatureValidationTest):
     - FAIL only if the llama-server process actually stopped AND /health
       did not become available within the timeout;
     - starter-wrapper failure -> direct llama-server.exe fallback launch
-      with the shell-derived config (SAME flags: -ngl -1, -c 8192, ...);
+      with the shell-derived config (SAME flags: -ngl 20, -c 32768, ...);
     - the python-bridge config error is a separate WARNING, not fatal,
       whenever the shell-derived llama-server config works;
     - the final verify result reports SIX separate indicators: server
@@ -409,7 +439,7 @@ class StartupHealthFirstV033Tests(FeatureValidationTest):
     def test_logic_verify_fallback_args_match_starter_contract(self) -> None:
         """The direct fallback must launch llama-server with the SAME flags."""
         code = self._code("verify_m1.ps1")
-        for flag in ('"-ngl", "-1"', '"-c", "8192"', '"--parallel", "1"',
+        for flag in ('"-ngl", "20"', '"-c", "32768"', '"--parallel", "1"',
                      '"--cache-type-k", "q8_0"', '"--cache-type-v", "q8_0"',
                      '"--temp", "0.7"', '"--metrics"', '"--no-webui"',
                      '"--host", "127.0.0.1"', '"--port", "8080"'):
@@ -455,11 +485,13 @@ class StartupHealthFirstV033Tests(FeatureValidationTest):
             code,
         )
 
-    def test_logic_starter_fallback_keeps_ngl_minus_one(self) -> None:
-        """v0.4.14: the shell fallback follows the ACTIVE profile's partial
-        offload (35B IQ4_XS ~19 GB does not fit 12 GB VRAM)."""
+    def test_logic_starter_fallback_keeps_profile_ngl(self) -> None:
+        """v0.4.14/v0.6.0+: the shell fallback follows the ACTIVE profile's
+        partial offload (35B IQ4_XS ~19 GB does not fit 12 GB VRAM; the
+        measured production profile offloads 20/42 layers)."""
         code = self._code("start_llama_server.ps1")
-        self.assertIn('$FbNgl = "26"', code)
+        self.assertIn('$FbNgl = "20"', code)
+        self.assertIn('$FbCtx = "32768"', code)
 
     def test_logic_starter_dll_preflight_is_warning_only(self) -> None:
         code = self._code("start_llama_server.ps1")
@@ -526,22 +558,24 @@ class StartupV034FieldReportTests(FeatureValidationTest):
         """v0.4.5 (field report #5): the dependency probe is VERSION-aware for
         transformers. An in-place upgraded venv still carrying voicemem's
         4.52.3 pin passed the import-only probe, the bootstrap skipped the
-        installer, and the v0.4.4 step-16 guard never ran -> qwen3_asr never
-        loaded ("ASR not green", text-only mode). The probe must exit 5 for
-        an importable-but-older version and route to the installer."""
+        installer, and the v0.4.4 step-16 guard never ran -> the ASR engine
+        class never loaded ("ASR not green", text-only mode). The probe must
+        exit 5 for an importable-but-older version and route to the
+        installer."""
         code = self._code("bootstrap.ps1")
         self.assertIn("transformers.__version__", code)
-        # v0.4.7: the floor is 5.0 - the native qwen3_asr module (the
-        # processor + generate call path in app/asr.py) exists from
-        # transformers 5.x; 4.57 does NOT contain it.
-        self.assertIn("(5, 0)", code)
+        # v0.6.1: the floor is 5.6 - ParakeetForTDT (the v0.6.0 production
+        # ASR engine, app/asr_parakeet.py) exists only from transformers
+        # 5.6; older 5.x releases do not contain it.
+        self.assertIn("(5, 6)", code)
         self.assertIn("else 5", code)
         # exit 5 must NOT pass as ready -> the installer (self-healing) runs
         self.assertIn("if ($LASTEXITCODE -eq 5) {", code)
         after_probe = code.split("$TfProbe = '")[1]
         self.assertIn("return $false", after_probe)
         # the probe names the concrete field symptom (ASR) in its warning
-        self.assertIn("Qwen3-ASR", after_probe)
+        self.assertIn("ParakeetForTDT", after_probe)
+        self.assertIn("parakeet-tdt-0.6b-v3", after_probe)
 
     def test_logic_bootstrap_version_probe_has_no_embedded_double_quotes(self) -> None:
         """PS 5.1 native-argument quoting: the probe code must stay free of
@@ -556,7 +590,7 @@ class StartupV034FieldReportTests(FeatureValidationTest):
         # the escaped single quotes survive as Python string literals
         self.assertIn("split(''+'')", inner)
         self.assertIn("split(''.'')", inner)
-        self.assertIn("sys.exit(0 if v >= (5, 0) else 5)", inner)
+        self.assertIn("sys.exit(0 if v >= (5, 6) else 5)", inner)
 
     # --- (2) cp1252 crash guard ------------------------------------------
 
@@ -766,3 +800,49 @@ class StartBatFieldReportV036Tests(FeatureValidationTest):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class StartLlamaServerProcessGuardTests(FeatureValidationTest):
+    """v0.6.4 (external audit v0.6.3 BAT-1): process-level double-instance guard.
+
+    The /health-based idempotent branch is BLIND while the ~19 GB model
+    loads (the server answers /health only at the END of the load), so a
+    second START.bat in that window started a second llama-server.exe
+    (field report: Task Manager screenshot). v0.6.4 adds the process-level
+    guard: with ANY llama-server.exe process alive, a second instance is
+    never started - the script waits for the existing load instead, and
+    -ForceKillExisting is the explicit operator escape hatch.
+    """
+
+    FEATURE = "scripts"
+
+    def _code(self, name: str) -> str:
+        text = (SCRIPTS_DIR / name).read_text(encoding="ascii")
+        return _strip_ps_comments(text)
+
+    def test_guard_functions_and_params_present(self):
+        code = self._code("start_llama_server.ps1")
+        self.assertIn("function Get-LlamaServerProcesses", code)
+        self.assertIn("Win32_Process", code)
+        self.assertIn("llama-server.exe", code)
+        self.assertIn("[switch]$ForceKillExisting", code)
+
+    def test_guard_refuses_second_instance_during_load(self):
+        # _code() strips comments - assert on executable code + output
+        # strings, not comment banners.
+        code = self._code("start_llama_server.ps1")
+        self.assertIn("elseif (@(Get-LlamaServerProcesses).Count -gt 0", code)
+        self.assertIn("NEM inditok masodik peldanyt", code)
+        # waiting path: bounded by max(WaitSec, 300) s
+        self.assertIn("Math]::Max([int]$WaitSec, 300", code)
+        # the guard exits PASS once the existing instance turns healthy
+        self.assertIn("a meglevo llama-server felfutott", code)
+        # escape hatch documented in the failure message
+        self.assertIn("-ForceKillExisting", code)
+
+    def test_guard_keeps_the_health_idempotent_branch(self):
+        code = self._code("start_llama_server.ps1")
+        # The original idempotent branch (health 200 + same model) still
+        # handles the "already running and healthy" case.
+        self.assertIn("a llama-server mar fut", code)
+        self.assertIn("Test-LlamaServesModel", code)

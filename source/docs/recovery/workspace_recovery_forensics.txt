@@ -1,0 +1,46 @@
+=== WORKSPACE RECOVERY FORENSICS — captured 2026-09-11T09:46:46Z BEFORE any modification ===
+
+--- GIT STATE ---
+branch: main
+HEAD: f730b700734db2e6149c6d9ee6db9f997cc6338e
+mirror expected HEAD: 8b7e6fbfa5a76e48ed1bbdcade5448d6e2c37e0b (verified via anonymous git ls-remote)
+reflog: clean linear commit history, NO reset/checkout events (top: f730b70 worklog final report)
+git diff --stat total: 53 files changed, 1 insertion(+), 1 deletion(-)
+verdict: ALL 53 file diffs are MODE-ONLY (100644->100755) except .zscripts/dev.pid (1122->1116, runtime PID artifact)
+
+--- RELEASE PACKAGE INTEGRITY (bit-identical to committed blobs) ---
+VoiceMemAgent_v0.6.0.zip        blob 82fcc2d8f239069ded68a16727ce2a3099ffa795  sha256 9c55d9e194f8e15ddf2ef01481e12ca5993c769126b1a86cbcf731b2a0ce46c4
+VoiceMemAgent_v0.6.0_ASRGate.zip blob 6d0d8f05e690f162c8e16d756e24c06b08d79709  sha256 54274f8dec40e068e6aeba3b29aa3187241c0c7f2c54fb7d15872a5250d9a2f9
+sidecars match recorded SHA256 values from commit 43b88ef
+
+--- v0.6.0 SOURCE INTEGRITY POINTS (grep-verified this session) ---
+vad.py: _SILERO_CONTEXT_SAMPLES=64 rolling context contract PRESENT
+FusedVad: DELETED (only removal-explaining comments remain)
+asr_core.py: AudioBuffer/AsrResult/AsrError/AsrModelSpec/MODEL_REGISTRY/select_engine PRESENT
+MODEL_REGISTRY: parakeet (default) + nemotron; qwen NOT in registry
+Qwen production imports: NONE (app/asr.py = marked non-production migration module)
+vendor/voicemem: VM-LOCAL-007 (delete default deny), VM-LOCAL-008 (supersession), VM-LOCAL-009 (cascade) all PRESENT
+pyproject.toml version: 0.6.0
+cosmetic note: web_server.py:1167 stale display-string getattr(vad_energy_fallback) — status detail only, no behavioral fallback (part of delivered v0.6.0)
+
+--- LOST IN THE SANDBOX RESET (the actual regression) ---
+1. voicemem-agent/.venv — GONE (python virtual environment)
+2. model weights — GONE (placeholder README/.gitkeep only):
+   models/asr/parakeet-tdt-0.6b-v3/ (nvidia, ~2.5 GB) — production ASR
+   models/vad/silero-vad/silero_vad.onnx (~2 MB)
+   models/embedding/multilingual-e5-small/ (intfloat, ~0.5 GB)
+   models/tts/piper/ voices (~60 MB) + bin/piper executable (dir absent)
+   models/hf/ HF cache isolation dir (empty shell)
+3. /tmp/llama/ — GONE: llama.cpp b10717 binary + qwen3-1.7b stand-in GGUF (LLM sandbox proof instance; production 19 GB GGUF is operator-placed by design and NEVER sandbox-resident)
+4. /home/z/.github_sync/ — GONE: GitHub mirror sync token (push credential)
+5. memory/ sqlite+qdrant dev databases — empty shells (demo fixtures recreated by tests)
+
+--- STILL RUNNING / INTACT ---
+Next.js dev server port 3000 (GET / 200), VoiceMEM mock web server 127.0.0.1:8787 (version 0.6.0, /api/health ok)
+worklog.md 3145 lines intact; public/ zips intact; vendor tree intact; data/asr_bench corpus intact
+HuggingFace network: REACHABLE (HTTP 200) — model re-download feasible; disk free 7.7 GB
+
+--- RECOVERY PLAN (no merge, no patching from old state, no fallback, no new architecture) ---
+source state: PROVEN INTACT at f730b70 = v0.6.0 — no source recovery needed; normalize mode bits to committed state
+runtime: rebuild .venv + re-download pinned models; LLM leg remains field-side (production GGUF never sandbox-resident)
+

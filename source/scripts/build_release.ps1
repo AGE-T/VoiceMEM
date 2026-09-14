@@ -391,9 +391,14 @@ try {
     # placeholder-t kap (+ a repo README.md-jet, ha van). A modellsulyok
     # SOHA nem kerulnek a ZIP-be - azokat a telepito tolti le.
     $PlaceholderDirs = @(
+        # v0.6.0: the modular engine dirs (production parakeet + selectable
+        # nemotron); the retired qwen dir still ships as the legacy
+        # migration-module placeholder.
+        "models/asr/parakeet-tdt-0.6b-v3",
+        "models/asr/nemotron-3.5-asr-streaming-0.6b",
         "models/asr/qwen3-asr-0.6b",
         "models/llm/qwen3.6-35b-a3b",
-        "models/tts/piper",
+        "models/tts/supertonic-3",
         "models/vad/silero-vad",
         "models/embedding/multilingual-e5-small",
         "models/hf",

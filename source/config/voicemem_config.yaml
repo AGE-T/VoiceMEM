@@ -27,12 +27,12 @@
 #   │                                  fájlnév - a GGUF magic dönt; Ollama
 #   │                                  sha256-... blob is betölthető; a web UI
 #   │                                  model picker / llm_model.json felülírja)
-#   ├── tts/piper/                      hu_HU-anna/berta/imre + en_US-lessac
+#   ├── tts/supertonic-3/               onnx/ (6 fájl) + voice_styles/ (F1-F5, M1-M5)
 #   ├── vad/silero-vad/silero_vad.onnx  Silero VAD v6.2.1 (CPU, ONNX)
 #   ├── embedding/multilingual-e5-small VoiceMem memória-embedding (384 dim)
 #   ├── emotion/emotion2vec-plus-base/  M2: emotion2vec+ base (CPU, funasr)
 #   └── hf/                             HF cache gyökér (HF_HOME izoláció)
-# Binárisok: bin/ (llama-server.exe, piper.exe). VoiceMem pinned klón:
+# Binárisok: bin/ (llama-server.exe). TTS: supertonic pip-csomag + ONNX. VoiceMem pinned klón:
 # vendor/voicemem. Memória: memory/ (sqlite/qdrant/backups).
 #
 # M1 szigorúsági megjegyzések:
@@ -46,7 +46,7 @@
 #     degradation az M1 módra (a check_runtime_assets nem tartalmazza).
 #   - voicemem_mode mindig "text_mode" — a "multi_modal" minden mérföldkőben
 #     véglegesen kizárt (scene recognition nincs).
-#   - sample_rate 16000 és output_sample_rate 22050 kötelező (VAD/ASR- és
+#   - sample_rate 16000 és output_sample_rate 44100 kötelező (VAD/ASR- és
 #     Piper-hangkövetelmény, a validate() ellenőrzi).
 #   - offline: true — futás közbeni hálózati hívás nincs (a config/env.local.ps1
 #     a HF_HUB_OFFLINE=1-et is beállítja).
@@ -56,7 +56,7 @@
 
 project:
   name: "voicemem-agent"
-  version: "0.6.0"        # a VERSION fájl az egyetlen forrás — ezt kézzel szinkronban tartani
+  version: "0.7.2"        # a VERSION fájl az egyetlen forrás — ezt kézzel szinkronban tartani
   offline: true           # runtime offline mód (telepítés után)
 
 paths:
@@ -76,7 +76,7 @@ app:
 
   # --- hang be-/kimenet ---
   sample_rate: 16000            # mikrofon (VAD + ASR), 16 kHz mono
-  output_sample_rate: 22050     # Piper kimenet, 22.05 kHz mono int16
+  output_sample_rate: 44100     # Supertonic 3 kimenet, 44.1 kHz mono int16
   audio_input_device: ""        # üres = rendszer-default mikrofon (sounddevice)
   audio_output_device: ""       # üres = rendszer-default hangszóró
 
@@ -127,25 +127,43 @@ app:
   # használni. Kód nincs benne, hardcode nincs benne.
   llama_server_host: "127.0.0.1"   # loopback: nincs külső expozíció
   llama_server_port: 8080
-  llm_model_name: "qwen3.6-35b-a3b"
-  llm_context_size: 8192           # 8K kontextus (nem növeljük feleslegesen)
-  llm_n_gpu_layers: 26             # RÉSZLEGES offload: ~19 GB modell > 12 GB VRAM
-  llm_parallel: 1                  # llama-server --parallel slotok száma
-  llm_cache_type_k: "q8_0"         # 8-bit KV cache -> VRAM-megtakarítás
-  llm_cache_type_v: "q8_0"
-  llm_temperature: 0.7
-  llm_max_tokens: 512
-  # v0.4.4: request-szintu thinking-ki Kapcsolo (chat_template_kwargs + reasoning_effort
-  # "none") - a hibrid-reasoning modell gondolkodasi csatornaja nelkule a
-  # valasz contentje
-  # URES maradhat (a b10717 llama-server enable_thinking defaultja TRUE).
-  llm_disable_thinking: true
+  # --- LLM FUTÁSIDEJŰ ÉRTÉKEK (v0.7.2): KANONIKUS FORRÁS KÖLTÖZÖTT ---
+  # A llama-server parancssor MINDEN értékét (-ngl, -c, --parallel,
+  # --cache-type-k/-v, --temp, --reasoning) és a Python LLM-kliens minden
+  # paraméterét (modell-név, temperature, max_tokens, thinking-ki) a
+  # KANONIKUS config/llm_config.yaml-ból materializálja az EGY loader
+  # (app/llm_config.py, AgentConfig.materialise_llm_runtime). Az itteni
+  # régi llm_* kulcsok (llm_model_name, llm_context_size, llm_n_gpu_layers,
+  # llm_parallel, llm_cache_type_k/v, llm_temperature, llm_max_tokens,
+  # llm_disable_thinking) ELTŰNTEK - itt már NEM szerkeszthetők (a
+  # from_yaml újból felülírná őket a kanonikus fájlból).
+  #
+  # A mért produkciós profil (2026-09-12): ngl 20 + 32K kontextus
+  # (ngl20+8192 TTFT ~4,90 s vs ngl20+32768 TTFT ~4,89 s → a 32K mért
+  # késleltetési költsége ~0; production kérés >8K token már előfordult).
+  # [2026-09-13, külső audit LAT-1 — OPERÁTORI DÖNTÉS] a Qwen3.6 35B A3B
+  # IQ4_XS MARAD (35B ~19 GB > 12 GB VRAM → 20/42 réteg GPU-n; minőség >
+  # sebesség). A teljes mérési jegyzőkönyv és a döntés: docs/
+  # llm_config_ngl20-c32768/ + a kanonikus fájl fejléce.
+  #
+  # IDE NEM KERÜL LLM-ÉRTÉK: a szerkesztés helye config/llm_config.yaml
+  # (a LLAMA_*/LLM_* env-változók pedig vész-felülírásként élnek, l. ott).
 
-  # --- TTS (Piper, subprocess) ---
-  tts_hu_voice: "hu_HU-anna-medium"    # alternatívák (letölthető): berta, imre
-  tts_en_voice: "en_US-lessac-medium"
+  # --- TTS (Supertonic 3, ONNX Runtime CPU — Piper kiváltva v0.7.0) ---
+  # A motor KIZÁRÓLAG supertonic3 lehet (validate() tiltja a többit);
+  # nincs Piper-fallback: Supertonic hiba = explicit TTS hiba.
+  tts_engine: "supertonic3"
+  tts_hu_voice: "F1"             # preset hangok: F1-F5, M1-M5 (mindegyik
+                                 # beszél magyarul ÉS angolul)
+  tts_en_voice: "F1"
   tts_first_chunk_chars: 24        # első mondat-ablak (alacsony TTFB)
   tts_chunk_chars: 80              # további chunkok mérete
+  # Supertonic szintézis-beállítások (hivatalos SDK defaultok)
+  supertonic_speed: 1.05           # 0.7 (lassú) .. 2.0 (gyors)
+  supertonic_steps: 8              # minőség: 5 (alacsony) .. 12 (magas)
+  supertonic_silence_duration: 0.3 # chunkok közti csend (s)
+  supertonic_max_chunk_chars: 300  # SDK chunkolási plafon
+  supertonic_trim_silence: true    # vocoder él-csend vágás (lásd docs)
 
   # --- VoiceMem hosszú távú memória ---
   user_id: "voice_user"            # M3 horog — M1-ben fix érték
