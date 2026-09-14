@@ -31,11 +31,35 @@ from typing import Any
 
 import numpy as np
 
+# [VM-LOCAL-015] 立场扫描器：纯函数模块（只依赖 re），模块级导入——
+# 不能在方法体内懒导入：测试套件里有模拟「包不存在」的降级场景会从
+# sys.modules 里摘掉 voicemem（见 tests/unit/test_voicemem_bridge 的
+# degraded 模拟），方法级 from-import 在运行时重新解析包名会炸。
+from voicemem.rightbrain import stance as _stance
+
 #: 两条 claim 像到这个程度就算同一条，证据并进去。
 #: 0.95 是实测出来的分界：本地 E5 对中文短语的基线相似度就有 0.9+，
 #: 「喜欢手冲咖啡」↔「偏好手冲咖啡」是 0.964（该合并），
 #: 「讨厌吃饭吧唧嘴」↔「讨厌被打断」是 0.934（不该合并）。
 MERGE_THRESHOLD = 0.95
+
+#: [CONTROLLED FORK - patch VM-LOCAL-015] 反义取代带（v0.9.0 语义门）。
+#: 实测（scripts/measure_semantic_matrix.py，本地 multilingual-e5-small）：
+#: 直接否定/反义对聚在 0.90–0.95（C-negation-en 0.9142 … hu2 0.9496，
+#: claim-pos-neg 0.9198，antipathy-en 0.9066，flip-back 0.92-0.95），
+#: 且部分反义对（utálja 0.9685、used to 0.9865）直接落在 0.95 合并带内
+#: ——纯余弦无法区分「同意」与「反对」。取代决策因此用独立的、更宽的
+#: 相似带：立场相反 + 带内相似 + 话题词重叠才允许翻转。
+#: 0.90 = 实测反义簇的下沿（antipathy-en 0.9066、stopped liking 0.9023）。
+SUPERSEDE_MIN_SIM = 0.90
+
+#: 预设性否定（"no longer"/"gave up"/"már nem" —— 语用上预设了它要
+#: 取代的前状态）允许更宽的带：0.88 = 实测 E5 话题命中下沿（代码库
+#: 自己的门槛校准：真命中 0.89~0.92、噪音 0.82~0.86 → 0.88）。
+#: "gave up coffee"↔"likes coffee" 实测 0.8824，恰好需要这条带。
+#: 话题词重叠守卫（stance.topic_overlaps）保证宽带不跨话题：
+#: "likes motorcycles"↔"no longer likes bicycles"（实测 0.8876）不重叠 → 不取代。
+SUPERSEDE_MIN_SIM_PRESUPPOSITION = 0.88
 
 #: [CONTROLLED FORK - patch VM-LOCAL-013] 置信度动力学（外部审计 v0.5.0 F-D：
 #: confidence 写入后永远不动、排序也不读它——「惰性字段」）。
@@ -114,6 +138,15 @@ class Trait:
     first_seen: str = ""
     last_seen: str = ""
     occurrence_count: int = 1
+    # [CONTROLLED FORK - patch VM-LOCAL-015] 语义状态（v0.9.0）。
+    # stance：这条判断写入时的立场分类（stance.py 的枚举：pos/neg/
+    # past/qualified/uncertain，空=中立/未知）；superseded_by/superseded_at：
+    # 被哪条新观察取代、何时——与左脑 VM-LOCAL-008 和 heartnote 的
+    # run_cleanup 取代链同构（追加式，永不改写旧行正文）。
+    stance: str = ""
+    supersedes: str = ""
+    superseded_by: str = ""
+    superseded_at: str = ""
 
     @property
     def cluster(self) -> str:
@@ -156,6 +189,18 @@ def _now() -> str:
     return datetime.now(timezone.utc).isoformat(timespec="seconds")
 
 
+def _parse_iso(ts: str):
+    """[VM-LOCAL-015] 容错解析 ISO 时间戳（日期或完整时间）；失败返回 None。"""
+    s = (ts or "").strip()
+    if not s:
+        return None
+    from datetime import datetime
+    try:
+        return datetime.fromisoformat(s.replace("Z", "+00:00"))
+    except ValueError:
+        return None
+
+
 class TraitStore:
     """rb_traits / rb_evidence 两张表，跟其余结构化存储共用 space 那个 sqlite。"""
 
@@ -192,6 +237,14 @@ class TraitStore:
                 ("last_seen", "ALTER TABLE rb_traits ADD COLUMN last_seen TEXT NOT NULL DEFAULT ''"),
                 ("occurrence_count",
                  "ALTER TABLE rb_traits ADD COLUMN occurrence_count INTEGER NOT NULL DEFAULT 1"),
+                # [VM-LOCAL-015] 语义状态列：stance（写入时立场分类）+
+                # superseded_by/superseded_at（取代链，同 VM-LOCAL-008 的
+                # 标记模式）。旧行默认值：stance 空（读时按 claim 文本懒推
+                # 断），未被取代。
+                ("stance", "ALTER TABLE rb_traits ADD COLUMN stance TEXT NOT NULL DEFAULT ''"),
+                ("supersedes", "ALTER TABLE rb_traits ADD COLUMN supersedes TEXT NOT NULL DEFAULT ''"),
+                ("superseded_by", "ALTER TABLE rb_traits ADD COLUMN superseded_by TEXT NOT NULL DEFAULT ''"),
+                ("superseded_at", "ALTER TABLE rb_traits ADD COLUMN superseded_at TEXT NOT NULL DEFAULT ''"),
             ):
                 if col not in have:
                     c.execute(ddl)
@@ -206,40 +259,80 @@ class TraitStore:
     # ── 写 ────────────────────────────────────────────────────────────────────
 
     def add(self, user_id: str, slot: str, claim: str, ev: Evidence) -> str:
-        """加一条判断 + 它的证据。已经有意思相同的 claim 就并进去，不新建节点。"""
+        """加一条判断 + 它的证据。
+
+        [CONTROLLED FORK - patch VM-LOCAL-015] v0.9.0 语义门：合并决策不再
+        只看余弦。新观察先过立场分类（stance.py，确定性 0-LLM），再在
+        三个**显式**结果里选一个：
+
+        * MERGE（强化） —— 同立场（或中立入参）且相似 ≥ 0.95：
+          证据追加、occurrence_count 递增、confidence 渐近上移（v0.8.0
+          语义完全保留）；
+        * SUPERSEDE（取代） —— 立场相反（pos↔neg）且相似落在取代带
+          （≥0.90；预设性否定 ≥0.88）且话题词重叠且时间不倒退：新行
+          成为当前状态，旧行**只加** superseded_by/superseded_at 标记
+          （与左脑 VM-LOCAL-008 同构，永不改写正文），旧行的
+          occurrence/confidence 冻结——矛盾绝不作为强化计数；
+        * SEPARATE（分离） —— 其余一切（限定句/过去时/不确定/立场
+          异类/带外相似）：新行独立成节点，各自带证据共存，推迟裁决。
+
+        已经被取代的行不参与匹配（活跃链外）；当前活跃行被翻转后，
+        再来的同立场观察沿取代链自然前进（S←N←R 链完整保留在行里）。
+        """
         claim = normalize_claim(claim)
         if not claim or slot not in SLOTS:
             return ""
 
+        # [VM-LOCAL-015] 立场：claim 和用户原话（quote）都扫——抽取器
+        # 可能把否定从标签里归一掉，但原话是地面真相（ground truth）。
+        s_in = _stance.observation_stance(claim, ev.quote or "")
+
         vec = self._vec(claim)
-        tid = self._find_similar(user_id, slot, vec)
+        match = self._best_active_match(user_id, slot, vec, claim, s_in, ev)
         now = _now()
         with self._conn() as c:
-            if tid is None:
-                tid = uuid.uuid4().hex
-                # [VM-LOCAL-013] 首次观察：occurrence_count=1，first=last=now。
-                c.execute("INSERT INTO rb_traits "
-                          "(id,user_id,slot,claim,embedding,confidence,created_at,updated_at,"
-                          "first_seen,last_seen,occurrence_count) "
-                          "VALUES (?,?,?,?,?,?,?,?,?,?,?)",
-                          (tid, user_id, slot, claim,
-                           vec.astype(np.float32).tobytes() if vec is not None else None,
-                           0.9, now, now, now, now, 1))
+            historical = None
+            if match is not None and match[3]:
+                # [VM-LOCAL-015] 倒退重放：翻转被守卫拒绝，但这条观察与
+                # 链上某个**已被取代**的同立场行同题（≥0.95，合并级身份）——
+                # 老陈述的证据归老状态：仅追加证据到那条历史行，行本身
+                # 保持冻结（不改 occurrence/confidence、不复活）。当前
+                # 状态不被污染（重放不再以「当前」面目出现）。
+                historical = self._superseded_agreeing_match(
+                    c, user_id, slot, vec, s_in)
+            if historical is not None:
+                tid = historical        # evidence-only attach (frozen row)
+            elif match is None or match[3]:
+                # SEPARATE（或首见 / 被守卫拒绝且链上无可挂的历史行）：
+                # 新节点，自己的立场随行记录。倒退重放绝不合并进当前行。
+                tid = self._insert_trait(c, user_id, slot, claim, vec, s_in, now)
             else:
-                # [VM-LOCAL-013] 再次确认同一判断：非破坏性记账——
-                # 证据照旧追加（下方 INSERT 不变），节点上递增 occurrence_count、
-                # 刷新 last_seen、渐近强化 confidence（旧值永不丢失）。
-                row = c.execute(
-                    "SELECT confidence, occurrence_count, first_seen FROM rb_traits WHERE id=?",
-                    (tid,)).fetchone()
-                prev_conf = float(row["confidence"]) if row is not None else 0.9
-                prev_occ = int(row["occurrence_count"]) if row is not None else 1
-                prev_first = (row["first_seen"] if row is not None else "") or now
-                new_conf = prev_conf + (1.0 - prev_conf) * TRAIT_REINFORCE_STEP
-                c.execute(
-                    "UPDATE rb_traits SET updated_at=?, last_seen=?, "
-                    "occurrence_count=?, confidence=?, first_seen=? WHERE id=?",
-                    (now, now, prev_occ + 1, round(new_conf, 4), prev_first, tid))
+                tid, target_stance, supersede = match[0], match[1], match[2]
+                if supersede:
+                    # SUPERSEDE：新行是当前状态；旧行只加标记（非破坏）。
+                    new_id = self._insert_trait(c, user_id, slot, claim, vec, s_in,
+                                                now, supersedes=tid)
+                    c.execute(
+                        "UPDATE rb_traits SET superseded_by=?, superseded_at=? "
+                        "WHERE id=?",
+                        (new_id, now, tid))
+                    tid = new_id
+                else:
+                    # MERGE：[VM-LOCAL-013] 非破坏性记账——证据照旧追加
+                    # （下方 INSERT 不变），节点上递增 occurrence_count、
+                    # 刷新 last_seen、渐近强化 confidence（旧值永不丢失）。
+                    row = c.execute(
+                        "SELECT confidence, occurrence_count, first_seen FROM rb_traits WHERE id=?",
+                        (tid,)).fetchone()
+                    prev_conf = float(row["confidence"]) if row is not None else 0.9
+                    prev_occ = int(row["occurrence_count"]) if row is not None else 1
+                    prev_first = (row["first_seen"] if row is not None else "") or now
+                    new_conf = prev_conf + (1.0 - prev_conf) * TRAIT_REINFORCE_STEP
+                    c.execute(
+                        "UPDATE rb_traits SET updated_at=?, last_seen=?, "
+                        "occurrence_count=?, confidence=?, first_seen=?, stance=? WHERE id=?",
+                        (now, now, prev_occ + 1, round(new_conf, 4), prev_first,
+                         target_stance or s_in, tid))
             # 每个字段都过一遍 str()：证据常常来自旧数据或 LLM 输出，
             # 缺字段时是 None，而这几列都是 NOT NULL，直接插会整轮写入失败。
             c.execute("INSERT INTO rb_evidence "
@@ -249,6 +342,137 @@ class TraitStore:
                        str(ev.emotion or ""), str(ev.cause or ""),
                        str(ev.cause_id or ""), str(ev.at or now)))
         return tid
+
+    def _insert_trait(self, c, user_id, slot, claim, vec, stance_val, now,
+                      supersedes: str = "") -> str:
+        """[VM-LOCAL-015] 新建一行判断（SEPARATE/SUPERSEDE 共用）。"""
+        tid = uuid.uuid4().hex
+        c.execute("INSERT INTO rb_traits "
+                  "(id,user_id,slot,claim,embedding,confidence,created_at,updated_at,"
+                  "first_seen,last_seen,occurrence_count,stance,supersedes) "
+                  "VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)",
+                  (tid, user_id, slot, claim,
+                   vec.astype(np.float32).tobytes() if vec is not None else None,
+                   0.9, now, now, now, now, 1, stance_val, supersedes))
+        return tid
+
+    def _best_active_match(self, user_id, slot, vec, claim, s_in, ev):
+        """[VM-LOCAL-015] 在**活跃**（未被取代）行里找最佳匹配并裁决。
+
+        返回 ``(trait_id, target_stance, supersede: bool)``；无候选返回
+        None。裁决依据（全部确定性，0 LLM）：
+
+        1. 候选只在取代带以上才被视为「同一话题」（比合并带更宽——
+           实测反义对聚在 0.90-0.95）；带宽由预设性否定决定；
+        2. 立场相反（pos↔neg）且话题词重叠且时间不倒退 → supersede；
+        3. 立场一致/中立 → 相似 ≥ 0.95 才 merge（v0.8.0 行为不变）；
+        4. 其余（限定/过去/不确定的异类立场、带外）→ None（SEPARATE）。
+
+        旧行的 stance 列优先；legacy 空值按存量 claim 文本懒推断。
+        """
+        if vec is None:
+            return None
+        presup = (_stance.is_presuppositional(claim)
+                  or _stance.is_presuppositional(ev.quote or ""))
+        band = (SUPERSEDE_MIN_SIM_PRESUPPOSITION if presup
+                else SUPERSEDE_MIN_SIM)
+        best, best_sim, best_row = None, 0.0, None
+        with self._conn() as c:
+            rows = c.execute(
+                "SELECT id, claim, stance, embedding, superseded_by, last_seen FROM rb_traits "
+                "WHERE user_id=? AND slot=? AND embedding IS NOT NULL",
+                (user_id, slot)).fetchall()
+        for r in rows:
+            if (r["superseded_by"] or ""):
+                continue          # 已取代的行不参与匹配（活跃链外）
+            v = np.frombuffer(r["embedding"], dtype=np.float32)
+            if v.shape != vec.shape:
+                continue
+            sim = float(v @ vec)
+            if sim > best_sim:
+                best, best_sim, best_row = r["id"], sim, r
+        if best is None or best_sim < band:
+            return None
+
+        target_claim = str(best_row["claim"] or "")
+        s_tgt = str(best_row["stance"] or "")
+        if not s_tgt:
+            s_tgt = _stance.classify_stance(target_claim)   # legacy 懒推断
+
+        flip = {s_in, s_tgt} == {"pos", "neg"}
+        if flip:
+            if not (best_sim >= band
+                    and _stance.topic_overlaps(claim, target_claim)):
+                return None           # 异义但不满足取代条件 → SEPARATE
+            if self._is_stale_replay(ev, best_row):
+                # 倒退重放：既不翻转也不强化——调用方会找链上的历史行
+                # 挂证据（找不到才 SEPARATE）。
+                return (best, s_tgt, False, True)
+            return (best, s_tgt, True, False)
+
+        # 同立场/中立：v0.8.0 合并语义（阈值不变）。
+        agrees = (s_in == s_tgt or s_in == ""
+                  or (s_tgt == "" and s_in == "pos"))
+        if best_sim >= MERGE_THRESHOLD and agrees:
+            return (best, s_tgt, False, False)
+        return None
+
+    def _superseded_agreeing_match(self, c, user_id, slot, vec, s_in):
+        """[VM-LOCAL-015] 链上**已被取代**的同立场最佳匹配（≥ 合并阈值）。
+
+        重放的老陈述找到它原本所属的历史行：证据挂过去，行保持冻结。
+        返回 trait_id 或 None（调用方降级为 SEPARATE）。
+        """
+        if vec is None:
+            return None
+        best, best_sim = None, 0.0
+        rows = c.execute(
+            "SELECT id, claim, stance, embedding FROM rb_traits "
+            "WHERE user_id=? AND slot=? AND embedding IS NOT NULL "
+            "AND superseded_by != ''",
+            (user_id, slot)).fetchall()
+        for r in rows:
+            v = np.frombuffer(r["embedding"], dtype=np.float32)
+            if v.shape != vec.shape:
+                continue
+            row_stance = str(r["stance"] or "")
+            if not row_stance:
+                row_stance = _stance.classify_stance(str(r["claim"] or ""))
+            if s_in and row_stance and s_in != row_stance:
+                continue          # 只要同立场（中立行任意立场都可挂）
+            sim = float(v @ vec)
+            if sim > best_sim:
+                best, best_sim = r["id"], sim
+        return best if best_sim >= MERGE_THRESHOLD else None
+
+    def _is_stale_replay(self, ev: Evidence, row) -> bool:
+        """[VM-LOCAL-015] 倒退守卫：新观察的事件时间比目标行最近一次
+        观察还旧 → 这是历史重放（老录音重捈、历史回放），不允许翻转
+        当前状态，也不允许强化（→ 历史行挂证据或 SEPARATE）。
+
+        比较的是**事件时间对事件时间**：目标行最近一次可解析的证据
+        时间戳（evidence.created_at 用的就是 ev.at）；没有可解析的
+        事件时间才退回写入墙钟 last_seen（混合时钟是已记录的限制：
+        纯回填/无时间戳数据下，守卫对时间 fail-open——立场门才是硬
+        安全；实时管道每轮都带 observed_at）。
+        """
+        incoming = _parse_iso(str(ev.at or ""))
+        if incoming is None:
+            return False
+        target = None
+        try:
+            with self._conn() as c:
+                latest = c.execute(
+                    "SELECT MAX(created_at) FROM rb_evidence WHERE trait_id=?",
+                    (row["id"],)).fetchone()
+                target = _parse_iso(str(latest[0] or ""))
+        except Exception:
+            target = None
+        if target is None:
+            target = _parse_iso(str(row["last_seen"] or ""))
+        if target is None:
+            return False
+        return incoming < target
 
     def _vec(self, text: str):
         # [CONTROLLED FORK - patch VM-LOCAL-004]
@@ -279,11 +503,15 @@ class TraitStore:
         if vec is None:
             return None
         with self._conn() as c:
-            rows = c.execute("SELECT id, embedding FROM rb_traits "
+            rows = c.execute("SELECT id, embedding, superseded_by FROM rb_traits "
                              "WHERE user_id=? AND slot=? AND embedding IS NOT NULL",
                              (user_id, slot)).fetchall()
+        # [VM-LOCAL-015] 已被取代的行不参与合并匹配（v0.8.x 会把已
+        # 取代的旧状态再次强化——取代链要求只有活跃行可以被强化）。
         best, best_sim = None, 0.0
         for r in rows:
+            if (r["superseded_by"] if "superseded_by" in set(r.keys()) else ""):
+                continue
             v = np.frombuffer(r["embedding"], dtype=np.float32)
             if v.shape != vec.shape:
                 continue
@@ -362,7 +590,13 @@ class TraitStore:
                     "embedder change old vectors are stale; re-embed them "
                     "(dry-run first: scripts/assess_trait_embeddings.py)",
                     stale)
-            scored.sort(key=lambda t: -t[0])
+            # [VM-LOCAL-015] v0.9.0 检索语义：当前状态优先（Phase 8——
+            # 「现状查询不得让已取代的行排在当前行前面」，与左脑 VM-LOCAL-008
+            # 的 (not superseded_by, base_score) 排序同构）。已取代的行保持
+            # 可检索（历史可恢复），只是排到所有活跃命中之后。
+            scored.sort(key=lambda t: (bool(t[1]["superseded_by"]
+                                            if "superseded_by" in set(t[1].keys()) else ""),
+                                       -t[0]))
             return [(self._to_trait(c, r), s) for s, r in scored[:top_k]]
 
     def _to_trait(self, c, r) -> Trait:
@@ -376,6 +610,11 @@ class TraitStore:
             first_seen=(r["first_seen"] if "first_seen" in keys else "") or "",
             last_seen=(r["last_seen"] if "last_seen" in keys else "") or "",
             occurrence_count=(int(r["occurrence_count"]) if "occurrence_count" in keys else 1) or 1,
+            # [VM-LOCAL-015] 语义状态字段（旧库迁移后默认：空）。
+            stance=(r["stance"] if "stance" in keys else "") or "",
+            supersedes=(r["supersedes"] if "supersedes" in keys else "") or "",
+            superseded_by=(r["superseded_by"] if "superseded_by" in keys else "") or "",
+            superseded_at=(r["superseded_at"] if "superseded_at" in keys else "") or "",
             evidence=[Evidence(quote=e["quote"], emotion=e["emotion"],
                                cause=e["cause"], cause_id=e["cause_id"],
                                at=e["created_at"]) for e in evs],

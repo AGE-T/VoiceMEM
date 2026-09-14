@@ -2048,7 +2048,7 @@ const SAMPLE_RATE=24000;          // must match the backend WEB_SAMPLE_RATE
    capture fixes, because the browser was still running the v0.4.9 JS).
    The page also reports itself to the backend on /api/lang, so the field log
    names the page version. Update this together with VERSION/pyproject. */
-const PAGE_VERSION='0.8.1';
+const PAGE_VERSION='0.9.0';
 let ws=null, live=false, paused=false;
 
 /* --- Playback ------------------------------------------------------ */
@@ -3432,7 +3432,11 @@ async function loadMemories(){
   sp.left=(m.left||[]).map(x=>({text:x.text,slot:x.slot||'daily_life',ents:x.entities||[]}));
   sp.right=(m.right||[]).map(x=>{
     const notes=x.notes||[];
-    const src=(x.slot||'')+(notes.length?' ×'+notes.length:'');
+    // v0.9.0 (VM-LOCAL-015): superseded traits are HISTORICAL states —
+    // mark them in the card footer ("former") so the mind-map's current
+    // picture never presents an old state as current.
+    let src=(x.slot||'')+(notes.length?' ×'+notes.length:'');
+    if(x.superseded) src='former · '+src;
     // The right hemisphere only has three anchors (RIGHT_SLOTS:
     // emotion/personality/preference). The backend's word is "experiences"
     // (the slots for coping style / expression style / attitudes to people,

@@ -122,6 +122,18 @@
         "voicemem/orchestrator.py",
         "voicemem/rightbrain/store.py"
       ]
+    },
+    {
+      "id": "VM-LOCAL-015",
+      "summary": "trait contradiction semantics (v0.9.0 memory semantics, measured-hazard fix): deterministic stance classification (voicemem/rightbrain/stance.py — EN/HU cue scanner, 0 LLM) gates the trait merge in traits_store.add; outcomes are now explicit — MERGE (same-stance agreement, threshold unchanged 0.95), SUPERSEDE (opposite pos/neg stance + similarity in the measured contradiction band >=0.90, or >=0.88 for presuppositional negation like 'no longer'/'gave up'/'már nem' + topic-token overlap + not a stale replay: new row becomes current, old row gains ONLY superseded_by/superseded_at — occurrence/confidence frozen, never reinforced), SEPARATE (qualified/past/uncertain/cross-stance or below-band: new independent node, deferred resolution). rb_traits gains additive idempotent columns stance/supersedes/superseded_by/superseded_at (legacy rows: stance inferred from claim text at decision time, never superseded). search_scored ranks active-first (superseded rows remain retrievable for historical queries but never outrank current — mirrors left-brain VM-LOCAL-008 ordering); _rb_trait_hits filters min-sim per-row, applies x0.75 demotion to superseded traits (heartnote convention) and surfaces stance/supersedes/superseded_by/superseded_at in hit metadata. app/retrieval_contract.py extends the v0.8.1 typed contract with the same keys and renders 'superseded' in the prompt suffix (fact-side wording). Evidence: docs/SEMANTIC_MATRIX.md (real local E5 measurements — antipathy 0.9685 / past 0.9821-0.9865 / qualified-HU 0.9552 / flip-back-HU 0.9521 all exceeded the 0.95 merge band pre-fix).",
+      "files": [
+        "voicemem/rightbrain/stance.py (new)",
+        "voicemem/rightbrain/traits_store.py",
+        "voicemem/rightbrain/brain.py",
+        "voicemem/__init__.py (CONTROLLED_PATCHES +013/+014 bookkeeping fix)"
+      ],
+      "based_on_upstream": "none (new semantics; supersession marking mirrors VM-LOCAL-008)",
+      "divergence": "upstream merges traits on cosine similarity alone — measured evidence shows semantic opposites embed inside the merge band, so a negation reinforces the trait it contradicts"
     }
   ],
   "ported_upstream_fixes": [

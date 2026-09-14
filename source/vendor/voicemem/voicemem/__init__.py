@@ -88,6 +88,9 @@ CONTROLLED_PATCHES = (
     "VM-LOCAL-010",  # HU/EN temporal cues in time_expand + multilingual date-value parsing (external audit v0.6.3 CD-3)
     "VM-LOCAL-011",  # recency ranking: observed_at decay bonus in the left-brain hit sort (external audit v0.6.3 CD-4)
     "VM-LOCAL-012",  # occurrence counting: NONE resolutions increment occurrence_count/last_observed_at (external audit v0.6.3 OCC-1)
+    "VM-LOCAL-013",  # trait observation bookkeeping + confidence dynamics (external audit v1.0 F-D/F-C) [v0.8.0; also fixes this list's v0.8.0 omission]
+    "VM-LOCAL-014",  # cold-archive wired daily + heartnote TTL read (external audit F-G) [v0.8.0; also fixes this list's v0.8.0 omission]
+    "VM-LOCAL-015",  # trait contradiction semantics: stance gate, explicit supersession, current-first retrieval (v0.9.0)
     "UPSTREAM-961efe8",  # use the injected embedder everywhere (intent; see VM-LOCAL-001)
     "UPSTREAM-91d2e42",  # vector dimension mismatch guards (logging instead of print)
     "UPSTREAM-f535f9d",  # trait similarity threshold bound to embedder dimensions

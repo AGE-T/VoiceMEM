@@ -1185,3 +1185,50 @@ A vendor (vendor/voicemem) kínai trait-slot enum-értékei
 **gép-azonosítók maradnak** — a megjelenítési réteg fordítja őket
 (`_SLOT_EN` / `localise_slot`); a felhasználó sosem lát nyers kínai
 slot-nevet.
+
+### Jelentés-semantikai elnevezések (v0.9.0 — VM-LOCAL-015)
+
+A v0.9.0 trait-jelentéssemantika kanonikus elnevezései (a teljes
+döntési modell és a mért bizonyítékok: `docs/SEMANTIC_MATRIX.md`):
+
+- **`stance`** — a megfigyelés ítéleti osztálya a beíráskor
+  (`pos` / `neg` / `past` / `qualified` / `uncertain`; üres = semleges
+  vagy legacy). Forrás: `voicemem/rightbrain/stance.py` determinisztikus
+  cue-szkenner (EN+HU, 0 LLM). Nem poláris "vélemény", hanem nyelvi
+  ítéletállás: múltbeli állítás, határolt kijelentés, bizonytalan
+  változás éppúgy stance, mint a pozitív/negatív affektus.
+- **`superseded_by` / `superseded_at` / `supersedes`** — a supersession-lánc
+  mezői, a bal-agyi VM-LOCAL-008 és a heartnote run_cleanup jelöléssel
+  AZONOS szerkezetben (append-only: a régi sor szövege sosem változik,
+  csak jelölőket kap). Kanonikus angol szó a prompt-renderben:
+  **`superseded`** (a tény-oldali `hit_provenance_suffix` szóhasználata —
+  egy fogalom, egy szó, mindkét rétegben).
+- **`occurrence_count`** (traits) — a betű szerinti definíció szigorodott:
+  **egyező állású** megfigyelések száma. Egy ellentmondás sosem
+  megerősítés: a superseded sor számlálója és confidence-e a flip
+  pillanatában fagyasztva marad (a negatív állapot saját újrakanó
+  megfigyelései a negatív soron számlálódnak).
+- **Három kimenet** (a csendes megerősítés tilalma): `MERGE` (egyező
+  stance + ≥0.95), `SUPERSEDE` (ellentétes pos/neg stance + mért sáv
+  [0.88/0.90] + téma-átfedés + nem-stale), `SEPARATE` (minden más —
+  a határolt/múlt/bizonytalan megfigyelések önálló sorok, a feloldás
+  elhalasztva).
+- **Mért küszöbök** (nem kitaláltak): `MERGE_THRESHOLD` 0.95 (változatlan),
+  `SUPERSEDE_MIN_SIM` 0.90, `SUPERSEDE_MIN_SIM_PRESUPPOSITION` 0.88 —
+  a 2026-09-14-es lokális E5-mérésekhez horgonyozva
+  (`scripts/measure_semantic_matrix.py`; a
+  `tests/validation/test_feature_memory_semantics.py` regressziós
+  őrszem — embedder-váltás után ÚJRA MÉRNI és újrahorgonyozni).
+
+### Observation-store döntés (v0.9.0, Phase 14)
+
+**NEM SZÜKSÉGES.** A feladat minden jelentés-semantikai követelménye
+(ellentmondás-megtagadás, explicit supersession, történelmi megőrzés,
+current/historical megkülönböztetés, replay-kezelés, lánavigáció)
+reprezentálható a meglévő modellben: trait-megfigyelés-történet =
+`rb_evidence` sorok (append-only), supersession-lánc = `rb_traits`
+oszlopok, tény-történet = mem0 + VM-LOCAL-008 metaadat, heartnote =
+run_cleanup jelölés. Egy külön observation-store a negyedik
+supersession-mintát jelentené — konkrét, ezt meghaladó követelmény
+felmerülésekor újranézendő (keresz-trait ellentmondás-lekérdezés,
+megfigyelés-szintű visszavonás, többszörös beszélő provenance).

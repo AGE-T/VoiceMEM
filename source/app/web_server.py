@@ -717,6 +717,14 @@ class RealMemoryLayer:
                     "text": getattr(t, "claim", "") or "",
                     "desc": "",
                     "notes": notes,
+                    # v0.9.0 (VM-LOCAL-015): the semantic state of the trait —
+                    # a superseded node is HISTORICAL (its claim was replaced
+                    # by a newer observation); the mind-map front-end marks
+                    # it so the current picture never shows old states as
+                    # current. stance is the recorded observation class
+                    # (pos/neg/past/qualified/uncertain, "" = neutral).
+                    "superseded": bool(getattr(t, "superseded_by", "") or ""),
+                    "stance": str(getattr(t, "stance", "") or ""),
                 }
             )
         return out

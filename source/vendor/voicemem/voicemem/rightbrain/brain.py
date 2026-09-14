@@ -280,10 +280,15 @@ def _rb_trait_hits(store, user_id: str, query: str, top_k: int = 4) -> list["Rig
     top-N 的位置。
     """
     out: list[RightBrainHit] = []
+    # [VM-LOCAL-015] v0.9.0：search_scored 的排序改为「活跃在前、已取代
+    # 在后」，不再全局按相似度降序——原来的 break（「后面只会更低」）
+    # 会在一条低相似活跃行后面把高相似的已取代历史行整段切掉。改为
+    # 逐行过滤（top_k 仍然界定量），已取代的行保持可检索（Phase 8），
+    # 带标记、降权出现在结果里。
     for t, sim in store.search_scored(user_id, query, top_k=top_k):
         # [ports upstream f535f9d] 门槛跟 embedder 绑（384 维 E5 → 0.88）。
         if sim < trait_min_sim(getattr(store, "last_query_dim", None)):
-            break                      # 已按相似度降序，后面只会更低
+            continue                   # 逐行判定（排序已非全局相似度降序）
         # [CONTROLLED FORK - patch VM-LOCAL-013] 外部审计 F-D：confidence 终于
         # 参与排序——有界混合，门槛判定仍只看原始 sim（上面那行）。
         # floor=0.75：低置信判断最多降 25%（conf 0.5 → ×0.875），永不清零、
@@ -294,6 +299,12 @@ def _rb_trait_hits(store, user_id: str, query: str, top_k: int = 4) -> list["Rig
         eff_raw = getattr(t, "eff_confidence", 0.9)
         eff = 0.9 if eff_raw is None else float(eff_raw)
         priority = sim * (TRAIT_CONF_RANK_FLOOR + (1.0 - TRAIT_CONF_RANK_FLOOR) * eff)
+        # [VM-LOCAL-015] 已取代的判断：保持返回（历史可恢复），但降权
+        # （与 heartnote 取代标注的 ×0.75 同构）并带上语义状态元数据——
+        # 应用层（app/retrieval_contract.py）据此在 prompt 里标 superseded。
+        superseded_by = str(getattr(t, "superseded_by", "") or "")
+        if superseded_by:
+            priority *= 0.75
         # 证据里挑最近一条当支撑——光一句 claim，模型看不出它是从哪来的。
         ev = t.evidence[0].quote if t.evidence else ""
         content = f"{t.claim}（{t.slot}）" + (f"｜他说过：{ev[:60]}" if ev else "")
@@ -306,7 +317,12 @@ def _rb_trait_hits(store, user_id: str, query: str, top_k: int = 4) -> list["Rig
                       "eff_confidence": round(eff, 4),
                       "occurrence_count": int(getattr(t, "occurrence_count", 1) or 1),
                       "first_seen": getattr(t, "first_seen", "") or "",
-                      "last_seen": getattr(t, "last_seen", "") or ""},
+                      "last_seen": getattr(t, "last_seen", "") or "",
+                      # [VM-LOCAL-015] 语义状态（v0.9.0）：立场分类 + 取代链。
+                      "stance": str(getattr(t, "stance", "") or ""),
+                      "supersedes": str(getattr(t, "supersedes", "") or ""),
+                      "superseded_by": superseded_by,
+                      "superseded_at": str(getattr(t, "superseded_at", "") or "")},
         ))
     return out
 

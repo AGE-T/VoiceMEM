@@ -87,6 +87,15 @@ class TraitObservationInfo:
     occurrence_count: int
     first_seen: str
     last_seen: str
+    # [v0.9.0 — VM-LOCAL-015] trait semantic state: the stance recorded at
+    # write time (pos/neg/past/qualified/uncertain, "" = neutral/legacy)
+    # and the supersession chain (this row superseded <id> / was superseded
+    # by <id> at <ts>). superseded_by non-empty => the trait is HISTORICAL,
+    # not current: consumers must not present it as current truth.
+    stance: str = ""
+    supersedes: str = ""
+    superseded_by: str = ""
+    superseded_at: str = ""
 
 
 def _meta(hit: Any) -> dict:
@@ -128,13 +137,21 @@ def extract_trait_info(hit: Any) -> Optional[TraitObservationInfo]:
         occurrence_count=occ,
         first_seen=str(meta.get("first_seen") or ""),
         last_seen=str(meta.get("last_seen") or ""),
+        stance=str(meta.get("stance") or ""),
+        supersedes=str(meta.get("supersedes") or ""),
+        superseded_by=str(meta.get("superseded_by") or ""),
+        superseded_at=str(meta.get("superseded_at") or ""),
     )
 
 
 #: Uniform payload keys (stable schema — non-trait hits get neutral values).
+#: [v0.9.0 — VM-LOCAL-015] the trait semantic state keys ride the same
+#: uniform schema: ``stance`` ("" = neutral/legacy), ``supersedes`` /
+#: ``superseded_by`` / ``superseded_at`` ("" = no chain membership).
 TRAIT_PAYLOAD_KEYS = (
     "is_trait", "trait_id", "confidence", "eff_confidence",
     "occurrence_count", "first_seen", "last_seen",
+    "stance", "supersedes", "superseded_by", "superseded_at",
 )
 
 
@@ -156,6 +173,10 @@ def trait_fields_payload(hit: Any) -> dict:
             "occurrence_count": 0,
             "first_seen": "",
             "last_seen": "",
+            "stance": "",
+            "supersedes": "",
+            "superseded_by": "",
+            "superseded_at": "",
         }
     return {
         "is_trait": True,
@@ -165,6 +186,10 @@ def trait_fields_payload(hit: Any) -> dict:
         "occurrence_count": info.occurrence_count,
         "first_seen": info.first_seen,
         "last_seen": info.last_seen,
+        "stance": info.stance,
+        "supersedes": info.supersedes,
+        "superseded_by": info.superseded_by,
+        "superseded_at": info.superseded_at,
     }
 
 
@@ -195,4 +220,14 @@ def trait_prompt_suffix(hit: Any) -> str:
         bits.append(f"last heard {last}")
     if info.occurrence_count > 1:
         bits.append(f"{info.occurrence_count}x heard")
+    # [v0.9.0 — VM-LOCAL-015] currency status: a superseded trait is
+    # HISTORICAL knowledge. The marker uses the fact-side wording
+    # (``superseded``, hit_provenance_suffix) — one term, one meaning,
+    # across both memory layers. Absence of the marker = current (the
+    # existing convention; the LLM is never told an unmarked trait is
+    # current — it is simply not told otherwise). The superseded row's
+    # occurrence/confidence are frozen at flip time, so "Nx heard" on a
+    # superseded line counts only PRE-flip observations.
+    if info.superseded_by:
+        bits.append("superseded")
     return f" [{' | '.join(bits)}]" if bits else ""

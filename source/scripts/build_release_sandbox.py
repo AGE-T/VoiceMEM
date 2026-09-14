@@ -45,8 +45,8 @@ from pathlib import Path
 REPO = Path(__file__).resolve().parent.parent
 RELEASES = REPO / "releases"
 
-NEW_VERSION = "0.8.1"
-PREV_VERSION = "0.8.0"
+NEW_VERSION = "0.9.0"
+PREV_VERSION = "0.8.1"
 ZIP_NAME = f"VoiceMemAgent_v{NEW_VERSION}.zip"
 
 PLACEHOLDER_DIRS = [
@@ -74,39 +74,38 @@ ROOT_FILES = [
 ]
 
 NOTES = (
-    "v0.8.1 STABILIZACIOS KIADAS (a v0.8.0 utani fuggetlen audit ket P1 "
-    "tetele + operatori kerelem: egysges brit angol szovegek). P1-1 "
-    "PAGE_VERSION: egyetlen igazsagforras a VERSION fajl - scripts/"
-    "sync_page_version.py byte-szintu idempotens regeneralas + futasideji "
-    "injektalas a kiszolgalt oldalra; a v0.8.0-as '0.7.2' hamis stale-toast "
-    "hibaosztaly megszunt; teszt: VERSION == PAGE_VERSION. P1-2 VISSZAKERESI "
-    "EREDMENY-SZERZODES: a v0.8.0 memoria-retegben mar kiszamitott trait-"
-    "konyveles (confidence/eff_confidence/occurrence_count/first_seen/"
-    "last_seen) eddig minden fogyasztonal eldobodott - app/"
-    "retrieval_contract.py a kanonikus tipusositott szerzodes (NINCS "
-    "search_rich, NINCS masodik kereso): a web payload a teljes "
-    "mezokeszletet viszi, az LLM kontextus megfigyeles-datumot + "
-    "merosites-szamot kap (raw confidence float NEM kerul a promptba - "
-    "merosites-ero, nem valoszinuseg; feltero preciziot nem injektalunk), "
-    "a CLI bridge ugyanazt rendereli. rb_directive: transzportban megmarad, "
-    "dokumentaltan NEM fogyasztott (a prompt-injektalas szemantikai "
-    "valtozas lenne). P1-3 KIADASI KAPU-SOREND: a teljes gate a kiadando "
-    "pontos fan fut a verzio/CHANGELOG/page-verzio frissites UTAN - "
-    "releases/gate_record.json fingerprint-kotott; a build regiszter nelkul "
-    "megtagadja (a v0.8.0 hibaja: a kapu a verzio-frissites elott futott). "
-    "TERMINOLOGIA: occurrence_count kanonikus nev (trait-oldal 1-alapu "
-    "'Nx heard', teny-oldal 0-alapu 'Nx confirmed' - az egysegek kulonboznek "
-    "es a renderek kimondjak). BRITT ANGOL SOPOR (operatori kerelem, egysges "
-    "megjelenes): enrollment->enrolment, recognized->recognised, analyzed->"
-    "analysed, normalized->normalised, minimized->minimised + orzo teszt a "
-    "negy lathato feluleten (tests/unit/test_british_english.py). Tesztek: "
-    "+53 uj viselkedes-teszt (retrieval_contract 22 + release_gate_order 21 "
-    "+ british_english 7 + page_version 3), a teljes kapu zold a pinned "
-    "sandbox-kornyezeti bazison. HATARON KIVUL (tudatosan): ellentmodas-"
-    "kezeles, trait-negacio, supersession, ervenyesseg, Observation-store, "
-    "search_rich, tanulasi reteg, TTL-producer, archivum-atalakitas, "
-    "modellvaltas, UI-atalakitas. Ugyanaz a memoria-motor, ugyanaz a "
-    "keresesi logika, ugyanazok a szemantikak."
+    "v0.9.0 MEMORIA-JELENTESSEMANTIKA (operator order: contradiction, "
+    "supersession es ervenyesseg a trait-retvegen). A MERT BIZONYITEK: "
+    "scripts/measure_semantic_matrix.py a valodi lokalis "
+    "multilingual-e5-small-lal megmerte a teljes szemantikai matrixot "
+    "(docs/SEMANTIC_MATRIX.md) - az antipatia (utalja 0.9685), a mult-ido "
+    "(regen szerette 0.9821 / used to like 0.9865), a magyar hatarolt "
+    "allitas (kiveve telen 0.9552) es a visszavaltas (megint szereti "
+    "0.9521) MIND a 0.95-os merge-kuszob FELETT: a v0.8.1 merge egy negalt "
+    "megfigyelest megerositeskent volt kepes beolvasztani. VM-LOCAL-015 "
+    "(uj vendor patch, VOICEMEM_PIN.json + CONTROLLED_PATCHES "
+    "regisztralva): (1) voicemem/rightbrain/stance.py - determinisztikus "
+    "(0 LLM) EN+HU cue-szkenner: stance-osztalyok "
+    "pos/neg/past/qualified/uncertain, scan-sorrend "
+    "uncertain>qualified>past>neg>pos; (2) TraitStore.add harom EXPLICIT "
+    "kimenet: MERGE (egyezo stance, 0.95 valtozatlan), SUPERSEDE "
+    "(ellentetes pos/neg stance + mert sav [0.90; presuppozicios negacional "
+    "0.88] + tema-token atfedes + nem-stale-replay: uj sor lesz az "
+    "aktualis, a regi sor CSAK superseded_by/superseded_at jelzot kap - "
+    "occurrence/confidence FAGYASZTVA), SEPARATE (hatarolt/mult/bizonytalan: "
+    "onallo sor, elhalasztott feloldas); (3) additiv idempotens migracio "
+    "(stance/supersedes/superseded_by/superseded_at); (4) search_scored "
+    "aktualis-elso rendezes + x0.75 lejarolas + hit-metadata bovites; (5) "
+    "app/retrieval_contract.py kiterjesztes + '[... | superseded]' "
+    "prompt-jelzo. Stale-replay or: az elutasitott flip egyezo stance-u "
+    "superseded lancszemre csatolja a bizonyitekat (fagyasztva). "
+    "OBSERVATION-STORE DONTS: NEM SZUKSEGES. Archivum/TTL: a trait-retegben "
+    "nincs interakcio (nincs archivum/TTL a trait tablan); a teny-oldali "
+    "interakciok tesztekkel rogzitve. Tesztek: +84 uj viselkedes-teszt; a "
+    "validacios teszt a mert E5-matrixot regresszio-orzi. HATARON KIVUL "
+    "(tudatosan): Observation-store, tanulasi reteg, confidence-csokkentes, "
+    "modellvaltas, search_rich, archivum-atalakitas, TTL-producer, "
+    "UI-atalakitas."
 )
 #: v0.6.0 markers: the modular ASR engine contract - asr_core (AudioBuffer,
 #: AsrResult, AsrError, registry, select_engine), the two NVIDIA adapters,
@@ -579,6 +578,75 @@ V081_MARKERS = {
     ],
     "CONTRACT.md": [
         "v0.8.1 kiegészítő",
+    ],
+}
+
+#: v0.9.0 markers: the memory-semantics mechanisms — the stance scanner,
+#: the three-outcome merge decision, the supersession chain columns, the
+#: current-first retrieval ordering, the contract extension and the
+#: measured-matrix regression guard. Markers pin the MECHANISM (the v0.8.1
+#: lesson: never pin a value the next release legitimately changes).
+V090_MARKERS = {
+    "vendor/voicemem/voicemem/rightbrain/stance.py": [
+        "def classify_stance",
+        "def observation_stance",
+        "def topic_overlaps",
+        "def is_presuppositional",
+    ],
+    "vendor/voicemem/voicemem/rightbrain/traits_store.py": [
+        "SUPERSEDE_MIN_SIM",
+        "def _best_active_match",
+        "def _superseded_agreeing_match",
+        "def _is_stale_replay",
+        "superseded_by TEXT NOT NULL DEFAULT ''",
+    ],
+    "vendor/voicemem/voicemem/rightbrain/brain.py": [
+        '"superseded_by"',
+        '"stance"',
+    ],
+    "vendor/voicemem/voicemem/__init__.py": [
+        "VM-LOCAL-015",
+    ],
+    "VOICEMEM_PIN.json": [
+        "VM-LOCAL-015",
+    ],
+    "app/retrieval_contract.py": [
+        "superseded_by: str",
+        'bits.append("superseded")',
+        '"stance", "supersedes", "superseded_by", "superseded_at",',
+    ],
+    "app/web_server.py": [
+        '"superseded": bool(getattr(t, "superseded_by", "") or "")',
+    ],
+    "web/voicemem.html": [
+        "x.superseded",
+    ],
+    "docs/SEMANTIC_MATRIX.md": [
+        "OBSERVATION STORE NOT REQUIRED",
+        "SUPERSEDE_MIN_SIM",
+    ],
+    "CONTRACT.md": [
+        "Jelentés-semantikai elnevezések (v0.9.0 — VM-LOCAL-015)",
+    ],
+    "tests/unit/test_stance_cues.py": [
+        "HungarianRequiredCases",
+    ],
+    "tests/unit/test_trait_semantics.py": [
+        "TraitSemanticsTests",
+        "test_contradiction_freezes_old_row",
+    ],
+    "tests/unit/test_retrieval_contract_semantics.py": [
+        "PromptSuffixTests",
+    ],
+    "tests/unit/test_fact_supersession_semantics.py": [
+        "FactSupersessionSemanticsTests",
+    ],
+    "tests/validation/test_feature_memory_semantics.py": [
+        "MemorySemanticsValidation",
+        "_MEASURED",
+    ],
+    "scripts/measure_semantic_matrix.py": [
+        "def embed_passages",
     ],
 }
 
@@ -2045,7 +2113,7 @@ def build() -> int:
                             f"self-check: {rel} lacks v0.4.11 marker {m!r}"
                         )
             # v0.4.12: stale-page detection + raw capture + send-as-turn
-            for rel, markers in {**V0412_MARKERS, **V0413_MARKERS, **V0414_MARKERS, **V0415_MARKERS, **V0416_MARKERS, **V0417_MARKERS, **V0418_MARKERS, **V0419_MARKERS, **V0420_MARKERS, **V0421_MARKERS, **V050_MARKERS, **V052_MARKERS, **V060_MARKERS, **V061_MARKERS, **V062_MARKERS, **V063_MARKERS, **V064_MARKERS, **V070_MARKERS, **V071_MARKERS, **V072_MARKERS, **V080_MARKERS, **V081_MARKERS}.items():
+            for rel, markers in {**V0412_MARKERS, **V0413_MARKERS, **V0414_MARKERS, **V0415_MARKERS, **V0416_MARKERS, **V0417_MARKERS, **V0418_MARKERS, **V0419_MARKERS, **V0420_MARKERS, **V0421_MARKERS, **V050_MARKERS, **V052_MARKERS, **V060_MARKERS, **V061_MARKERS, **V062_MARKERS, **V063_MARKERS, **V064_MARKERS, **V070_MARKERS, **V071_MARKERS, **V072_MARKERS, **V080_MARKERS, **V081_MARKERS, **V090_MARKERS}.items():
                 src_text = zf.read(root_prefix + rel).decode("utf-8", errors="replace")
                 for m in markers:
                     if m not in src_text:
