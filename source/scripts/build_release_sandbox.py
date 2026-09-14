@@ -2,21 +2,32 @@
 """Sandbox replica of scripts/build_release.ps1 (Linux-side release builder).
 
 Mirrors the PowerShell builder step-for-step:
-  1. (gate) the full unittest suite must have passed -> releases are only
-     built from a green tree (the caller runs the gate; this script records
-     the numbers it is given).
-  2. staged CHANGELOG entry (the ZIP carries its own version's entry).
-  3. version sync is already done (VERSION/pyproject/yaml).
+  1. (gate) v0.8.1 gate-order fix: a GREEN releases/gate_record.json from
+     scripts/run_release_gate.py is REQUIRED, and its source-tree
+     fingerprint must match the CURRENT tree — the exact tree that is
+     packaged is provably the tree that passed the final release gate (the
+     v0.8.0 flow ran the gate BEFORE the VERSION bump and shipped a
+     never-gated PAGE_VERSION defect). The gate numbers in BUILD_INFO /
+     CHANGELOG / RELEASE_INDEX come from the record — caller-supplied
+     numbers are no longer accepted.
+  2. staged CHANGELOG entry (the ZIP carries its own version's entry; the
+     entry's gate numbers are stamped FROM the gate record).
+  3. version sync is already done (VERSION/pyproject/yaml + the generated
+     page version via scripts/sync_page_version.py) — the gate has seen it.
   4. staging: allowlist copy of app/ config/ scripts/ tests/ web/ + root
-     files + M0 placeholder dirs; every staged *.bat normalized to CRLF.
+     files + M0 placeholder dirs; every staged *.bat normalised to CRLF.
   5. BUILD_INFO.json into the stage root.
   6. ZIP with a single top-level folder VoiceMemAgent_v<version>/.
   6b. SELF-CHECK: the finished ZIP is opened and verified (placeholder
-      dirs, own CHANGELOG entry, cumulative v0.3.5/v0.3.6 markers, and the
-      new v0.4.1 markers). A failed self-check DELETES the zip - no false
-      success is ever published.
+      dirs, own CHANGELOG entry, VERSION == PAGE_VERSION, cumulative
+      markers, and the per-version markers). A failed self-check DELETES
+      the zip - no false success is ever published.
   7. sha256 sidecar file.
   8. RELEASE_INDEX.json + repo CHANGELOG.md + BUILD_HISTORY.json updated.
+
+Usage:
+    python scripts/run_release_gate.py            # FIRST: gate + record
+    python scripts/build_release_sandbox.py [gate_record.json]
 """
 from __future__ import annotations
 
@@ -34,8 +45,8 @@ from pathlib import Path
 REPO = Path(__file__).resolve().parent.parent
 RELEASES = REPO / "releases"
 
-NEW_VERSION = "0.8.0"
-PREV_VERSION = "0.7.2"
+NEW_VERSION = "0.8.1"
+PREV_VERSION = "0.8.0"
 ZIP_NAME = f"VoiceMemAgent_v{NEW_VERSION}.zip"
 
 PLACEHOLDER_DIRS = [
@@ -63,37 +74,39 @@ ROOT_FILES = [
 ]
 
 NOTES = (
-    "v0.8.0 MEMORIA-RETEG JAVITASOK (operator order: folytassuk a memoria "
-    "fixekkel + F-O P3 + a fennmarado reszleges tetelek). VM-LOCAL-013 "
-    "(audit F-D + F-C maradek): trait megfigyeles-konyveles + confidence-"
-    "dinamika - additiv first_seen/last_seen/occurrence_count oszlopok "
-    "(idempotens migracio), merge-kor aszimptotikus megerosites "
-    "c'=c+(1-c)*0.30, olvasasi oldali csillapitas (90 nap turelem, 180 nap "
-    "felezesi ido), rangsor-tag priority=sim*(0.75+0.25*eff_confidence) - "
-    "a floor 0.75 kezese, a min-sim kuszob a nyers sim-en marad; hit "
-    "metadata: confidence/eff_confidence/occurrence_count/first_seen/"
-    "last_seen. VM-LOCAL-014 (audit F-G): ArchiveColdMemories NAPONTA fut "
-    "(kv-throttle 20h) a post-Ingest karbantartasi szalon, nem-pusztito; a "
-    "heartnote-TTL VEGRE OLVASVA (session 1 nap, short_term 14 nap - "
-    "lejart sorok a keresesben kihagyva, DB-ben megtartva). F-O (P3): "
-    "detect_language harom uj jel - ekezet nelkuli magyar funkcioszok, "
-    "digraf-suruseg (sz/cs/gy/ny/ly/ty/zs), q-betu angol jelzes (w "
-    "szandekosan nem). F-N: a maradek ket hardcoded gpt-4o-mini hely is "
-    "OPENAI_MODEL-env-felulirhato. F-E: a bootstrap pin-ellenorzese GATING "
-    "(sikertelen vendor-azonositas eldobja a bootstrap-et; mock mod kivete "
-    "- START.bat repair a menekulout). F-M: a MODELS.lock.json negy 'main' "
-    "pinje pontos commit-SHA-ra rögzittve (E5 614241f6, emotion2vec "
-    "b318240b, speechbrain 0f99f2d0, silero-vad 394d7e6b). F-I: a "
-    "haromszoros tenytarolas DOKUMENTALVA (CONTRACT.md) - konzisztencia-"
-    "invariansok megtartva, egyesites TASK 4 scope. VOICEMEM_PIN.json: "
-    "VM-LOCAL-013/014 belejegyezve (15 helyi patch). Tesztek: +27 uj "
-    "(test_traits_observation 13 + test_archive_ttl_wiring 11 + F-O nyelvi "
-    "3 uj), MIND zold; teljes gate 1090 teszt, nulla uj kod-regresszio "
-    "(diff-elemzes a tisztan kicsomagolt v0.7.2 alapbázissal bizonyitva; "
-    "a sandbox-reset kornezeti hibak azonosak a bázissal). HATARON KIVUL "
-    "(TASK 2/3/4): F-D ellentmondas-irany, supersession, ervenyesseg, "
-    "Observation-store, search_rich. Gate: full sandbox battery; real "
-    "MixPre acceptance remains USER VERIFIED."
+    "v0.8.1 STABILIZACIOS KIADAS (a v0.8.0 utani fuggetlen audit ket P1 "
+    "tetele + operatori kerelem: egysges brit angol szovegek). P1-1 "
+    "PAGE_VERSION: egyetlen igazsagforras a VERSION fajl - scripts/"
+    "sync_page_version.py byte-szintu idempotens regeneralas + futasideji "
+    "injektalas a kiszolgalt oldalra; a v0.8.0-as '0.7.2' hamis stale-toast "
+    "hibaosztaly megszunt; teszt: VERSION == PAGE_VERSION. P1-2 VISSZAKERESI "
+    "EREDMENY-SZERZODES: a v0.8.0 memoria-retegben mar kiszamitott trait-"
+    "konyveles (confidence/eff_confidence/occurrence_count/first_seen/"
+    "last_seen) eddig minden fogyasztonal eldobodott - app/"
+    "retrieval_contract.py a kanonikus tipusositott szerzodes (NINCS "
+    "search_rich, NINCS masodik kereso): a web payload a teljes "
+    "mezokeszletet viszi, az LLM kontextus megfigyeles-datumot + "
+    "merosites-szamot kap (raw confidence float NEM kerul a promptba - "
+    "merosites-ero, nem valoszinuseg; feltero preciziot nem injektalunk), "
+    "a CLI bridge ugyanazt rendereli. rb_directive: transzportban megmarad, "
+    "dokumentaltan NEM fogyasztott (a prompt-injektalas szemantikai "
+    "valtozas lenne). P1-3 KIADASI KAPU-SOREND: a teljes gate a kiadando "
+    "pontos fan fut a verzio/CHANGELOG/page-verzio frissites UTAN - "
+    "releases/gate_record.json fingerprint-kotott; a build regiszter nelkul "
+    "megtagadja (a v0.8.0 hibaja: a kapu a verzio-frissites elott futott). "
+    "TERMINOLOGIA: occurrence_count kanonikus nev (trait-oldal 1-alapu "
+    "'Nx heard', teny-oldal 0-alapu 'Nx confirmed' - az egysegek kulonboznek "
+    "es a renderek kimondjak). BRITT ANGOL SOPOR (operatori kerelem, egysges "
+    "megjelenes): enrollment->enrolment, recognized->recognised, analyzed->"
+    "analysed, normalized->normalised, minimized->minimised + orzo teszt a "
+    "negy lathato feluleten (tests/unit/test_british_english.py). Tesztek: "
+    "+53 uj viselkedes-teszt (retrieval_contract 22 + release_gate_order 21 "
+    "+ british_english 7 + page_version 3), a teljes kapu zold a pinned "
+    "sandbox-kornyezeti bazison. HATARON KIVUL (tudatosan): ellentmodas-"
+    "kezeles, trait-negacio, supersession, ervenyesseg, Observation-store, "
+    "search_rich, tanulasi reteg, TTL-producer, archivum-atalakitas, "
+    "modellvaltas, UI-atalakitas. Ugyanaz a memoria-motor, ugyanaz a "
+    "keresesi logika, ugyanazok a szemantikak."
 )
 #: v0.6.0 markers: the modular ASR engine contract - asr_core (AudioBuffer,
 #: AsrResult, AsrError, registry, select_engine), the two NVIDIA adapters,
@@ -147,7 +160,7 @@ V060_MARKERS = {
         "const CHAIN_LIVE={}",
         "renderChainErrorLine",
         "stage_event",
-        "PAGE_VERSION='0.7.2'"
+        "const PAGE_VERSION=",
         "micDiagHead",
         "llmColHead",
     ],
@@ -225,7 +238,7 @@ V062_MARKERS = {
         "test_step12_fails_loudly_on_a_wrong_commit",
     ],
     "web/voicemem.html": [
-        "PAGE_VERSION='0.7.2'"
+        "const PAGE_VERSION="
     ],
 }
 
@@ -258,7 +271,7 @@ V063_MARKERS = {
         '"-c", "32768"',
     ],
     "web/voicemem.html": [
-        "PAGE_VERSION='0.7.2'"
+        "const PAGE_VERSION="
     ],
     "docs/llm_config_ngl20-c32768/identity.json": [
         "ngl20 + 32768 context",
@@ -393,7 +406,7 @@ V070_MARKERS = {
         "OpenRAIL-M",
     ],
     "web/voicemem.html": [
-        "PAGE_VERSION='0.7.2'",
+        "const PAGE_VERSION=",
         "Supertonic 3 since v0.7.0",
         "Preview this voice (local Supertonic 3)",
     ],
@@ -520,6 +533,52 @@ V080_MARKERS = {
     ],
     "CONTRACT.md": [
         "v0.8.0 kiegészítő",
+    ],
+}
+
+#: v0.8.1 markers: the stabilization release — the typed retrieval result
+#: contract + its three consumers, the page-version single source, the
+#: gate-order fix (fingerprint-bound gate record required by the build),
+#: and the British-English guard on the visible surfaces.
+V081_MARKERS = {
+    "app/retrieval_contract.py": [
+        "class TraitObservationInfo",
+        "def trait_fields_payload",
+        "def trait_prompt_suffix",
+        "TRAIT_PAYLOAD_KEYS",
+    ],
+    "app/web_server.py": [
+        "trait_fields_payload",
+        "_SLOT_EN",
+        "localise_slot",
+    ],
+    "app/voicemem_bridge.py": [
+        "trait_prompt_suffix",
+    ],
+    "scripts/run_release_gate.py": [
+        "KNOWN_ENV_FAILURES",
+        "def classify_failures",
+        "gate_record.json",
+    ],
+    "scripts/sync_page_version.py": [
+        "const PAGE_VERSION=",
+    ],
+    "scripts/release_tree.py": [
+        "def tree_fingerprint",
+    ],
+    "tests/unit/test_retrieval_contract.py": [
+        "trait_fields_payload",
+        "trait_prompt_suffix",
+    ],
+    "tests/unit/test_release_gate_order.py": [
+        "_verify_gate_record",
+        "test_line_endings_preserved",
+    ],
+    "tests/unit/test_british_english.py": [
+        "BritishEnglishSurfaceTests",
+    ],
+    "CONTRACT.md": [
+        "v0.8.1 kiegészítő",
     ],
 }
 
@@ -772,7 +831,7 @@ V0411_MARKERS = {
 #: v0.4.12 markers: stale-page detection + raw capture + send-as-turn.
 V0412_MARKERS = {
     "web/voicemem.html": [
-        "const PAGE_VERSION='0.4.14';",
+        "const PAGE_VERSION=",
         "uiVerStale",
         "id=\"rawCapChk\"",
         "?{echoCancellation:false,noiseSuppression:false,autoGainControl:false}",
@@ -1160,7 +1219,7 @@ V0419_MARKERS = {
         "type:'mic_probe'",
         'id="micProbeBtn"',
         'id="micDiag"',
-        "PAGE_VERSION='0.7.2'"
+        "const PAGE_VERSION="
     ],
     "app/web_server.py": [
         "def _mic_probe_core(",
@@ -1217,7 +1276,7 @@ V0420_MARKERS = {
         "test_label_lands_in_result_and_log_line",
         "test_http_probe_carries_the_ab_label",
         "test_mic_probe_frame_carries_the_ab_label",
-        "PAGE_VERSION='0.7.2'"
+        "test_version_bumped"
     ],
 }
 
@@ -1535,6 +1594,78 @@ def _strip_version_entry(text: str, version: str) -> str:
     return text[:idx] + text[end:]
 
 
+def _verify_gate_record() -> dict:
+    """v0.8.1 gate-order fix: load + verify releases/gate_record.json.
+
+    The record must be GREEN, its source-tree fingerprint must equal the
+    CURRENT tree's fingerprint (any post-gate change — a version bump, a
+    'small fix', a page edit — invalidates it), and the record's version
+    must equal NEW_VERSION and the tree's VERSION file. This is the
+    mechanical guarantee that THE EXACT TREE PACKAGED IS THE TREE GATED.
+    """
+    record_path = Path(sys.argv[1]) if len(sys.argv) > 1 else (
+        RELEASES / "gate_record.json"
+    )
+    if not record_path.is_file():
+        print(
+            f"BUILD FAILED: no gate record at {record_path}. Run "
+            f"'python scripts/run_release_gate.py' on the FINAL tree first "
+            f"(v0.8.1 gate-order rule: the gate runs on the exact tree to "
+            f"be released, AFTER the VERSION/CHANGELOG/page-version update)."
+        )
+        return {}
+    try:
+        record = json.loads(record_path.read_text(encoding="utf-8"))
+    except Exception as exc:  # noqa: BLE001
+        print(f"BUILD FAILED: gate record unreadable: {exc}")
+        return {}
+    if record.get("verdict") != "GREEN":
+        print(
+            "BUILD FAILED: gate record verdict is "
+            f"{record.get('verdict')!r} (regressions: "
+            f"{record.get('regressions')}) — the tree is not green."
+        )
+        return {}
+    if record.get("version") != NEW_VERSION:
+        print(
+            f"BUILD FAILED: gate record version {record.get('version')!r} != "
+            f"builder NEW_VERSION {NEW_VERSION!r} — bump/re-gate mismatch "
+            f"(the gate must run AFTER the VERSION update)."
+        )
+        return {}
+    sys.path.insert(0, str(REPO / "scripts"))
+    from release_tree import tree_fingerprint, tree_version
+
+    fingerprint, _n = tree_fingerprint(REPO)
+    if record.get("tree_fingerprint") != fingerprint:
+        print(
+            "BUILD FAILED: tree changed since the gate ran "
+            f"(record {str(record.get('tree_fingerprint'))[:16]}… vs now "
+            f"{fingerprint[:16]}…). Re-run scripts/run_release_gate.py on "
+            "the current tree. THE EXACT TREE PACKAGED MUST BE THE TREE "
+            "THAT PASSED THE GATE."
+        )
+        return {}
+    tree_ver = tree_version(REPO)
+    if tree_ver != NEW_VERSION:
+        print(
+            f"BUILD FAILED: tree VERSION file {tree_ver!r} != NEW_VERSION "
+            f"{NEW_VERSION!r} — sync the version files first, then re-gate."
+        )
+        return {}
+    # page version must be in sync too (the P1-1 defect class)
+    page = (REPO / "web" / "voicemem.html").read_bytes()
+    want = f"const PAGE_VERSION='{NEW_VERSION}';".encode("ascii")
+    if want not in page:
+        print(
+            f"BUILD FAILED: web/voicemem.html PAGE_VERSION literal is not "
+            f"{NEW_VERSION!r} — run scripts/sync_page_version.py, then "
+            f"re-run the gate (the gate pins VERSION == PAGE_VERSION)."
+        )
+        return {}
+    return record
+
+
 def build() -> int:
     built_at = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
     today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
@@ -1543,21 +1674,32 @@ def build() -> int:
     stage.mkdir(parents=True, exist_ok=True)
     zip_path = RELEASES / ZIP_NAME
 
-    # gate numbers (from the caller's green run)
-    gate_total = int(sys.argv[1]) if len(sys.argv) > 1 else 0
-    deep_pass = sys.argv[2] if len(sys.argv) > 2 else "release, runtime-deps"
-    deep_skip = int(sys.argv[3]) if len(sys.argv) > 3 else 0
+    # v0.8.1 gate-order fix: gate numbers come from the VERIFIED record of a
+    # green run on THIS EXACT TREE (fingerprint-bound) — never from the
+    # caller's memory. See _verify_gate_record.
+    record = _verify_gate_record()
+    if not record:
+        return 1
+    gate_total = int(record.get("totals", {}).get("tests", 0))
+    deep_pass = record.get("deep_validation_pass") or "—"
+    deep_skip = int(record.get("deep_validation_skipped", 0))
+    env_gap = len(record.get("env_gap_failures", {}))
+    gate_skipped = int(record.get("totals", {}).get("skipped", 0))
     if gate_total <= 0:
-        print("BUILD FAILED: no green test-gate numbers supplied "
-              "(usage: build_release_sandbox.py <total_tests> <deep_pass> <deep_skip>)")
+        print("BUILD FAILED: gate record has no test total")
         return 1
 
     ch_entry = (
         f"## [{NEW_VERSION}] - {today}\n"
         f"### Kiadas (ZIP-build)\n"
         f"- {NOTES}\n"
-        f"- Tesztkapu: PASS a build ELOTT (teljes tesztkeszlet: {gate_total} teszt; "
-        f"deep validacio: {deep_pass}; SKIP: {deep_skip} db)\n"
+        f"- Tesztkapu: PASS a VEGSO FAJAN (v0.8.1 kapu-sorrend: verzio/"
+        f"CHANGELOG/page-verzio FRISSITES UTAN futott a teljes gate; "
+        f"releases/gate_record.json fingerprint-kotott): teljes "
+        f"tesztkeszlet {gate_total} teszt (SKIP: {gate_skipped} db; "
+        f"ismeretes sandbox kornyezeti hiba: {env_gap or 0} db — a "
+        f"pinned-bazisban dokumentalt, celgepen zold); deep validacio: "
+        f"{deep_pass}; SKIP: {deep_skip} db)\n"
         f"- Kiadas: ``releases/{ZIP_NAME}`` + ``{ZIP_NAME}.sha256`` (UTC: {built_at}).\n\n"
     )
 
@@ -1636,8 +1778,25 @@ def build() -> int:
         "built_at_utc": built_at,
         "git_commit": git_commit(),
         "generator": "sandbox replica of scripts/build_release.ps1",
-        "test_gate": "unittest discover (unit + integration + benchmark + validation)",
+        "test_gate": "run_release_gate.py (unit + integration + validation)",
         "test_gate_exit_code": 0,
+        "gate_record": {
+            "ran_at_utc": record.get("ran_at_utc"),
+            "verdict": record.get("verdict"),
+            "tree_fingerprint": record.get("tree_fingerprint"),
+            "tests": gate_total,
+            "failures": record.get("totals", {}).get("failures", 0),
+            "errors": record.get("totals", {}).get("errors", 0),
+            "skipped": gate_skipped,
+            "env_gap_failures": env_gap,
+            "regressions": record.get("regressions", []),
+            "note": (
+                "v0.8.1 gate-order rule: the gate ran on the EXACT tree that "
+                "was packaged (fingerprint-bound record; every failure is a "
+                "pinned+documented sandbox environment gap, green on the "
+                "target machine)"
+            ),
+        },
         "validation_deep_pass": deep_pass,
         "validation_deep_skipped": deep_skip,
         "validation_strict": False,
@@ -1664,6 +1823,23 @@ def build() -> int:
             ch_in_zip = zf.read(root_prefix + "CHANGELOG.md").decode("utf-8")
             if f"## [{NEW_VERSION}]" not in ch_in_zip:
                 raise AssertionError("self-check: ZIP CHANGELOG lacks its own entry")
+            # v0.8.1 (post-audit P1-1): the ZIP's page version MUST equal the
+            # ZIP's VERSION — the v0.8.0 release shipped PAGE_VERSION='0.7.2'
+            # inside the v0.8.0 ZIP and every session showed a false stale-
+            # page toast. Belt and braces on top of the serve-time injection.
+            zip_version = zf.read(root_prefix + "VERSION").decode(
+                "utf-8"
+            ).strip()
+            zip_html = zf.read(root_prefix + "web/voicemem.html").decode(
+                "utf-8", errors="replace"
+            )
+            want_page = f"const PAGE_VERSION='{zip_version}';"
+            if want_page not in zip_html:
+                raise AssertionError(
+                    "self-check: ZIP web/voicemem.html PAGE_VERSION != ZIP "
+                    f"VERSION (expected {want_page!r}) — the served page "
+                    "would show a false staleness warning"
+                )
             # cumulative markers (v0.3.5 web payload, v0.3.6 CRLF START.bat)
             for rel, markers in CUMULATIVE_MARKERS.items():
                 content = zf.read(root_prefix + rel)
@@ -1869,7 +2045,7 @@ def build() -> int:
                             f"self-check: {rel} lacks v0.4.11 marker {m!r}"
                         )
             # v0.4.12: stale-page detection + raw capture + send-as-turn
-            for rel, markers in {**V0412_MARKERS, **V0413_MARKERS, **V0414_MARKERS, **V0415_MARKERS, **V0416_MARKERS, **V0417_MARKERS, **V0418_MARKERS, **V0419_MARKERS, **V0420_MARKERS, **V0421_MARKERS, **V050_MARKERS, **V052_MARKERS, **V060_MARKERS, **V061_MARKERS, **V062_MARKERS, **V063_MARKERS, **V064_MARKERS, **V070_MARKERS, **V071_MARKERS, **V072_MARKERS, **V080_MARKERS}.items():
+            for rel, markers in {**V0412_MARKERS, **V0413_MARKERS, **V0414_MARKERS, **V0415_MARKERS, **V0416_MARKERS, **V0417_MARKERS, **V0418_MARKERS, **V0419_MARKERS, **V0420_MARKERS, **V0421_MARKERS, **V050_MARKERS, **V052_MARKERS, **V060_MARKERS, **V061_MARKERS, **V062_MARKERS, **V063_MARKERS, **V064_MARKERS, **V070_MARKERS, **V071_MARKERS, **V072_MARKERS, **V080_MARKERS, **V081_MARKERS}.items():
                 src_text = zf.read(root_prefix + rel).decode("utf-8", errors="replace")
                 for m in markers:
                     if m not in src_text:
@@ -2041,8 +2217,16 @@ def build() -> int:
             "size_bytes": size,
             "notes": NOTES,
             "git_commit": build_info["git_commit"],
-            "test_gate": "run_tests.ps1",
+            "test_gate": "run_release_gate.py (v0.8.1 gate-order fix)",
             "test_gate_exit_code": 0,
+            "gate_record": {
+                "ran_at_utc": record.get("ran_at_utc"),
+                "verdict": record.get("verdict"),
+                "tree_fingerprint": record.get("tree_fingerprint"),
+                "tests": gate_total,
+                "env_gap_failures": env_gap,
+                "regressions": len(record.get("regressions", [])),
+            },
             "validation_deep_pass": deep_pass,
             "validation_deep_skipped": deep_skip,
             "validation_strict": False,

@@ -464,7 +464,7 @@ class EmotionAnalyzerTests(unittest.TestCase):
         model = _FakeAutoModel(result)
         analyzer = self._analyzer(model)
         self.assertTrue(analyzer.warm_up())
-        self.assertEqual(model.generate_kwargs, [])  # loaded, not analyzed
+        self.assertEqual(model.generate_kwargs, [])  # loaded, not analysed
         # a failing factory warm-up reports False and degrades
         analyzer2 = self._analyzer(None)
         self.assertFalse(analyzer2.warm_up())

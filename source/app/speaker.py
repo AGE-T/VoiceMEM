@@ -41,7 +41,7 @@ Four layers, cleanly separated for testability:
 Threshold note: the spec pins 0.50 as the ECAPA identification threshold
 (conservative: unknown -> fallback user, memories NEVER mix - measured
 cross-speaker cosine ~0.13-0.18, same-speaker segments 0.37-0.75 on short
-windows, higher with the spec's 3-5 s window + enrollment averaging).
+windows, higher with the spec's 3-5 s window + enrolment averaging).
 SpeechBrain's own pairwise verification default is 0.25; the threshold is
 configurable (``speaker_match_threshold``) for tuning.
 
@@ -93,7 +93,7 @@ UNKNOWN_USER_ID = "voice_user"
 class SpeakerIdentification:
     """One identification outcome.
 
-    ``id`` is the recognized speaker id or ``None`` (unknown speaker);
+    ``id`` is the recognised speaker id or ``None`` (unknown speaker);
     ``similarity`` the best cosine score (0.0 when nothing matched);
     ``registered`` the number of reference speakers compared against.
     """
@@ -516,7 +516,7 @@ class SpeakerEmbedder:
         (what the CLI registration used to do) silently discarded everything
         except the last ~5 s: 10.4 s collected, 5.0 s actually embedded.
         Splitting into consecutive windows and averaging the embeddings (the
-        caller) restores spec 9.3.3 (~10 s averaged enrollment). Windows that
+        caller) restores spec 9.3.3 (~10 s averaged enrolment). Windows that
         fail to embed are skipped, not fatal.
         """
         import numpy as np

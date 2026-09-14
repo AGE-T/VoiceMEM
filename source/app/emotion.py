@@ -379,7 +379,7 @@ class EmotionMemory:
     """Per-turn emotion persistence (spec 8.3.4 / exit criterion 3).
 
     Two layers:
-    - ALWAYS: one JSON line per analyzed turn in ``data/emotion_log.jsonl``
+    - ALWAYS: one JSON line per analysed turn in ``data/emotion_log.jsonl``
       (machine-readable, offline, greppable - the "per-turn
       valence-arousal" record).
     - STRONG emotions only (``should_store``): the caller (pipeline) also

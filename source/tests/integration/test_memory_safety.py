@@ -154,7 +154,7 @@ def _route(messages: list[dict[str, Any]]) -> dict[str, Any]:
 
     # ── merged fact extraction (utterance-keyed) ───────────────────────────
     # v0.6.4 OCC-1 scenario (external audit): the SAME allergy fact is
-    # extracted from both utterances (identical normalized text — that is
+    # extracted from both utterances (identical normalised text — that is
     # what omit-NONE exact-matching keys on); the second utterance adds a
     # second, independent fact.
     if "szeretem a teát" in everything:

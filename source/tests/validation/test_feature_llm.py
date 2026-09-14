@@ -11,7 +11,7 @@ health endpoint must answer HTTP 200 with the llama-server health JSON.
 The responder is identified by its llama.cpp signatures (GET /health
 answers a JSON object with a "status" field; GET /props answers a JSON
 object). A DIFFERENT service that happens to listen on 127.0.0.1:8080 must
-NOT fail the release gate - it is recognized as "not llama-server" and the
+NOT fail the release gate - it is recognised as "not llama-server" and the
 deep check skips with an explicit reason (release-blocker regression:
 v0.1.6 - the old test failed on any non-200 answer, including foreign
 services on the port).

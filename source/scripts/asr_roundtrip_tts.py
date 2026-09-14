@@ -58,7 +58,7 @@ WER_MEAN_GATE = 0.20  # HU mean ceiling (Parakeet real-speech HU WER: 17.1%)
 
 #: Hungarian numeral words -> digits (0-20 + tens): the ASR writes spoken
 #: numbers as DIGITS ("tizennégy óra harminc perc" -> "14 óra 30 perc");
-#: normalizing both sides measures SPEECH quality, not orthography.
+#: normalising both sides measures SPEECH quality, not orthography.
 _HU_NUM = {
     "nulla": "0", "egy": "1", "kettő": "2", "két": "2", "három": "3",
     "négy": "4", "öt": "5", "hat": "6", "hét": "7", "nyolc": "8",

@@ -72,6 +72,96 @@ class PageVersionTests(unittest.TestCase):
         self.assertIn("{lang:'en',page:PAGE_VERSION}", html)
 
 
+class PageVersionInjectionTests(unittest.TestCase):
+    """v0.8.1 (post-audit P1-1): the SERVED page version comes from VERSION.
+
+    The repo literal is regenerated at release prep (scripts/sync_page_version.py)
+    and gate-checked by test_page_version_matches_repo_version above; the SERVED
+    page is additionally stamped at request time from the VERSION file — the
+    single authoritative source (the same value /api/health serves). These
+    tests fail if a future release changes VERSION and the served page stops
+    carrying it (injection removed, bypassed, or broken).
+    """
+
+    def _served_page(self, html_text: str):
+        """Context manager: a TestClient whose index() serves a COPY of the
+        given page text from a temp web dir (the repo's own
+        web/voicemem.html is untouched; _WEB_DIR is always restored)."""
+        import tempfile
+        from contextlib import contextmanager
+
+        from fastapi.testclient import TestClient
+
+        import app.web_server as web_server
+        from app.config import AgentConfig
+        from app.web_server import WebComponents, build_web_app
+
+        @contextmanager
+        def _ctx():
+            tmp_obj = tempfile.TemporaryDirectory(prefix="vm_v081_page_")
+            web_dir = Path(tmp_obj.name) / "web"
+            web_dir.mkdir()
+            (web_dir / "voicemem.html").write_text(html_text, encoding="utf-8")
+            original_web_dir = web_server._WEB_DIR
+            web_server._WEB_DIR = web_dir
+            try:
+                cfg = AgentConfig(root=Path(tmp_obj.name))
+                components = WebComponents(cfg, mock=True).build()
+                app = build_web_app(components)
+                with TestClient(app) as client:
+                    yield client
+            finally:
+                web_server._WEB_DIR = original_web_dir
+                tmp_obj.cleanup()
+
+        return _ctx()
+
+    def test_served_page_carries_repo_version(self) -> None:
+        """GET / returns the page with the CURRENT VERSION stamped in —
+        the effective PAGE_VERSION always equals VERSION."""
+        version = VERSION_FILE.read_text(encoding="utf-8").strip()
+        with self._served_page(_ui_text()) as client:
+            r = client.get("/")
+        self.assertEqual(r.status_code, 200)
+        self.assertIn(f"const PAGE_VERSION='{version}';", r.text)
+        self.assertTrue(
+            r.headers.get("content-type", "").startswith("text/html"),
+            f"content-type must be text/html, got {r.headers.get('content-type')}",
+        )
+
+    def test_served_page_injects_over_a_stale_literal(self) -> None:
+        """The v0.8.0 defect shape (stale file literal) must NOT reach the
+        browser: the served page carries the CURRENT VERSION even when the
+        file on disk still holds an old literal."""
+        version = VERSION_FILE.read_text(encoding="utf-8").strip()
+        stale = _ui_text().replace(
+            "const PAGE_VERSION='", "const PAGE_VERSION='0.0.0-", 1
+        )  # a deliberately wrong literal (0.0.0-…)
+        self.assertIn("const PAGE_VERSION='0.0.0-", stale)  # precondition
+        with self._served_page(stale) as client:
+            r = client.get("/")
+        self.assertEqual(r.status_code, 200)
+        self.assertIn(f"const PAGE_VERSION='{version}';", r.text)
+        self.assertNotIn("const PAGE_VERSION='0.0.0-", r.text)
+
+    def test_injection_helper_is_pure_and_idempotent(self) -> None:
+        """_inject_page_version: stamps the current VERSION, leaves an
+        already-synced page untouched, and never touches anything else
+        (synthetic snippets — independent of the repo's current literal)."""
+        from app.web_server import _inject_page_version
+
+        version = VERSION_FILE.read_text(encoding="utf-8").strip()
+        body = "…<script>const PAGE_VERSION='{}';\nrest of the page ünïcode</script>…"
+        stale = body.format("0.0.0")
+        fixed = _inject_page_version(stale)
+        self.assertEqual(fixed, body.format(version))
+        # idempotent: a second pass changes nothing
+        self.assertEqual(_inject_page_version(fixed), fixed)
+        # a page without the literal is served untouched
+        no_literal = "<html><body>no version here</body></html>"
+        self.assertEqual(_inject_page_version(no_literal), no_literal)
+
+
 class ServerLangPageVersionTests(unittest.TestCase):
     """The /api/lang handler logs the reported page version (+ stale flag)."""
 
@@ -86,7 +176,6 @@ class ServerLangPageVersionTests(unittest.TestCase):
         import tempfile
 
         from fastapi.testclient import TestClient
-
         from app.config import AgentConfig
         from app.web_server import WebComponents, build_web_app
 

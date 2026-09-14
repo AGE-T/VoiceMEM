@@ -600,7 +600,7 @@ class VoicePipeline:
     ) -> None:
         """M2 spec 8.3.4: persist the turn emotion.
 
-        Every analyzed turn lands in the JSONL emotion log; a STRONG emotion
+        Every analysed turn lands in the JSONL emotion log; a STRONG emotion
         additionally becomes a VoiceMem fact (the "RightBrain" long-term
         aggregation layer). Everything is best-effort and never raises.
         """

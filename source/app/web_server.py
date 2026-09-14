@@ -93,6 +93,7 @@ from app.llm_model_settings import (
     resolve_llm_model_path,
 )
 from app.native_picker import is_supported as picker_supported, pick_file
+from app.retrieval_contract import trait_fields_payload, trait_prompt_suffix
 from app.teacher_persona import build_messages, build_system_prompt
 from app.text_utils import LANG_EN, LANG_HU, SentenceStream, detect_language
 from app.voice_settings import (
@@ -3046,7 +3047,14 @@ class WebSession:
         for h in rb[:3]:
             t = clean_rb_content(getattr(h, "content", "") or "").strip()
             if t:
-                parts.append(f"- {t}")
+                # v0.8.1 (post-audit P1-2): trait hits keep their observation
+                # provenance (last-heard date + confirmation count — the
+                # material interpretation signals). Confidence floats are
+                # deliberately NOT rendered into the prompt: trait confidence
+                # is a confirmation-strength measure, not a probability (see
+                # app/retrieval_contract.py). rb_directive is deliberately
+                # NOT appended (vendor guidance, documented unconsumed).
+                parts.append(f"- {t}{trait_prompt_suffix(h)}")
         ctx = "\n".join(parts)
         return ctx[:1200]
 
@@ -3087,10 +3095,24 @@ class WebSession:
                     "source": getattr(h, "source", "") or "",
                     "priority": getattr(h, "priority", 0.0),
                     "cluster": "",
+                    # v0.8.1 (post-audit P1-2): the trait bookkeeping the
+                    # memory layer already computes (VM-LOCAL-013) is no
+                    # longer discarded — confidence/eff_confidence/
+                    # occurrence_count/first_seen/last_seen + stable trait
+                    # identity ride the payload (uniform keys; non-trait
+                    # hits carry neutral defaults). app/retrieval_contract.py
+                    # is the canonical definition.
+                    **trait_fields_payload(h),
                 }
                 for h in rb
                 if getattr(h, "source", "") != "response_experience"
             ],
+            # v0.8.1 (Phase 8): rb_directive (vendor right-brain situational
+            # guidance + the orchestrator's low-evidence abstention note) is
+            # computed on every search and had NO consumer — preserved here
+            # (transport-only, documented as currently unconsumed in
+            # CONTRACT.md; deliberately NOT injected into the LLM prompt).
+            "rb_directive": str(getattr(result, "rb_directive", "") or ""),
             "current_scene": None,
             "related_summaries": getattr(result, "related_summaries", {}) or {},
         }
@@ -3556,7 +3578,23 @@ def build_web_app(components: WebComponents) -> Any:
         page = _WEB_DIR / "voicemem.html"
         if not page.is_file():
             return JSONResponse({"error": "voicemem.html missing"}, status_code=500)
-        return FileResponse(page, headers={"Cache-Control": "no-store"})
+        # v0.8.1 (post-audit P1-1): serve-time version injection — the page's
+        # PAGE_VERSION is stamped from the VERSION file (single source, the
+        # same value /api/health serves). A stale repo literal can no longer
+        # reach the browser; a browser-CACHED old page still mismatches
+        # /api/health, so the v0.4.12 stale-page detection is unchanged.
+        try:
+            html = page.read_text(encoding="utf-8")
+        except OSError as exc:
+            logger.warning("voicemem.html unreadable: %s", exc)
+            return JSONResponse(
+                {"error": "voicemem.html unreadable"}, status_code=500
+            )
+        return Response(
+            _inject_page_version(html),
+            media_type="text/html",
+            headers={"Cache-Control": "no-store"},
+        )
 
     images_dir = _WEB_DIR / "images"
     images_dir.mkdir(exist_ok=True)
@@ -4200,6 +4238,48 @@ def _version() -> str:
         return (_ROOT / "VERSION").read_text("utf-8").strip()
     except OSError:
         return "dev"
+
+
+#: v0.8.1 (post-implementation-audit P1-1): the PAGE_VERSION literal the page
+#: carries (browser-side stale-page detection against /api/health, v0.4.12).
+#: The literal is stamped INTO THE SERVED PAGE from the VERSION file at
+#: request time — the single source of truth. Staleness detection keeps its
+#: original meaning: a browser-CACHED old page still carries its old baked
+#: version and still mismatches /api/health.
+_PAGE_VERSION_LITERAL_RE = re.compile(r"const PAGE_VERSION='[^']*';")
+_page_version_warned: set[tuple[str, str]] = set()
+
+
+def _inject_page_version(html: str) -> str:
+    """Stamp the CURRENT VERSION into the served page's PAGE_VERSION literal.
+
+    Up to v0.8.0 the literal in web/voicemem.html was bumped BY HAND at
+    release time; v0.8.0 shipped it stale (page 0.7.2 vs backend 0.8.0 -> a
+    false "stale page" warning on every session). /api/health already serves
+    the VERSION file; this injection makes the served page agree with it by
+    construction. The FILE literal is regenerated at release prep
+    (scripts/sync_page_version.py) and gate-checked
+    (test_page_version_matches_repo_version), so the shipped tree cannot
+    disagree even if this injection is ever bypassed. A missing literal is
+    served untouched (the page JS requires the literal — the gate pins it).
+    """
+    version = _version()
+    m = _PAGE_VERSION_LITERAL_RE.search(html)
+    if m is None:
+        return html
+    injected = f"const PAGE_VERSION='{version}';"
+    if m.group(0) == injected:
+        return html
+    key = (m.group(0), injected)
+    if key not in _page_version_warned:
+        _page_version_warned.add(key)
+        logger.warning(
+            "serving page version %s (web/voicemem.html literal %s is stale — "
+            "run scripts/sync_page_version.py)",
+            version,
+            m.group(0),
+        )
+    return html[: m.start()] + injected + html[m.end():]
 
 
 # ═══════════════════════════════════════════════════════════════════════════

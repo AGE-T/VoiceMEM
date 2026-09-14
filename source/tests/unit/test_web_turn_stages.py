@@ -76,11 +76,31 @@ class _RecordingSock:
         self.binary_chunks.append(raw)
 
 
+def _fixture_root() -> Path:
+    """A throwaway copy of tests/unit/data as the session root.
+
+    The session INGESTS turns into the demo memory store
+    (data/web_demo_memory.json); the REAL fixture must stay byte-stable
+    (staged release file, hashed by the release-tree fingerprint — see
+    the v0.8.1 gate-order contract). Tests seed themselves from a copy.
+    """
+    import shutil
+    import tempfile
+
+    dst = Path(tempfile.mkdtemp(prefix="vm_turnstages_"))
+    src = Path(__file__).parent / "data"
+    if src.is_dir():
+        shutil.copytree(src, dst / "data")
+    else:
+        (dst / "data").mkdir(parents=True)
+    return dst
+
+
 def _make_session(root: Optional[Path] = None) -> tuple[Any, Any, _RecordingSock]:
     """Build WebComponents + a WebSession with a recording socket."""
     from app.web_server import WebSession
 
-    tmp = root if root is not None else Path(__file__).parent
+    tmp = root if root is not None else _fixture_root()
     cfg = AgentConfig(root=tmp)
     components = WebComponents(cfg, mock=True).build()
     sock = _RecordingSock()

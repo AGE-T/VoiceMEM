@@ -16,10 +16,10 @@ exercised realistically:
   ``commit_reply``/``store_fact`` calls and ``cancel_pending`` count.
 * :class:`MockVad` — ``prob()`` from a scripted probability timeline.
 * :class:`MockEmotionAnalyzer` — scripted prosody results per turn (M2);
-  records the analyzed audio sizes; supports a failure mode to exercise
+  records the analysed audio sizes; supports a failure mode to exercise
   graceful degradation.
 * :class:`MockSpeakerRecognizer` — scripted speaker identifications per
-  turn (M3); records the analyzed audio sizes and supports a failure mode
+  turn (M3); records the analysed audio sizes and supports a failure mode
   plus an "unknown speaker" mode (None ids) to exercise the memory-routing
   fallback.
 * :class:`MockSpeaker` — EXTRA (not in the CONTRACT mock list): a speaker

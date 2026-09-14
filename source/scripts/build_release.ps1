@@ -14,15 +14,19 @@ Ajanlott rutin egy frissites utan (napi munkafolyamat):
     .\scripts\build_release.ps1 -Notes "mi valtozott es miert"
     (alap -Bump patch: minden frissites uj verzioszamot kap)
 
-Lepesek:
+Lepesek (v0.8.1 kapu-sorrend: a verzio-iras a TESZTKAPU ELOTT fut, igy a
+kapu a kiadando fa VALDI allapotat latja - a v0.8.0 kiadas elavult
+PAGE_VERSION-t csomagolt, mert a kapu a verzio-iras elott futott):
   1/8 cel-verzio: VERSION + -Bump (patch|minor|major|none, alap: patch)
       vagy -Version x.y.z (explicit feluliras)
-  2/8 TESZTKAPU: run_tests.ps1 child PowerShellben - FAIL -> abort.
+  2/8 verzio-iras: VERSION + pyproject.toml [project] version +
+      config/voicemem_config.yaml project.version + web/voicemem.html
+      PAGE_VERSION literal (GENERALT a VERSION-bol - v0.8.1 P1-1).
+      (a tesztek ellenorzik a szinkront - a szinkron-szabaly egyetlen
+      forrasa a VERSION)
+  3/8 TESZTKAPU: run_tests.ps1 child PowerShellben - FAIL -> abort.
       -StrictValidation: a tests\validation deep-SKIP-ek is FAIL-t okoznak
       (kiadasi minosegu buildhez; a riport: logs\validation_report.json)
-  3/8 verzio-iras: VERSION + pyproject.toml [project] version +
-      config/voicemem_config.yaml project.version (a tesztek ellenorzik a
-      szinkront - a szinkron-szabaly egyetlen forrasa a VERSION)
   4/8 staging megengedesi-listaval: app, config, scripts, tests, web, vendor (a
       helyi web UI - v0.3.5: a ZIP a rendszer MINDEN elemet tartalmazza)
       + gyokeri dokumentumok + START.bat + MODELS.lock.json (M0.2 one-click:
@@ -262,8 +266,38 @@ try {
     }
     Write-BOk "Verzio: $CurrentVersion -> $NewVersion (-Bump: $Bump)"
 
-    # ------------------------------------------------------ 2/8 TESZTKAPU ---
-    Write-BStep "2/8 TESZTKAPU: a teljes tesztkeszlet lefut a ZIP ELOTT..."
+    # ------------------------------------------------- 2/8 verzio-iras -----
+    # v0.8.1 kapu-sorrend: a verzio-iras a TESZTKAPU ELOTT tortenik, igy a
+    # kapu a kiadando fa vegleges allapotat latja (a v0.8.0 kiadas elavult
+    # PAGE_VERSION-t csomagolt, mert a kapu a verzio-iras elott futott).
+    Write-BStep "2/8 Verzio-iras: VERSION + pyproject.toml + config YAML + PAGE_VERSION..."
+    [IO.File]::WriteAllText($VersionFile, "$NewVersion`n", (New-Utf8NoBom))
+
+    $PP = [IO.File]::ReadAllText($PyProjectFile)
+    $PPNew = [regex]::Replace($PP, '(?m)^version\s*=\s*"[^"]*"', ('version = "' + $NewVersion + '"'), 1)
+    if ($PPNew -eq $PP) { Fail "A pyproject.toml version mezoje nem talalhato." }
+    [IO.File]::WriteAllText($PyProjectFile, $PPNew, (New-Utf8NoBom))
+
+    $YL = [IO.File]::ReadAllText($YamlFile)
+    $YLNew = [regex]::Replace($YL, '(?m)^(\s*version:\s*")[^"]+(")', ('${1}' + $NewVersion + '${2}'), 1)
+    if ($YLNew -eq $YL) { Fail "A config/voicemem_config.yaml project.version mezoje nem talalhato." }
+    [IO.File]::WriteAllText($YamlFile, $YLNew, (New-Utf8NoBom))
+
+    # v0.8.1 (P1-1): a web PAGE_VERSION literal GENERALT ertek - a VERSION
+    # fajlbol irja felul a literal-t (a szerver kiszolgalaskor is injektalja
+    # a VERSION-t; a fajl-literal a ZIP-on beluli konzisztencia-or). Az
+    # UTF-8 olvasas/iras no-BOM; a regex csak ASCII literal-ra illeszkedik.
+    $WebUiFile = Join-Path $RepoRoot "web\voicemem.html"
+    $Html = [IO.File]::ReadAllText($WebUiFile, [Text.Encoding]::UTF8)
+    $HtmlNew = [regex]::Replace($Html, "const PAGE_VERSION='[^']*'", ("const PAGE_VERSION='" + $NewVersion + "'"), 1)
+    if ($HtmlNew -eq $Html) { Fail "A web/voicemem.html PAGE_VERSION literalja nem talalhato." }
+    [IO.File]::WriteAllText($WebUiFile, $HtmlNew, (New-Utf8NoBom))
+    Write-BOk "Verzio-fajlok + PAGE_VERSION frissitve (szinkron-szabaly, generalt page-verzio)."
+
+    # ------------------------------------------------------ 3/8 TESZTKAPU ---
+    # v0.8.1: a kapu a VERZIO-IRAS UTAN fut (2/8) - a kiadando fa
+    # vegleges allapotan fut a teljes tesztkeszlet.
+    Write-BStep "3/8 TESZTKAPU: a teljes tesztkeszlet lefut a verzio-iras UTAN..."
     if (-not (Test-Path $RunTestsFile)) { Fail "A scripts/run_tests.ps1 hianyzik." }
 
     $ChildPs = ""
@@ -328,23 +362,8 @@ try {
     $ChEntry = "## [$NewVersion] - $Today`n"
     $ChEntry += "### Kiadas (ZIP-build)`n"
     $ChEntry += "- $NoteLine`n"
-    $ChEntry += "- Tesztkapu: PASS a build ELOTT (teljes tesztkeszlet; deep validacio: $DeepPassStr; SKIP: $DeepSkipCount db).`n"
+    $ChEntry += "- Tesztkapu: PASS a verzio-iras UTAN, a kiadando fan (v0.8.1 kapu-sorrend; deep validacio: $DeepPassStr; SKIP: $DeepSkipCount db).`n"
     $ChEntry += "- Kiadas: ``releases/$ZipName`` + ``$ZipName.sha256`` (UTC: $BuiltAtUtc).`n`n"
-
-    # ------------------------------------------------- 3/8 verzio-iras -----
-    Write-BStep "3/8 Verzio-iras: VERSION + pyproject.toml + config YAML..."
-    [IO.File]::WriteAllText($VersionFile, "$NewVersion`n", (New-Utf8NoBom))
-
-    $PP = [IO.File]::ReadAllText($PyProjectFile)
-    $PPNew = [regex]::Replace($PP, '(?m)^version\s*=\s*"[^"]*"', ('version = "' + $NewVersion + '"'), 1)
-    if ($PPNew -eq $PP) { Fail "A pyproject.toml version mezoje nem talalhato." }
-    [IO.File]::WriteAllText($PyProjectFile, $PPNew, (New-Utf8NoBom))
-
-    $YL = [IO.File]::ReadAllText($YamlFile)
-    $YLNew = [regex]::Replace($YL, '(?m)^(\s*version:\s*")[^"]+(")', ('${1}' + $NewVersion + '${2}'), 1)
-    if ($YLNew -eq $YL) { Fail "A config/voicemem_config.yaml project.version mezoje nem talalhato." }
-    [IO.File]::WriteAllText($YamlFile, $YLNew, (New-Utf8NoBom))
-    Write-BOk "Verzio-fajlok frissitve (szinkron-szabaly)."
 
     # ------------------------------------------------------ 4/8 staging ----
     Write-BStep "4/8 Staging (megengedesi-lista masolas)..."

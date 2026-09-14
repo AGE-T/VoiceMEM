@@ -246,7 +246,7 @@ class StartupRobustnessV032Tests(FeatureValidationTest):
     ggml-cuda/cudart/cublas DLLs missing) makes llama-server.exe die
     instantly and SILENTLY (STATUS_DLL_NOT_FOUND 0xC0000135, no stderr),
     while the v0.3.1 installer skipped re-download (it only checked the
-    exe) and the starter's own diagnosis was lost in the minimized child
+    exe) and the starter's own diagnosis was lost in the minimised child
     console.
     """
 
@@ -326,7 +326,7 @@ class StartupRobustnessV032Tests(FeatureValidationTest):
 
         Start-Transcript into logs/llama-server.starter.log, wrapped in
         try/finally so EVERY exit (including fast-fail paths) closes the
-        transcript - the minimized child console output was previously
+        transcript - the minimised child console output was previously
         lost, which is exactly why field report #2 had no diagnosis.
         """
         raw = self._raw("start_llama_server.ps1")
@@ -795,7 +795,7 @@ class StartBatFieldReportV036Tests(FeatureValidationTest):
         self.assertIn('[IO.File]::WriteAllBytes', code,
                       "the builder does not rewrite the staged .bat bytes")
         self.assertIn('.Replace("`n", "`r`n")', code,
-                      "the builder does not normalize LF to CRLF")
+                      "the builder does not normalise LF to CRLF")
 
 
 if __name__ == "__main__":

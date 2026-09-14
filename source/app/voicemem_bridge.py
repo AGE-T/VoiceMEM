@@ -24,6 +24,7 @@ from typing import TYPE_CHECKING, Any, Optional
 import numpy as np
 
 from .config import AgentConfig
+from .retrieval_contract import trait_prompt_suffix
 from .teacher_persona import (
     build_messages,
     build_system_prompt,
@@ -772,6 +773,15 @@ def _extract_memory_context(result: Any) -> str:
     the vendor's date/slot prefix and advisory suffix, capped at ~1200
     characters. Objects without hits/rb_attrs fall through to the generic
     attribute walk (context/memory_list) below.
+
+    v0.8.1 (post-audit P1-2): trait hits keep their observation provenance
+    (last-heard date + confirmation count) via the shared canonical contract
+    (app/retrieval_contract.py ``trait_prompt_suffix``) — mirroring the web
+    path exactly, so the CLI bridge and the web server render the same
+    information. The raw ``SearchResult`` object (with every computed field
+    incl. ``rb_directive``) is preserved on ``TurnContext.turn`` for programmatic
+    consumers. Confidence floats stay OUT of the prompt render (confirmation
+    strength, not a probability — see the contract module).
     """
     hits = getattr(result, "hits", None)
     rb_hits = getattr(result, "rb_hits", None)
@@ -787,7 +797,7 @@ def _extract_memory_context(result: Any) -> str:
         for h in (rb_hits or [])[:3]:
             t = clean_rb_content(getattr(h, "content", "") or "").strip()
             if t:
-                parts.append(f"- {t}")
+                parts.append(f"- {t}{trait_prompt_suffix(h)}")
         return "\n".join(parts)[:1200]
     for attr in _CONTEXT_ATTRIBUTES:
         value = getattr(result, attr, None)

@@ -112,10 +112,32 @@ MIC_STAGES = (
 )
 
 
+def _fixture_root() -> Path:
+    """A throwaway copy of tests/unit/data as the session root.
+
+    The web session INGESTS turns into the demo memory store
+    (data/web_demo_memory.json). The REAL fixture under tests/unit/data
+    must stay byte-stable: it is a staged release file, hashed by the
+    release-tree fingerprint (v0.8.1 gate-order contract — a test run
+    that mutates it invalidates the gate record against the build).
+    The tests seed themselves from a copy instead.
+    """
+    import shutil
+    import tempfile
+
+    dst = Path(tempfile.mkdtemp(prefix="vm_micdisp_"))
+    src = Path(__file__).parent / "data"
+    if src.is_dir():
+        shutil.copytree(src, dst / "data")
+    else:  # fixture absent on a fresh edge — start empty
+        (dst / "data").mkdir(parents=True)
+    return dst
+
+
 def _make_session() -> tuple[WebSession, WebComponents, _RecordingSock, _HealthyVad]:
     """Session with a one-way recording socket (frames pushed straight into
     the pending-bytes queue — the receive-loop variant is _make_feed_session)."""
-    tmp = Path(__file__).parent
+    tmp = _fixture_root()
     cfg = AgentConfig(root=tmp)
     components = WebComponents(cfg, mock=True).build()
     vad = _HealthyVad()
@@ -149,7 +171,7 @@ class _FeedSock(_RecordingSock):
 
 
 def _make_feed_session() -> tuple[WebSession, WebComponents, _FeedSock, _HealthyVad]:
-    tmp = Path(__file__).parent
+    tmp = _fixture_root()
     cfg = AgentConfig(root=tmp)
     components = WebComponents(cfg, mock=True).build()
     vad = _HealthyVad()

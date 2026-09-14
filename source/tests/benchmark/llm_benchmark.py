@@ -277,7 +277,7 @@ EN_CONVERSATIONS: list[tuple[str, list[tuple[str, tuple[str, ...], bool]]]] = [
              ("lend",), False),
             ("Translate into Hungarian: Can I borrow your pen?",
              ("kölcsön", "tudok", "kérhetek"), True),
-            ("Summarize what we practiced.",
+            ("Summarise what we practised.",
              ("borrow", "lend"), False),
         ],
     ),

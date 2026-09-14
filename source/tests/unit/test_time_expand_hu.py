@@ -274,7 +274,7 @@ class ProvenanceRenderTests(unittest.TestCase):
             " [2026-09-12]")
 
     def test_time_only_observed_at_is_dropped(self):
-        # observed_at was normalized to "" upstream when it is a time, not a
+        # observed_at was normalised to "" upstream when it is a time, not a
         # date — the suffix must not print garbage.
         self.assertEqual(hit_provenance_suffix(self._Hit(observed_at="15:18:36")), "")
 

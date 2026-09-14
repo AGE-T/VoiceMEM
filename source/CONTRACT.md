@@ -1014,3 +1014,174 @@ F-D ellentmondás-iránya; tulajdonság-supersession; érvényességi időinterv
 a counted Observation-store / tanulási réteg (kutatási dokumentum §17-18);
 a `search_rich` API (TASK 2 Stage 1). Ezeket a jövőbeli operátori
 utasítások ütemezik.
+
+## v0.8.1 kiegészítő — stabilizációs kiadás (post-implementation audit P1 tételek)
+
+A v0.8.0 utáni független audit két P1 tételt azonosított; ez a kiadás a
+legkisebb biztonságos javítást nyújtja mindegyikre. **Ugyanaz a
+memória-motor, ugyanaz a keresési logika, ugyanazok a szemantikák** —
+amit ez a kiadás változtat: helyes kiadási validáció + a már kiszámított
+keresési információ veszteségmentes továbbítása + világos fogyasztói
+határok.
+
+### P1-1 — PAGE_VERSION: egyetlen forrás + futásidejű injektálás
+
+A v0.8.0 kiadás a `web/voicemem.html`-ben `PAGE_VERSION='0.7.2'`-t
+csomagolta, miközben a VERSION 0.8.0 volt (a kapu a verziónapló-frissítés
+ELŐTT futott — minden munkamenet hamis "régi oldal" figyelmeztetést
+mutatott). A javítás rétegelt:
+
+1. **Futtatási idejű injektálás** (a szolgáltatott oldal forrása): a
+   `GET /` kezelő (`app/web_server.py` `_inject_page_version`) a
+   `PAGE_VERSION` literált a VERSION fájlból pecsételi a kiszolgált
+   HTML-be — pontosan abból a forrásból, amit az `/api/health` is
+   szolgál. Az elavult-literal nem juthat el a böngészőhöz.
+2. **Prep-idejű generálás**: `scripts/sync_page_version.py` a VERSION
+   fájlból újraigenerálja a fájl literálját (bájtszintű csere — a sorvég
+   és a fájl többi bájtja érintetlen). A `build_release.ps1` 2/8
+   verziónapló-írás lépése a literált is frissíti.
+3. **Kapu-ellenőrzés**: `test_page_version_matches_repo_version`
+   (fájl-literal == VERSION) + az új injektálási tesztek
+   (a kiszolgált oldal == VERSION akkor is, ha a fájl literalja elavult) +
+   a ZIP self-check (a csomagolt ZIP-en belül VERSION == PAGE_VERSION).
+
+A stale-page detektálás szemantikája változatlan: a böngésző GYORSÍTÓTÁRBÓL
+betöltött régi oldal a saját (régi) verzióját hordozza és az `/api/health`
+ügyfél-ellenőrzése továbbra is eltérést jelez — a frissen kiszolgált oldal
+konstrukció szerint egyezik.
+
+### P1-2 — a kiadási kapu sorrendje: a kapu a KIADANDÓ fán fut
+
+A v0.8.0 folyamat: teljes kapu → VERSION-frissítés → build (a kapu-számok
+manuálisan, a hívótól). A kicsomagolt fa sosem volt kapuzva. A v0.8.1
+folyamat (mindkét builderben):
+
+```
+implementáció kész → VERSION → CHANGELOG → generált page-verzio →
+TELJES KAPU a kiadandó fán → build a kapuzott fából → ellenőrzés →
+checksum → index → végső ellenőrzés → tükör-szinkron
+```
+
+- **`scripts/run_release_gate.py`** (új): a teljes suite-t futtatja
+  (compileall + unit + integration + validation, a `run_tests.ps1`
+  lépéseivel azonos sorrendben), a VMA_VALIDATION_REPORT-ot vezeti, a
+  kudarcokat a PINNOLT sandbox-környzeti hiba-bázishoz hasonlítja
+  (minden tétel okkal dokumentált; a célgépen zöld), és
+  `releases/gate_record.json`-t ír: verdikt + git-commit +
+  **forrásfa-ujjlenyomat** + csomagonkénti számok + kudarclista.
+- **`scripts/release_tree.py`** (új, közös): az ujjlenyomat pontosan a
+  ZIP által csomagolt fájlhalmazon számol (ugyanazok a könyvtárak,
+  gyökér-fájlok és ignore-minták, mint a staging — a `releases/`
+  főkönyveket kivéve, amelyek build-kimenetek).
+- **`scripts/build_release_sandbox.py`**: a build FELTÉTELÉVE vált egy
+  ZÖLD gate_record, amelynek ujjlenyomata megegyezik az AKTUALIS fával,
+  verziója a builder NEW_VERSION-jével és a fa VERSION-fájljával; a
+  BUILD_INFO/CHANGELOG/RELEASE_INDEX kapu-számai a rekordból jönnek — a
+  hívó emlékezetéből többé nem. **A CSOMAGOLT PONTOS FA = A KAPUZOTT PONTOS
+  FA** — gépileg kikényszerítve.
+- **`scripts/build_release.ps1`** (Windows-replika): a 2/8
+  verziónapló-írás (VERSION + pyproject + yaml + PAGE_VERSION) a 3/8
+  TESZTKAPU ELŐTT fut — a kapu a végleges fán fut. (A staging determinisztikus
+  transzformációi — CRLF-normalizálás, BUILD_INFO generálás, a CHANGELOG
+  bejegyzés kapu-rekordból pecsételt számai — nem változtatnak forrástartalmon.)
+
+### P1-2 (audit) — a lekérdezési eredmény szerződése: veszteségmentes szállítás
+
+Az audit P1 tétele: a v0.8.0 memória-réteg által kiszámított trait-
+könyvelés (VM-LOCAL-013: `confidence`, `eff_confidence`,
+`occurrence_count`, `first_seen`, `last_seen` — a vendor
+`_rb_trait_hits` minden trait `RightBrainHit.metadata`-jában) minden
+fogyasztónál eldobásra került. **NINCS új keresési motor, NINCS
+`search_rich`, NINCS második API** (az audit javaslata: egy kanonikus
+pipeline + jobb eredmény-szerződés). Az új kanonikus szerződés:
+`app/retrieval_contract.py`.
+
+**Mező-referencia (a szerződés mezői és azok előállítási pontjai):**
+
+| Mező | Előállítás | Web payload | LLM prompt | CLI bridge |
+| --- | --- | --- | --- | --- |
+| memory_id (tény) / trait_id (trait) | store / `_rb_trait_hits` | ✔ | — (identitás) | TurnContext.turn |
+| score (tény) / priority (trait) | rank / `_rb_trait_hits` | ✔ | — (nyers koszinusz NEM a promptba) | TurnContext.turn |
+| confidence, eff_confidence (trait) | `_rb_trait_hits` (VM-LOCAL-013) | ✔ (payload) | **NEM** — l. alább | TurnContext.turn |
+| occurrence_count | tény: OCC-1 (VM-LOCAL-011); trait: VM-LOCAL-013 | ✔ | ✔ (suffix) | ✔ (suffix) |
+| observed_at/last_observed_at (tény) / first_seen/last_seen (trait) | store / VM-LOCAL-013 | ✔ | ✔ (tény: suffix; trait: last-heard) | ✔ (suffix) |
+| attributed_to (tény) | store | ✔ | ✔ (suffix) | TurnContext.turn |
+| superseded_by (tény) | VM-LOCAL-008 | ✔ | ✔ (suffix) | TurnContext.turn |
+| source (rb hit) | `_rb_ctx_to_hits` / `_rb_trait_hits` | ✔ | — | TurnContext.turn |
+| rb_directive (keresés) | vendor `_render_rb_directive` + orchestrator | ✔ (csak szállítás) | **NEM** (l. alább) | TurnContext.turn |
+
+**LLM prompt határ (szemantikai döntés):** a trait `confidence`/
+`eff_confidence` lebegőpontos értékei tudatosan NEM kerülnek a promptba.
+Az audit megállapítása: a trait-confidence egy megerősítési-számláló
+aszimptotikus maradéka (`c' = c + (1-c)*0.30` mergesoronként, 0.9-ről
+indulva), NEM kalibrált valószínűség — a `confidence = 0.93` a promptban
+"93%-ban biztos"-ként olvasódna (félrevezető pszedudo-precizitás). Ami
+anyagilag változtatja a memória-interpretációt, azt a prompt viszi: az
+utolsó megfigyelés dátuma és a megerősítések száma
+(`[last heard 2026-06-01 | 3x heard]`). A számok az alkalmazási/UI rétegben
+elérhetők maradnak (`trait_fields_payload`), ahol valódi jelentésükben
+(megerősítési erő) mutathatók.
+
+**rb_directive döntés (P2 "holt csatorna"):** a vendor jobbagy-fél
+szituációs vezérlése + az orchestrátor alacsony-bizonyítékű tartózkodási
+javaslata minden keresésnél kiszámítódik és SEMMI fogyasztotta. A döntés:
+**megőrzés a szerződésben (web payload `rb_directive` mező — csak
+szállítás), dokumentáltan fogyasztatlan**. NEM kerül az LLM promptba: (1)
+a vendor-szöveg kínai-nyelvű vezérlés, amely kettőzné az app saját
+(tisztított top-3) renderjét egy HU/EN promptban; (2) a tartózkodási
+javaslat a válasz-viselkedést változtatná — szemantikai változás, ami egy
+stabilizációs kiadás hatáskörébe tartozó, tudatos döntést igényel, nem
+csak vezetékezést. A jövőbeli operátori utasítás döntheti el a
+prompt-oldali fogyasztást; addig az információ nem vész el.
+
+### Terminológia (a fi érintett mezőkre — széles átnevezés NINCS)
+
+Kanonikus név minden oldalon: `occurrence_count`. **Az egységek
+különböznek és a renderek kimondják:** a trait-oldalon a tárolt
+megfigyelések száma (1-alapú; 1 hozzáadás = 1 evidencia-sor + 1
+növelés → a render `Nx heard`), a tény-oldalon az ugyanarra az értékre
+történt újra-megerősítések száma (0-alapú, OCC-1 → a render
+`Nx confirmed`). A trait `first_seen`/`last_seen` könyvelési dátumok
+(egy gyűjtött tulajdonság első/utolsó megfigyelése), a tény-oldal
+`observed_at`/`last_observed_at` esemény-idő (mikor történt a
+megfigyelt dolog) — a különbség szándékos, a mezők jelentése más.
+
+### Határon kívül maradt (tudatosan)
+
+Ellentmondás-kezelés; trait-negáció feloldás; supersession-bővítés;
+érvényességi időintervallumok; Observation-store; új beágyazás; keresési
+algoritmus; `search_rich`; tanulási réteg; TTL-producer; archívum-átalakítás;
+ASR/TTS/LLM modellváltás; UI-átalakítás. (A v0.8.0 audit P2 tételei közül a
+TTL-producer, a nyelvi küszöb-kalibráció és az archívum-reaktiválás
+továbbra is nyitottak — ütemezésük a jövőbeli operátori utasításokon múlik.)
+
+### Angol szövegek konvenciója — brit helyesírás (operátori kérés, v0.8.1)
+
+A projekt angol prózája (UI-sztringek, LLM-promptok, slot-címkék,
+docstringek, kommentek, dokumentáció) **brit helyesírású** — a v0.4.6-os
+"British-English release" óta ez a konvenció ("recognised",
+"Quantisation", "cancelling", `localise_slot`). A v0.8.1-es söpörés
+eltávolította az utolsó kivételteket is ("enrollment" → "enrolment",
+"recognized" → "recognised", "analyzed" → "analysed", "normalized" →
+"normalised", "minimized" → "minimised").
+
+**Őrző teszt:** `tests/unit/test_british_english.py` — a négy
+felhasználó által LÁTHATÓ felületet rögzíti (I18N szótár, `_SLOT_EN`
+címkék, persona-prompt, retrieval render-sztringek): amerikai
+helyesírás vagy CJK-szivárgás ezekben a felületekben teszt-hibát ad.
+
+**Tudatos mentesítések** (a konvenció ALKALMAZÁSI KÖRE, nem kiskapu):
+
+- **kód-azonosítók** (`analyze()`, `summarize()`, `.normalize`): a
+  API-felület átnevezése törő változás lenne, nem helyesírási kérdés;
+- **harmadik féltől jövő hiba-sztringek egyeztetése** (app/asr.py a
+  transformers "unrecognized configuration" hibaszövegét egyezteti
+  szó szerint — a helyesírás megváltoztatása törné az egyeztetést);
+- **PowerShell paraméter-literálok** (`-WindowStyle Minimized`);
+- **történelmi CHANGELOG-bejegyzések** (a múlt kiadásainak
+  append-only recordja).
+
+A vendor (vendor/voicemem) kínai trait-slot enum-értékei
+**gép-azonosítók maradnak** — a megjelenítési réteg fordítja őket
+(`_SLOT_EN` / `localise_slot`); a felhasználó sosem lát nyers kínai
+slot-nevet.

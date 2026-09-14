@@ -677,7 +677,7 @@ class AsrEngine:
 
     @staticmethod
     def _join(parts: list[str]) -> str:
-        """Join chunk texts into one transcript (whitespace-normalized)."""
+        """Join chunk texts into one transcript (whitespace-normalised)."""
         return " ".join(p.strip() for p in parts if p.strip())
 
     # -- the official processor + generate call path (v0.4.7) -----------------

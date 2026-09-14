@@ -576,8 +576,15 @@ class TestUiMarkers(unittest.TestCase):
         self.assertIn("constraint={audio:true};", self.PAGE)
 
     def test_version_bumped(self):
-        # v0.7.2: the LLM configuration centralisation release.
-        self.assertIn("PAGE_VERSION='0.7.2'", self.PAGE)
+        # v0.8.1: the page literal is GENERATED from the VERSION file
+        # (scripts/sync_page_version.py) — pinned against the file, not a
+        # duplicated literal here (the v0.8.0 release shipped the page at
+        # 0.7.2 while VERSION said 0.8.0 because every copy had to be bumped
+        # by hand).
+        version = (
+            Path(__file__).resolve().parent.parent.parent / "VERSION"
+        ).read_text(encoding="utf-8").strip()
+        self.assertIn(f"PAGE_VERSION='{version}'", self.PAGE)
 
 
 if __name__ == "__main__":
