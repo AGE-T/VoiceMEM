@@ -78,10 +78,13 @@ At a single end-to-end failure, re-run `START.bat repair`.
   constructed — all green.
 - **Clean install:** fresh ZIP → new venv → editable install → import
   identity → `pin_verified: true` in the manifest.
-- **Test gate:** 921 passed / 24 skipped, reproduced in a downgraded
-  (no vendor PYTHONPATH) main-sandbox venv.
-- **Local vendor patches:** exactly 10 files vs upstream, all mapped in a
-  documented ledger — permanently local, never upstreamed.
+- **Test gate:** 1253 passed / 0 regressions / 13 skipped
+  (pinned env-gap: GPU-bound ASR/VAD/TTS legs; semantics- and
+  memory-gate suites included; deep validation PASS on fingerprint
+  a74af6c54a85f288d8d9b3ea7dc556d4).
+- **Local vendor patches:** exactly 21 files vs upstream (20 modified
+  + 1 added, right-brain stance), all mapped in a documented
+  ledger — permanently local, never upstreamed.
 - Full details: open the `*_Verification.zip` → `docs/` report.
 
 ## Mirrors

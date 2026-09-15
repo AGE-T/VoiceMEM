@@ -1,0 +1,4147 @@
+{
+ "spaces": {
+  "demo": {
+   "left": [
+    {
+     "id": "m1",
+     "text": "Hello, mivan?",
+     "slot": "daily_life",
+     "entities": [],
+     "date": "2026-09-05"
+    },
+    {
+     "id": "m2",
+     "text": "Szia, hogy vagy ma?",
+     "slot": "daily_life",
+     "entities": [
+      "Szia"
+     ],
+     "date": "2026-09-05"
+    },
+    {
+     "id": "m3",
+     "text": "Hello, mivan?",
+     "slot": "daily_life",
+     "entities": [],
+     "date": "2026-09-05"
+    },
+    {
+     "id": "m4",
+     "text": "Szia, hogy vagy ma?",
+     "slot": "daily_life",
+     "entities": [
+      "Szia"
+     ],
+     "date": "2026-09-05"
+    },
+    {
+     "id": "m5",
+     "text": "Szia, mi újság?",
+     "slot": "daily_life",
+     "entities": [
+      "Szia"
+     ],
+     "date": "2026-09-05"
+    },
+    {
+     "id": "m6",
+     "text": "Szia, mi újság?",
+     "slot": "daily_life",
+     "entities": [
+      "Szia"
+     ],
+     "date": "2026-09-05"
+    },
+    {
+     "id": "m7",
+     "text": "Szia, mi újság?",
+     "slot": "daily_life",
+     "entities": [
+      "Szia"
+     ],
+     "date": "2026-09-05"
+    },
+    {
+     "id": "m8",
+     "text": "teszt",
+     "slot": "daily_life",
+     "entities": [],
+     "date": "2026-09-05"
+    },
+    {
+     "id": "m9",
+     "text": "Szia, mi újság?",
+     "slot": "daily_life",
+     "entities": [
+      "Szia"
+     ],
+     "date": "2026-09-05"
+    },
+    {
+     "id": "m10",
+     "text": "Szia, mi újság?",
+     "slot": "daily_life",
+     "entities": [
+      "Szia"
+     ],
+     "date": "2026-09-05"
+    },
+    {
+     "id": "m11",
+     "text": "Szia, mi újság?",
+     "slot": "daily_life",
+     "entities": [
+      "Szia"
+     ],
+     "date": "2026-09-05"
+    },
+    {
+     "id": "m12",
+     "text": "Hello, mivan?",
+     "slot": "daily_life",
+     "entities": [],
+     "date": "2026-09-05"
+    },
+    {
+     "id": "m13",
+     "text": "Szia, hogy vagy ma?",
+     "slot": "daily_life",
+     "entities": [
+      "Szia"
+     ],
+     "date": "2026-09-05"
+    },
+    {
+     "id": "m14",
+     "text": "Szia, mi újság?",
+     "slot": "daily_life",
+     "entities": [
+      "Szia"
+     ],
+     "date": "2026-09-05"
+    },
+    {
+     "id": "m15",
+     "text": "Szia, mi újság?",
+     "slot": "daily_life",
+     "entities": [
+      "Szia"
+     ],
+     "date": "2026-09-05"
+    },
+    {
+     "id": "m16",
+     "text": "Szia, mi újság?",
+     "slot": "daily_life",
+     "entities": [
+      "Szia"
+     ],
+     "date": "2026-09-05"
+    },
+    {
+     "id": "m17",
+     "text": "teszt",
+     "slot": "daily_life",
+     "entities": [],
+     "date": "2026-09-05"
+    },
+    {
+     "id": "m18",
+     "text": "Szia, mi újság?",
+     "slot": "daily_life",
+     "entities": [
+      "Szia"
+     ],
+     "date": "2026-09-05"
+    },
+    {
+     "id": "m19",
+     "text": "Szia, mi újság?",
+     "slot": "daily_life",
+     "entities": [
+      "Szia"
+     ],
+     "date": "2026-09-05"
+    },
+    {
+     "id": "m20",
+     "text": "Szia, mi újság?",
+     "slot": "daily_life",
+     "entities": [
+      "Szia"
+     ],
+     "date": "2026-09-05"
+    },
+    {
+     "id": "m21",
+     "text": "Hello, mivan?",
+     "slot": "daily_life",
+     "entities": [],
+     "date": "2026-09-05"
+    },
+    {
+     "id": "m22",
+     "text": "Szia, mi újság?",
+     "slot": "daily_life",
+     "entities": [
+      "Szia"
+     ],
+     "date": "2026-09-05"
+    },
+    {
+     "id": "m23",
+     "text": "Szia, mi újság?",
+     "slot": "daily_life",
+     "entities": [
+      "Szia"
+     ],
+     "date": "2026-09-05"
+    },
+    {
+     "id": "m24",
+     "text": "Szia, mi újság?",
+     "slot": "daily_life",
+     "entities": [
+      "Szia"
+     ],
+     "date": "2026-09-05"
+    },
+    {
+     "id": "m25",
+     "text": "Szia, mi újság?",
+     "slot": "daily_life",
+     "entities": [
+      "Szia"
+     ],
+     "date": "2026-09-05"
+    },
+    {
+     "id": "m26",
+     "text": "Szia, mi újság?",
+     "slot": "daily_life",
+     "entities": [
+      "Szia"
+     ],
+     "date": "2026-09-05"
+    },
+    {
+     "id": "m27",
+     "text": "Szia kézzel",
+     "slot": "daily_life",
+     "entities": [
+      "Szia"
+     ],
+     "date": "2026-09-05"
+    },
+    {
+     "id": "m28",
+     "text": "Szia, mi újság?",
+     "slot": "daily_life",
+     "entities": [
+      "Szia"
+     ],
+     "date": "2026-09-05"
+    },
+    {
+     "id": "m29",
+     "text": "teszt log",
+     "slot": "daily_life",
+     "entities": [],
+     "date": "2026-09-05"
+    },
+    {
+     "id": "m30",
+     "text": "Szia, mi újság?",
+     "slot": "daily_life",
+     "entities": [
+      "Szia"
+     ],
+     "date": "2026-09-05"
+    },
+    {
+     "id": "m31",
+     "text": "Szia, mi újság?",
+     "slot": "daily_life",
+     "entities": [
+      "Szia"
+     ],
+     "date": "2026-09-05"
+    },
+    {
+     "id": "m32",
+     "text": "Szia, mi újság?",
+     "slot": "daily_life",
+     "entities": [
+      "Szia"
+     ],
+     "date": "2026-09-05"
+    },
+    {
+     "id": "m33",
+     "text": "Szia, mi újság?",
+     "slot": "daily_life",
+     "entities": [
+      "Szia"
+     ],
+     "date": "2026-09-05"
+    },
+    {
+     "id": "m34",
+     "text": "Szia, mi újság?",
+     "slot": "daily_life",
+     "entities": [
+      "Szia"
+     ],
+     "date": "2026-09-05"
+    },
+    {
+     "id": "m35",
+     "text": "Szia, mi újság?",
+     "slot": "daily_life",
+     "entities": [
+      "Szia"
+     ],
+     "date": "2026-09-05"
+    },
+    {
+     "id": "m36",
+     "text": "Szia, hogy vagy ma?",
+     "slot": "daily_life",
+     "entities": [
+      "Szia"
+     ],
+     "date": "2026-09-05"
+    },
+    {
+     "id": "m37",
+     "text": "Szia, mi újság?",
+     "slot": "daily_life",
+     "entities": [
+      "Szia"
+     ],
+     "date": "2026-09-07"
+    },
+    {
+     "id": "m38",
+     "text": "Szia, mi újság?",
+     "slot": "daily_life",
+     "entities": [
+      "Szia"
+     ],
+     "date": "2026-09-07"
+    },
+    {
+     "id": "m39",
+     "text": "Szia, mi újság?",
+     "slot": "daily_life",
+     "entities": [
+      "Szia"
+     ],
+     "date": "2026-09-07"
+    },
+    {
+     "id": "m40",
+     "text": "Szia, hogy vagy ma?",
+     "slot": "daily_life",
+     "entities": [
+      "Szia"
+     ],
+     "date": "2026-09-07"
+    },
+    {
+     "id": "m41",
+     "text": "Hello, mivan?",
+     "slot": "daily_life",
+     "entities": [],
+     "date": "2026-09-07"
+    },
+    {
+     "id": "m42",
+     "text": "Szia, mi újság?",
+     "slot": "daily_life",
+     "entities": [
+      "Szia"
+     ],
+     "date": "2026-09-07"
+    },
+    {
+     "id": "m43",
+     "text": "Szia, mi újság?",
+     "slot": "daily_life",
+     "entities": [
+      "Szia"
+     ],
+     "date": "2026-09-07"
+    },
+    {
+     "id": "m44",
+     "text": "Szia kézzel",
+     "slot": "daily_life",
+     "entities": [
+      "Szia"
+     ],
+     "date": "2026-09-07"
+    },
+    {
+     "id": "m45",
+     "text": "Szia, mi újság?",
+     "slot": "daily_life",
+     "entities": [
+      "Szia"
+     ],
+     "date": "2026-09-07"
+    },
+    {
+     "id": "m46",
+     "text": "Szia, mi újság?",
+     "slot": "daily_life",
+     "entities": [
+      "Szia"
+     ],
+     "date": "2026-09-07"
+    },
+    {
+     "id": "m47",
+     "text": "Szia, mi újság?",
+     "slot": "daily_life",
+     "entities": [
+      "Szia"
+     ],
+     "date": "2026-09-07"
+    },
+    {
+     "id": "m48",
+     "text": "Szia, mi újság?",
+     "slot": "daily_life",
+     "entities": [
+      "Szia"
+     ],
+     "date": "2026-09-07"
+    },
+    {
+     "id": "m49",
+     "text": "Ez egy mikrofon teszt.",
+     "slot": "daily_life",
+     "entities": [],
+     "date": "2026-09-07"
+    },
+    {
+     "id": "m50",
+     "text": "Hello, mivan?",
+     "slot": "daily_life",
+     "entities": [],
+     "date": "2026-09-07"
+    },
+    {
+     "id": "m51",
+     "text": "teszt",
+     "slot": "daily_life",
+     "entities": [],
+     "date": "2026-09-07"
+    },
+    {
+     "id": "m52",
+     "text": "Szia, mi újság?",
+     "slot": "daily_life",
+     "entities": [
+      "Szia"
+     ],
+     "date": "2026-09-07"
+    },
+    {
+     "id": "m53",
+     "text": "Szia, mi újság?",
+     "slot": "daily_life",
+     "entities": [
+      "Szia"
+     ],
+     "date": "2026-09-07"
+    },
+    {
+     "id": "m54",
+     "text": "Szia, mi újság?",
+     "slot": "daily_life",
+     "entities": [
+      "Szia"
+     ],
+     "date": "2026-09-07"
+    },
+    {
+     "id": "m55",
+     "text": "Szia, mi újság?",
+     "slot": "daily_life",
+     "entities": [
+      "Szia"
+     ],
+     "date": "2026-09-07"
+    },
+    {
+     "id": "m56",
+     "text": "Szia, mi újság?",
+     "slot": "daily_life",
+     "entities": [
+      "Szia"
+     ],
+     "date": "2026-09-07"
+    },
+    {
+     "id": "m57",
+     "text": "Szia, mi újság?",
+     "slot": "daily_life",
+     "entities": [
+      "Szia"
+     ],
+     "date": "2026-09-07"
+    },
+    {
+     "id": "m58",
+     "text": "Hello, mivan?",
+     "slot": "daily_life",
+     "entities": [],
+     "date": "2026-09-07"
+    },
+    {
+     "id": "m59",
+     "text": "Szia, mi újság?",
+     "slot": "daily_life",
+     "entities": [
+      "Szia"
+     ],
+     "date": "2026-09-07"
+    },
+    {
+     "id": "m60",
+     "text": "Szia, mi újság?",
+     "slot": "daily_life",
+     "entities": [
+      "Szia"
+     ],
+     "date": "2026-09-07"
+    },
+    {
+     "id": "m61",
+     "text": "Szia, mi újság?",
+     "slot": "daily_life",
+     "entities": [
+      "Szia"
+     ],
+     "date": "2026-09-07"
+    },
+    {
+     "id": "m62",
+     "text": "Szia, mi újság?",
+     "slot": "daily_life",
+     "entities": [
+      "Szia"
+     ],
+     "date": "2026-09-07"
+    },
+    {
+     "id": "m63",
+     "text": "Szia, mi újság?",
+     "slot": "daily_life",
+     "entities": [
+      "Szia"
+     ],
+     "date": "2026-09-07"
+    },
+    {
+     "id": "m64",
+     "text": "Szia, mi újság?",
+     "slot": "daily_life",
+     "entities": [
+      "Szia"
+     ],
+     "date": "2026-09-07"
+    },
+    {
+     "id": "m65",
+     "text": "Hello, mivan?",
+     "slot": "daily_life",
+     "entities": [],
+     "date": "2026-09-07"
+    },
+    {
+     "id": "m66",
+     "text": "Szia, mi újság?",
+     "slot": "daily_life",
+     "entities": [
+      "Szia"
+     ],
+     "date": "2026-09-08"
+    },
+    {
+     "id": "m67",
+     "text": "Szia, mi újság?",
+     "slot": "daily_life",
+     "entities": [
+      "Szia"
+     ],
+     "date": "2026-09-08"
+    },
+    {
+     "id": "m68",
+     "text": "Szia kézzel",
+     "slot": "daily_life",
+     "entities": [
+      "Szia"
+     ],
+     "date": "2026-09-08"
+    },
+    {
+     "id": "m69",
+     "text": "Szia, mi újság?",
+     "slot": "daily_life",
+     "entities": [
+      "Szia"
+     ],
+     "date": "2026-09-08"
+    },
+    {
+     "id": "m70",
+     "text": "Szia, mi újság?",
+     "slot": "daily_life",
+     "entities": [
+      "Szia"
+     ],
+     "date": "2026-09-08"
+    },
+    {
+     "id": "m71",
+     "text": "Szia, mi újság?",
+     "slot": "daily_life",
+     "entities": [
+      "Szia"
+     ],
+     "date": "2026-09-08"
+    },
+    {
+     "id": "m72",
+     "text": "Szia, mi újság?",
+     "slot": "daily_life",
+     "entities": [
+      "Szia"
+     ],
+     "date": "2026-09-08"
+    },
+    {
+     "id": "m73",
+     "text": "Szia, mi újság?",
+     "slot": "daily_life",
+     "entities": [
+      "Szia"
+     ],
+     "date": "2026-09-08"
+    },
+    {
+     "id": "m74",
+     "text": "Szia, mi újság?",
+     "slot": "daily_life",
+     "entities": [
+      "Szia"
+     ],
+     "date": "2026-09-08"
+    },
+    {
+     "id": "m75",
+     "text": "Szia, mi újság?",
+     "slot": "daily_life",
+     "entities": [
+      "Szia"
+     ],
+     "date": "2026-09-08"
+    },
+    {
+     "id": "m76",
+     "text": "Szia, mi újság?",
+     "slot": "daily_life",
+     "entities": [
+      "Szia"
+     ],
+     "date": "2026-09-08"
+    },
+    {
+     "id": "m77",
+     "text": "Szia, mi újság?",
+     "slot": "daily_life",
+     "entities": [
+      "Szia"
+     ],
+     "date": "2026-09-08"
+    },
+    {
+     "id": "m78",
+     "text": "Szia, mi újság?",
+     "slot": "daily_life",
+     "entities": [
+      "Szia"
+     ],
+     "date": "2026-09-08"
+    },
+    {
+     "id": "m79",
+     "text": "Szia, mi újság?",
+     "slot": "daily_life",
+     "entities": [
+      "Szia"
+     ],
+     "date": "2026-09-08"
+    },
+    {
+     "id": "m80",
+     "text": "Szia, mi újság?",
+     "slot": "daily_life",
+     "entities": [
+      "Szia"
+     ],
+     "date": "2026-09-08"
+    },
+    {
+     "id": "m81",
+     "text": "Szia, mi újság?",
+     "slot": "daily_life",
+     "entities": [
+      "Szia"
+     ],
+     "date": "2026-09-08"
+    },
+    {
+     "id": "m82",
+     "text": "Hello, mivan?",
+     "slot": "daily_life",
+     "entities": [],
+     "date": "2026-09-08"
+    },
+    {
+     "id": "m83",
+     "text": "Szia, mi újság?",
+     "slot": "daily_life",
+     "entities": [
+      "Szia"
+     ],
+     "date": "2026-09-08"
+    },
+    {
+     "id": "m84",
+     "text": "Szia, mi újság?",
+     "slot": "daily_life",
+     "entities": [
+      "Szia"
+     ],
+     "date": "2026-09-08"
+    },
+    {
+     "id": "m85",
+     "text": "Szia, mi újság?",
+     "slot": "daily_life",
+     "entities": [
+      "Szia"
+     ],
+     "date": "2026-09-08"
+    },
+    {
+     "id": "m86",
+     "text": "Szia, mi újság?",
+     "slot": "daily_life",
+     "entities": [
+      "Szia"
+     ],
+     "date": "2026-09-08"
+    },
+    {
+     "id": "m87",
+     "text": "Szia, mi újság?",
+     "slot": "daily_life",
+     "entities": [
+      "Szia"
+     ],
+     "date": "2026-09-08"
+    },
+    {
+     "id": "m88",
+     "text": "Szia, mi újság?",
+     "slot": "daily_life",
+     "entities": [
+      "Szia"
+     ],
+     "date": "2026-09-08"
+    },
+    {
+     "id": "m89",
+     "text": "Hello, mivan?",
+     "slot": "daily_life",
+     "entities": [],
+     "date": "2026-09-08"
+    },
+    {
+     "id": "m90",
+     "text": "Szia, mi újság?",
+     "slot": "daily_life",
+     "entities": [
+      "Szia"
+     ],
+     "date": "2026-09-08"
+    },
+    {
+     "id": "m91",
+     "text": "Szia, mi újság?",
+     "slot": "daily_life",
+     "entities": [
+      "Szia"
+     ],
+     "date": "2026-09-08"
+    },
+    {
+     "id": "m92",
+     "text": "Szia kézzel",
+     "slot": "daily_life",
+     "entities": [
+      "Szia"
+     ],
+     "date": "2026-09-08"
+    },
+    {
+     "id": "m93",
+     "text": "Szia, mi újság?",
+     "slot": "daily_life",
+     "entities": [
+      "Szia"
+     ],
+     "date": "2026-09-08"
+    },
+    {
+     "id": "m94",
+     "text": "Szia, mi újság?",
+     "slot": "daily_life",
+     "entities": [
+      "Szia"
+     ],
+     "date": "2026-09-10"
+    },
+    {
+     "id": "m95",
+     "text": "Szia, mi újság?",
+     "slot": "daily_life",
+     "entities": [
+      "Szia"
+     ],
+     "date": "2026-09-10"
+    },
+    {
+     "id": "m96",
+     "text": "Szia, mi újság?",
+     "slot": "daily_life",
+     "entities": [
+      "Szia"
+     ],
+     "date": "2026-09-10"
+    },
+    {
+     "id": "m97",
+     "text": "teszt",
+     "slot": "daily_life",
+     "entities": [],
+     "date": "2026-09-10"
+    },
+    {
+     "id": "m98",
+     "text": "Szia, mi újság?",
+     "slot": "daily_life",
+     "entities": [
+      "Szia"
+     ],
+     "date": "2026-09-10"
+    },
+    {
+     "id": "m99",
+     "text": "Szia, mi újság?",
+     "slot": "daily_life",
+     "entities": [
+      "Szia"
+     ],
+     "date": "2026-09-10"
+    },
+    {
+     "id": "m100",
+     "text": "Szia, mi újság?",
+     "slot": "daily_life",
+     "entities": [
+      "Szia"
+     ],
+     "date": "2026-09-10"
+    },
+    {
+     "id": "m101",
+     "text": "Hello, mivan?",
+     "slot": "daily_life",
+     "entities": [],
+     "date": "2026-09-10"
+    },
+    {
+     "id": "m102",
+     "text": "Szia, mi újság?",
+     "slot": "daily_life",
+     "entities": [
+      "Szia"
+     ],
+     "date": "2026-09-10"
+    },
+    {
+     "id": "m103",
+     "text": "Szia, mi újság?",
+     "slot": "daily_life",
+     "entities": [
+      "Szia"
+     ],
+     "date": "2026-09-10"
+    },
+    {
+     "id": "m104",
+     "text": "Szia, mi újság?",
+     "slot": "daily_life",
+     "entities": [
+      "Szia"
+     ],
+     "date": "2026-09-10"
+    },
+    {
+     "id": "m105",
+     "text": "Szia, mi újság?",
+     "slot": "daily_life",
+     "entities": [
+      "Szia"
+     ],
+     "date": "2026-09-10"
+    },
+    {
+     "id": "m106",
+     "text": "Szia, mi újság?",
+     "slot": "daily_life",
+     "entities": [
+      "Szia"
+     ],
+     "date": "2026-09-10"
+    },
+    {
+     "id": "m107",
+     "text": "Szia, mi újság?",
+     "slot": "daily_life",
+     "entities": [
+      "Szia"
+     ],
+     "date": "2026-09-10"
+    },
+    {
+     "id": "m108",
+     "text": "Szia, mi újság?",
+     "slot": "daily_life",
+     "entities": [
+      "Szia"
+     ],
+     "date": "2026-09-10"
+    },
+    {
+     "id": "m109",
+     "text": "Szia, mi újság?",
+     "slot": "daily_life",
+     "entities": [
+      "Szia"
+     ],
+     "date": "2026-09-10"
+    },
+    {
+     "id": "m110",
+     "text": "Szia, mi újság?",
+     "slot": "daily_life",
+     "entities": [
+      "Szia"
+     ],
+     "date": "2026-09-10"
+    },
+    {
+     "id": "m111",
+     "text": "Szia, mi újság?",
+     "slot": "daily_life",
+     "entities": [
+      "Szia"
+     ],
+     "date": "2026-09-10"
+    },
+    {
+     "id": "m112",
+     "text": "Szia, mi újság?",
+     "slot": "daily_life",
+     "entities": [
+      "Szia"
+     ],
+     "date": "2026-09-10"
+    },
+    {
+     "id": "m113",
+     "text": "Szia, mi újság?",
+     "slot": "daily_life",
+     "entities": [
+      "Szia"
+     ],
+     "date": "2026-09-10"
+    },
+    {
+     "id": "m114",
+     "text": "Szia, mi újság?",
+     "slot": "daily_life",
+     "entities": [
+      "Szia"
+     ],
+     "date": "2026-09-10"
+    },
+    {
+     "id": "m115",
+     "text": "Szia, mi újság?",
+     "slot": "daily_life",
+     "entities": [
+      "Szia"
+     ],
+     "date": "2026-09-10"
+    },
+    {
+     "id": "m116",
+     "text": "Szia, mi újság?",
+     "slot": "daily_life",
+     "entities": [
+      "Szia"
+     ],
+     "date": "2026-09-10"
+    },
+    {
+     "id": "m117",
+     "text": "teszt",
+     "slot": "daily_life",
+     "entities": [],
+     "date": "2026-09-10"
+    },
+    {
+     "id": "m118",
+     "text": "Szia, mi újság?",
+     "slot": "daily_life",
+     "entities": [
+      "Szia"
+     ],
+     "date": "2026-09-10"
+    },
+    {
+     "id": "m119",
+     "text": "Szia, mi újság?",
+     "slot": "daily_life",
+     "entities": [
+      "Szia"
+     ],
+     "date": "2026-09-10"
+    },
+    {
+     "id": "m120",
+     "text": "Szia, mi újság?",
+     "slot": "daily_life",
+     "entities": [
+      "Szia"
+     ],
+     "date": "2026-09-10"
+    },
+    {
+     "id": "m121",
+     "text": "Hello, mivan?",
+     "slot": "daily_life",
+     "entities": [],
+     "date": "2026-09-10"
+    },
+    {
+     "id": "m122",
+     "text": "Szia, mi újság?",
+     "slot": "daily_life",
+     "entities": [
+      "Szia"
+     ],
+     "date": "2026-09-10"
+    },
+    {
+     "id": "m123",
+     "text": "Szia, mi újság?",
+     "slot": "daily_life",
+     "entities": [
+      "Szia"
+     ],
+     "date": "2026-09-10"
+    },
+    {
+     "id": "m124",
+     "text": "Szia, mi újság?",
+     "slot": "daily_life",
+     "entities": [
+      "Szia"
+     ],
+     "date": "2026-09-10"
+    },
+    {
+     "id": "m125",
+     "text": "Szia, mi újság?",
+     "slot": "daily_life",
+     "entities": [
+      "Szia"
+     ],
+     "date": "2026-09-10"
+    },
+    {
+     "id": "m126",
+     "text": "Szia, mi újság?",
+     "slot": "daily_life",
+     "entities": [
+      "Szia"
+     ],
+     "date": "2026-09-10"
+    },
+    {
+     "id": "m127",
+     "text": "Szia, mi újság?",
+     "slot": "daily_life",
+     "entities": [
+      "Szia"
+     ],
+     "date": "2026-09-10"
+    },
+    {
+     "id": "m128",
+     "text": "teszt log",
+     "slot": "daily_life",
+     "entities": [],
+     "date": "2026-09-10"
+    },
+    {
+     "id": "m129",
+     "text": "Hello, mivan?",
+     "slot": "daily_life",
+     "entities": [],
+     "date": "2026-09-10"
+    },
+    {
+     "id": "m130",
+     "text": "Szia, mi újság?",
+     "slot": "daily_life",
+     "entities": [
+      "Szia"
+     ],
+     "date": "2026-09-10"
+    },
+    {
+     "id": "m131",
+     "text": "Szia, mi újság?",
+     "slot": "daily_life",
+     "entities": [
+      "Szia"
+     ],
+     "date": "2026-09-10"
+    },
+    {
+     "id": "m132",
+     "text": "Szia kézzel",
+     "slot": "daily_life",
+     "entities": [
+      "Szia"
+     ],
+     "date": "2026-09-10"
+    },
+    {
+     "id": "m133",
+     "text": "Szia, mi újság?",
+     "slot": "daily_life",
+     "entities": [
+      "Szia"
+     ],
+     "date": "2026-09-10"
+    },
+    {
+     "id": "m134",
+     "text": "Ez egy mikrofon teszt.",
+     "slot": "daily_life",
+     "entities": [],
+     "date": "2026-09-10"
+    },
+    {
+     "id": "m135",
+     "text": "Szia kézzel",
+     "slot": "daily_life",
+     "entities": [
+      "Szia"
+     ],
+     "date": "2026-09-10"
+    },
+    {
+     "id": "m136",
+     "text": "Szia, mi újság?",
+     "slot": "daily_life",
+     "entities": [
+      "Szia"
+     ],
+     "date": "2026-09-10"
+    },
+    {
+     "id": "m137",
+     "text": "Szia, mi újság?",
+     "slot": "daily_life",
+     "entities": [
+      "Szia"
+     ],
+     "date": "2026-09-10"
+    },
+    {
+     "id": "m138",
+     "text": "Szia kézzel",
+     "slot": "daily_life",
+     "entities": [
+      "Szia"
+     ],
+     "date": "2026-09-10"
+    },
+    {
+     "id": "m139",
+     "text": "Szia, mi újság?",
+     "slot": "daily_life",
+     "entities": [
+      "Szia"
+     ],
+     "date": "2026-09-10"
+    },
+    {
+     "id": "m140",
+     "text": "Szia, mi újság?",
+     "slot": "daily_life",
+     "entities": [
+      "Szia"
+     ],
+     "date": "2026-09-10"
+    },
+    {
+     "id": "m141",
+     "text": "Szia kézzel",
+     "slot": "daily_life",
+     "entities": [
+      "Szia"
+     ],
+     "date": "2026-09-10"
+    },
+    {
+     "id": "m142",
+     "text": "Szia, mi újság?",
+     "slot": "daily_life",
+     "entities": [
+      "Szia"
+     ],
+     "date": "2026-09-10"
+    },
+    {
+     "id": "m143",
+     "text": "Szia, mi újság?",
+     "slot": "daily_life",
+     "entities": [
+      "Szia"
+     ],
+     "date": "2026-09-10"
+    },
+    {
+     "id": "m144",
+     "text": "Szia, mi újság?",
+     "slot": "daily_life",
+     "entities": [
+      "Szia"
+     ],
+     "date": "2026-09-10"
+    },
+    {
+     "id": "m145",
+     "text": "Szia, mi újság?",
+     "slot": "daily_life",
+     "entities": [
+      "Szia"
+     ],
+     "date": "2026-09-10"
+    },
+    {
+     "id": "m146",
+     "text": "Hello, mivan?",
+     "slot": "daily_life",
+     "entities": [],
+     "date": "2026-09-10"
+    },
+    {
+     "id": "m147",
+     "text": "Szia, mi újság?",
+     "slot": "daily_life",
+     "entities": [
+      "Szia"
+     ],
+     "date": "2026-09-10"
+    },
+    {
+     "id": "m148",
+     "text": "Szia, mi újság?",
+     "slot": "daily_life",
+     "entities": [
+      "Szia"
+     ],
+     "date": "2026-09-10"
+    },
+    {
+     "id": "m149",
+     "text": "Szia, mi újság?",
+     "slot": "daily_life",
+     "entities": [
+      "Szia"
+     ],
+     "date": "2026-09-10"
+    },
+    {
+     "id": "m150",
+     "text": "Szia kézzel",
+     "slot": "daily_life",
+     "entities": [
+      "Szia"
+     ],
+     "date": "2026-09-10"
+    },
+    {
+     "id": "m151",
+     "text": "Szia, mi újság?",
+     "slot": "daily_life",
+     "entities": [
+      "Szia"
+     ],
+     "date": "2026-09-10"
+    },
+    {
+     "id": "m152",
+     "text": "Szia, mi újság?",
+     "slot": "daily_life",
+     "entities": [
+      "Szia"
+     ],
+     "date": "2026-09-10"
+    },
+    {
+     "id": "m153",
+     "text": "Szia, mi újság?",
+     "slot": "daily_life",
+     "entities": [
+      "Szia"
+     ],
+     "date": "2026-09-10"
+    },
+    {
+     "id": "m154",
+     "text": "Hello, mivan?",
+     "slot": "daily_life",
+     "entities": [],
+     "date": "2026-09-10"
+    },
+    {
+     "id": "m155",
+     "text": "Szia, mi újság?",
+     "slot": "daily_life",
+     "entities": [
+      "Szia"
+     ],
+     "date": "2026-09-10"
+    },
+    {
+     "id": "m156",
+     "text": "Szia, mi újság?",
+     "slot": "daily_life",
+     "entities": [
+      "Szia"
+     ],
+     "date": "2026-09-10"
+    },
+    {
+     "id": "m157",
+     "text": "Szia, mi újság?",
+     "slot": "daily_life",
+     "entities": [
+      "Szia"
+     ],
+     "date": "2026-09-10"
+    },
+    {
+     "id": "m158",
+     "text": "Szia, mi újság?",
+     "slot": "daily_life",
+     "entities": [
+      "Szia"
+     ],
+     "date": "2026-09-10"
+    },
+    {
+     "id": "m159",
+     "text": "Szia, mi újság?",
+     "slot": "daily_life",
+     "entities": [
+      "Szia"
+     ],
+     "date": "2026-09-10"
+    },
+    {
+     "id": "m160",
+     "text": "Szia, mi újság?",
+     "slot": "daily_life",
+     "entities": [
+      "Szia"
+     ],
+     "date": "2026-09-10"
+    },
+    {
+     "id": "m161",
+     "text": "Szia, mi újság?",
+     "slot": "daily_life",
+     "entities": [
+      "Szia"
+     ],
+     "date": "2026-09-10"
+    },
+    {
+     "id": "m162",
+     "text": "Szia, mi újság?",
+     "slot": "daily_life",
+     "entities": [
+      "Szia"
+     ],
+     "date": "2026-09-10"
+    },
+    {
+     "id": "m163",
+     "text": "Szia, mi újság?",
+     "slot": "daily_life",
+     "entities": [
+      "Szia"
+     ],
+     "date": "2026-09-10"
+    },
+    {
+     "id": "m164",
+     "text": "Szia, mi újság?",
+     "slot": "daily_life",
+     "entities": [
+      "Szia"
+     ],
+     "date": "2026-09-10"
+    },
+    {
+     "id": "m165",
+     "text": "Szia, mi újság?",
+     "slot": "daily_life",
+     "entities": [
+      "Szia"
+     ],
+     "date": "2026-09-10"
+    },
+    {
+     "id": "m166",
+     "text": "Szia, mi újság?",
+     "slot": "daily_life",
+     "entities": [
+      "Szia"
+     ],
+     "date": "2026-09-10"
+    },
+    {
+     "id": "m167",
+     "text": "Hello, mivan?",
+     "slot": "daily_life",
+     "entities": [],
+     "date": "2026-09-10"
+    },
+    {
+     "id": "m168",
+     "text": "Szia, mi újság?",
+     "slot": "daily_life",
+     "entities": [
+      "Szia"
+     ],
+     "date": "2026-09-10"
+    },
+    {
+     "id": "m169",
+     "text": "Szia, mi újság?",
+     "slot": "daily_life",
+     "entities": [
+      "Szia"
+     ],
+     "date": "2026-09-10"
+    },
+    {
+     "id": "m170",
+     "text": "Szia, mi újság?",
+     "slot": "daily_life",
+     "entities": [
+      "Szia"
+     ],
+     "date": "2026-09-10"
+    },
+    {
+     "id": "m171",
+     "text": "teszt log",
+     "slot": "daily_life",
+     "entities": [],
+     "date": "2026-09-10"
+    },
+    {
+     "id": "m172",
+     "text": "Szia, mi újság?",
+     "slot": "daily_life",
+     "entities": [
+      "Szia"
+     ],
+     "date": "2026-09-10"
+    },
+    {
+     "id": "m173",
+     "text": "Szia, mi újság?",
+     "slot": "daily_life",
+     "entities": [
+      "Szia"
+     ],
+     "date": "2026-09-10"
+    },
+    {
+     "id": "m174",
+     "text": "Szia, mi újság?",
+     "slot": "daily_life",
+     "entities": [
+      "Szia"
+     ],
+     "date": "2026-09-10"
+    },
+    {
+     "id": "m175",
+     "text": "teszt",
+     "slot": "daily_life",
+     "entities": [],
+     "date": "2026-09-10"
+    },
+    {
+     "id": "m176",
+     "text": "Hello, mivan?",
+     "slot": "daily_life",
+     "entities": [],
+     "date": "2026-09-10"
+    },
+    {
+     "id": "m177",
+     "text": "Hello, mivan?",
+     "slot": "daily_life",
+     "entities": [],
+     "date": "2026-09-10"
+    },
+    {
+     "id": "m178",
+     "text": "Szia, hogy vagy ma?",
+     "slot": "daily_life",
+     "entities": [
+      "Szia"
+     ],
+     "date": "2026-09-10"
+    },
+    {
+     "id": "m179",
+     "text": "Szia kézzel",
+     "slot": "daily_life",
+     "entities": [
+      "Szia"
+     ],
+     "date": "2026-09-10"
+    },
+    {
+     "id": "m180",
+     "text": "Szia, mi újság?",
+     "slot": "daily_life",
+     "entities": [
+      "Szia"
+     ],
+     "date": "2026-09-10"
+    },
+    {
+     "id": "m181",
+     "text": "Szia, mi újság?",
+     "slot": "daily_life",
+     "entities": [
+      "Szia"
+     ],
+     "date": "2026-09-10"
+    },
+    {
+     "id": "m182",
+     "text": "Szia, mi újság?",
+     "slot": "daily_life",
+     "entities": [
+      "Szia"
+     ],
+     "date": "2026-09-10"
+    },
+    {
+     "id": "m183",
+     "text": "Ez egy mikrofon teszt.",
+     "slot": "daily_life",
+     "entities": [],
+     "date": "2026-09-10"
+    },
+    {
+     "id": "m184",
+     "text": "Szia, mi újság?",
+     "slot": "daily_life",
+     "entities": [
+      "Szia"
+     ],
+     "date": "2026-09-10"
+    },
+    {
+     "id": "m185",
+     "text": "Szia, mi újság?",
+     "slot": "daily_life",
+     "entities": [
+      "Szia"
+     ],
+     "date": "2026-09-10"
+    },
+    {
+     "id": "m186",
+     "text": "Szia, mi újság?",
+     "slot": "daily_life",
+     "entities": [
+      "Szia"
+     ],
+     "date": "2026-09-10"
+    },
+    {
+     "id": "m187",
+     "text": "Szia, hogy vagy ma?",
+     "slot": "daily_life",
+     "entities": [
+      "Szia"
+     ],
+     "date": "2026-09-10"
+    },
+    {
+     "id": "m188",
+     "text": "Szia kézzel",
+     "slot": "daily_life",
+     "entities": [
+      "Szia"
+     ],
+     "date": "2026-09-10"
+    },
+    {
+     "id": "m189",
+     "text": "Szia, mi újság?",
+     "slot": "daily_life",
+     "entities": [
+      "Szia"
+     ],
+     "date": "2026-09-10"
+    },
+    {
+     "id": "m190",
+     "text": "Szia, mi újság?",
+     "slot": "daily_life",
+     "entities": [
+      "Szia"
+     ],
+     "date": "2026-09-10"
+    },
+    {
+     "id": "m191",
+     "text": "Szia, mi újság?",
+     "slot": "daily_life",
+     "entities": [
+      "Szia"
+     ],
+     "date": "2026-09-10"
+    },
+    {
+     "id": "m192",
+     "text": "Szia, mi újság?",
+     "slot": "daily_life",
+     "entities": [
+      "Szia"
+     ],
+     "date": "2026-09-13"
+    },
+    {
+     "id": "m193",
+     "text": "Szia, mi újság?",
+     "slot": "daily_life",
+     "entities": [
+      "Szia"
+     ],
+     "date": "2026-09-13"
+    },
+    {
+     "id": "m194",
+     "text": "Szia, mi újság?",
+     "slot": "daily_life",
+     "entities": [
+      "Szia"
+     ],
+     "date": "2026-09-13"
+    },
+    {
+     "id": "m195",
+     "text": "Szia, hogy vagy ma?",
+     "slot": "daily_life",
+     "entities": [
+      "Szia"
+     ],
+     "date": "2026-09-13"
+    },
+    {
+     "id": "m196",
+     "text": "Szia, mi újság?",
+     "slot": "daily_life",
+     "entities": [
+      "Szia"
+     ],
+     "date": "2026-09-13"
+    },
+    {
+     "id": "m197",
+     "text": "Szia, mi újság?",
+     "slot": "daily_life",
+     "entities": [
+      "Szia"
+     ],
+     "date": "2026-09-13"
+    },
+    {
+     "id": "m198",
+     "text": "Szia, mi újság?",
+     "slot": "daily_life",
+     "entities": [
+      "Szia"
+     ],
+     "date": "2026-09-13"
+    },
+    {
+     "id": "m199",
+     "text": "teszt log",
+     "slot": "daily_life",
+     "entities": [],
+     "date": "2026-09-13"
+    },
+    {
+     "id": "m200",
+     "text": "Szia, hogy vagy ma?",
+     "slot": "daily_life",
+     "entities": [
+      "Szia"
+     ],
+     "date": "2026-09-13"
+    },
+    {
+     "id": "m201",
+     "text": "Szia, mi újság?",
+     "slot": "daily_life",
+     "entities": [
+      "Szia"
+     ],
+     "date": "2026-09-13"
+    },
+    {
+     "id": "m202",
+     "text": "Szia, mi újság?",
+     "slot": "daily_life",
+     "entities": [
+      "Szia"
+     ],
+     "date": "2026-09-13"
+    },
+    {
+     "id": "m203",
+     "text": "Szia, mi újság?",
+     "slot": "daily_life",
+     "entities": [
+      "Szia"
+     ],
+     "date": "2026-09-13"
+    },
+    {
+     "id": "m204",
+     "text": "Szia, hogy vagy ma?",
+     "slot": "daily_life",
+     "entities": [
+      "Szia"
+     ],
+     "date": "2026-09-13"
+    },
+    {
+     "id": "m205",
+     "text": "Szia, mi újság?",
+     "slot": "daily_life",
+     "entities": [
+      "Szia"
+     ],
+     "date": "2026-09-13"
+    },
+    {
+     "id": "m206",
+     "text": "Szia, mi újság?",
+     "slot": "daily_life",
+     "entities": [
+      "Szia"
+     ],
+     "date": "2026-09-13"
+    },
+    {
+     "id": "m207",
+     "text": "Szia, mi újság?",
+     "slot": "daily_life",
+     "entities": [
+      "Szia"
+     ],
+     "date": "2026-09-13"
+    },
+    {
+     "id": "m208",
+     "text": "Szia, hogy vagy ma?",
+     "slot": "daily_life",
+     "entities": [
+      "Szia"
+     ],
+     "date": "2026-09-13"
+    },
+    {
+     "id": "m209",
+     "text": "Hello, mivan?",
+     "slot": "daily_life",
+     "entities": [],
+     "date": "2026-09-13"
+    },
+    {
+     "id": "m210",
+     "text": "Szia, mi újság?",
+     "slot": "daily_life",
+     "entities": [
+      "Szia"
+     ],
+     "date": "2026-09-13"
+    },
+    {
+     "id": "m211",
+     "text": "Szia, mi újság?",
+     "slot": "daily_life",
+     "entities": [
+      "Szia"
+     ],
+     "date": "2026-09-13"
+    },
+    {
+     "id": "m212",
+     "text": "Szia, mi újság?",
+     "slot": "daily_life",
+     "entities": [
+      "Szia"
+     ],
+     "date": "2026-09-13"
+    },
+    {
+     "id": "m213",
+     "text": "teszt log",
+     "slot": "daily_life",
+     "entities": [],
+     "date": "2026-09-13"
+    },
+    {
+     "id": "m214",
+     "text": "Szia, mi újság?",
+     "slot": "daily_life",
+     "entities": [
+      "Szia"
+     ],
+     "date": "2026-09-13"
+    },
+    {
+     "id": "m215",
+     "text": "Szia, mi újság?",
+     "slot": "daily_life",
+     "entities": [
+      "Szia"
+     ],
+     "date": "2026-09-13"
+    },
+    {
+     "id": "m216",
+     "text": "Szia, mi újság?",
+     "slot": "daily_life",
+     "entities": [
+      "Szia"
+     ],
+     "date": "2026-09-13"
+    },
+    {
+     "id": "m217",
+     "text": "Szia, hogy vagy ma?",
+     "slot": "daily_life",
+     "entities": [
+      "Szia"
+     ],
+     "date": "2026-09-13"
+    },
+    {
+     "id": "m218",
+     "text": "teszt",
+     "slot": "daily_life",
+     "entities": [],
+     "date": "2026-09-13"
+    },
+    {
+     "id": "m219",
+     "text": "Szia, mi újság?",
+     "slot": "daily_life",
+     "entities": [
+      "Szia"
+     ],
+     "date": "2026-09-13"
+    },
+    {
+     "id": "m220",
+     "text": "Szia, mi újság?",
+     "slot": "daily_life",
+     "entities": [
+      "Szia"
+     ],
+     "date": "2026-09-13"
+    },
+    {
+     "id": "m221",
+     "text": "Szia, mi újság?",
+     "slot": "daily_life",
+     "entities": [
+      "Szia"
+     ],
+     "date": "2026-09-13"
+    },
+    {
+     "id": "m222",
+     "text": "teszt",
+     "slot": "daily_life",
+     "entities": [],
+     "date": "2026-09-13"
+    },
+    {
+     "id": "m223",
+     "text": "Szia kézzel",
+     "slot": "daily_life",
+     "entities": [
+      "Szia"
+     ],
+     "date": "2026-09-13"
+    },
+    {
+     "id": "m224",
+     "text": "Szia, mi újság?",
+     "slot": "daily_life",
+     "entities": [
+      "Szia"
+     ],
+     "date": "2026-09-13"
+    },
+    {
+     "id": "m225",
+     "text": "Szia, mi újság?",
+     "slot": "daily_life",
+     "entities": [
+      "Szia"
+     ],
+     "date": "2026-09-13"
+    },
+    {
+     "id": "m226",
+     "text": "Szia, mi újság?",
+     "slot": "daily_life",
+     "entities": [
+      "Szia"
+     ],
+     "date": "2026-09-13"
+    },
+    {
+     "id": "m227",
+     "text": "Hello, mivan?",
+     "slot": "daily_life",
+     "entities": [],
+     "date": "2026-09-13"
+    },
+    {
+     "id": "m228",
+     "text": "Szia, mi újság?",
+     "slot": "daily_life",
+     "entities": [
+      "Szia"
+     ],
+     "date": "2026-09-13"
+    },
+    {
+     "id": "m229",
+     "text": "Szia, mi újság?",
+     "slot": "daily_life",
+     "entities": [
+      "Szia"
+     ],
+     "date": "2026-09-13"
+    },
+    {
+     "id": "m230",
+     "text": "Szia, mi újság?",
+     "slot": "daily_life",
+     "entities": [
+      "Szia"
+     ],
+     "date": "2026-09-13"
+    },
+    {
+     "id": "m231",
+     "text": "Hello, mivan?",
+     "slot": "daily_life",
+     "entities": [],
+     "date": "2026-09-13"
+    },
+    {
+     "id": "m232",
+     "text": "Szia, mi újság?",
+     "slot": "daily_life",
+     "entities": [
+      "Szia"
+     ],
+     "date": "2026-09-13"
+    },
+    {
+     "id": "m233",
+     "text": "Szia, mi újság?",
+     "slot": "daily_life",
+     "entities": [
+      "Szia"
+     ],
+     "date": "2026-09-13"
+    },
+    {
+     "id": "m234",
+     "text": "Szia, mi újság?",
+     "slot": "daily_life",
+     "entities": [
+      "Szia"
+     ],
+     "date": "2026-09-13"
+    },
+    {
+     "id": "m235",
+     "text": "Szia, mi újság?",
+     "slot": "daily_life",
+     "entities": [
+      "Szia"
+     ],
+     "date": "2026-09-13"
+    },
+    {
+     "id": "m236",
+     "text": "Szia, mi újság?",
+     "slot": "daily_life",
+     "entities": [
+      "Szia"
+     ],
+     "date": "2026-09-13"
+    },
+    {
+     "id": "m237",
+     "text": "Szia, mi újság?",
+     "slot": "daily_life",
+     "entities": [
+      "Szia"
+     ],
+     "date": "2026-09-13"
+    },
+    {
+     "id": "m238",
+     "text": "teszt log",
+     "slot": "daily_life",
+     "entities": [],
+     "date": "2026-09-13"
+    },
+    {
+     "id": "m239",
+     "text": "Hello, mivan?",
+     "slot": "daily_life",
+     "entities": [],
+     "date": "2026-09-13"
+    },
+    {
+     "id": "m240",
+     "text": "Szia, mi újság?",
+     "slot": "daily_life",
+     "entities": [
+      "Szia"
+     ],
+     "date": "2026-09-13"
+    },
+    {
+     "id": "m241",
+     "text": "Szia, mi újság?",
+     "slot": "daily_life",
+     "entities": [
+      "Szia"
+     ],
+     "date": "2026-09-13"
+    },
+    {
+     "id": "m242",
+     "text": "Szia, mi újság?",
+     "slot": "daily_life",
+     "entities": [
+      "Szia"
+     ],
+     "date": "2026-09-13"
+    },
+    {
+     "id": "m243",
+     "text": "Hello, mivan?",
+     "slot": "daily_life",
+     "entities": [],
+     "date": "2026-09-13"
+    },
+    {
+     "id": "m244",
+     "text": "Hello, mivan?",
+     "slot": "daily_life",
+     "entities": [],
+     "date": "2026-09-13"
+    },
+    {
+     "id": "m245",
+     "text": "Szia, mi újság?",
+     "slot": "daily_life",
+     "entities": [
+      "Szia"
+     ],
+     "date": "2026-09-13"
+    },
+    {
+     "id": "m246",
+     "text": "Szia, mi újság?",
+     "slot": "daily_life",
+     "entities": [
+      "Szia"
+     ],
+     "date": "2026-09-13"
+    },
+    {
+     "id": "m247",
+     "text": "Szia, mi újság?",
+     "slot": "daily_life",
+     "entities": [
+      "Szia"
+     ],
+     "date": "2026-09-13"
+    },
+    {
+     "id": "m248",
+     "text": "teszt log",
+     "slot": "daily_life",
+     "entities": [],
+     "date": "2026-09-13"
+    },
+    {
+     "id": "m249",
+     "text": "Szia, mi újság?",
+     "slot": "daily_life",
+     "entities": [
+      "Szia"
+     ],
+     "date": "2026-09-14"
+    },
+    {
+     "id": "m250",
+     "text": "Szia, mi újság?",
+     "slot": "daily_life",
+     "entities": [
+      "Szia"
+     ],
+     "date": "2026-09-14"
+    },
+    {
+     "id": "m251",
+     "text": "Szia, mi újság?",
+     "slot": "daily_life",
+     "entities": [
+      "Szia"
+     ],
+     "date": "2026-09-14"
+    },
+    {
+     "id": "m252",
+     "text": "teszt log",
+     "slot": "daily_life",
+     "entities": [],
+     "date": "2026-09-14"
+    },
+    {
+     "id": "m253",
+     "text": "Szia, mi újság?",
+     "slot": "daily_life",
+     "entities": [
+      "Szia"
+     ],
+     "date": "2026-09-14"
+    },
+    {
+     "id": "m254",
+     "text": "Szia, mi újság?",
+     "slot": "daily_life",
+     "entities": [
+      "Szia"
+     ],
+     "date": "2026-09-14"
+    },
+    {
+     "id": "m255",
+     "text": "Szia, mi újság?",
+     "slot": "daily_life",
+     "entities": [
+      "Szia"
+     ],
+     "date": "2026-09-14"
+    },
+    {
+     "id": "m256",
+     "text": "Ez egy mikrofon teszt.",
+     "slot": "daily_life",
+     "entities": [],
+     "date": "2026-09-14"
+    },
+    {
+     "id": "m257",
+     "text": "Szia, mi újság?",
+     "slot": "daily_life",
+     "entities": [
+      "Szia"
+     ],
+     "date": "2026-09-14"
+    },
+    {
+     "id": "m258",
+     "text": "Szia, mi újság?",
+     "slot": "daily_life",
+     "entities": [
+      "Szia"
+     ],
+     "date": "2026-09-14"
+    },
+    {
+     "id": "m259",
+     "text": "Szia, mi újság?",
+     "slot": "daily_life",
+     "entities": [
+      "Szia"
+     ],
+     "date": "2026-09-14"
+    },
+    {
+     "id": "m260",
+     "text": "Szia kézzel",
+     "slot": "daily_life",
+     "entities": [
+      "Szia"
+     ],
+     "date": "2026-09-14"
+    },
+    {
+     "id": "m261",
+     "text": "Szia, mi újság?",
+     "slot": "daily_life",
+     "entities": [
+      "Szia"
+     ],
+     "date": "2026-09-14"
+    },
+    {
+     "id": "m262",
+     "text": "Szia, mi újság?",
+     "slot": "daily_life",
+     "entities": [
+      "Szia"
+     ],
+     "date": "2026-09-14"
+    },
+    {
+     "id": "m263",
+     "text": "Szia, mi újság?",
+     "slot": "daily_life",
+     "entities": [
+      "Szia"
+     ],
+     "date": "2026-09-14"
+    },
+    {
+     "id": "m264",
+     "text": "Hello, mivan?",
+     "slot": "daily_life",
+     "entities": [],
+     "date": "2026-09-14"
+    },
+    {
+     "id": "m265",
+     "text": "Szia, mi újság?",
+     "slot": "daily_life",
+     "entities": [
+      "Szia"
+     ],
+     "date": "2026-09-14"
+    },
+    {
+     "id": "m266",
+     "text": "Szia, mi újság?",
+     "slot": "daily_life",
+     "entities": [
+      "Szia"
+     ],
+     "date": "2026-09-14"
+    },
+    {
+     "id": "m267",
+     "text": "Szia, mi újság?",
+     "slot": "daily_life",
+     "entities": [
+      "Szia"
+     ],
+     "date": "2026-09-14"
+    },
+    {
+     "id": "m268",
+     "text": "Szia, mi újság?",
+     "slot": "daily_life",
+     "entities": [
+      "Szia"
+     ],
+     "date": "2026-09-14"
+    },
+    {
+     "id": "m269",
+     "text": "Szia, mi újság?",
+     "slot": "daily_life",
+     "entities": [
+      "Szia"
+     ],
+     "date": "2026-09-14"
+    },
+    {
+     "id": "m270",
+     "text": "Szia, mi újság?",
+     "slot": "daily_life",
+     "entities": [
+      "Szia"
+     ],
+     "date": "2026-09-14"
+    },
+    {
+     "id": "m271",
+     "text": "teszt",
+     "slot": "daily_life",
+     "entities": [],
+     "date": "2026-09-14"
+    },
+    {
+     "id": "m272",
+     "text": "Szia, mi újság?",
+     "slot": "daily_life",
+     "entities": [
+      "Szia"
+     ],
+     "date": "2026-09-14"
+    },
+    {
+     "id": "m273",
+     "text": "Szia, mi újság?",
+     "slot": "daily_life",
+     "entities": [
+      "Szia"
+     ],
+     "date": "2026-09-14"
+    },
+    {
+     "id": "m274",
+     "text": "Szia, mi újság?",
+     "slot": "daily_life",
+     "entities": [
+      "Szia"
+     ],
+     "date": "2026-09-14"
+    },
+    {
+     "id": "m275",
+     "text": "Szia, mi újság?",
+     "slot": "daily_life",
+     "entities": [
+      "Szia"
+     ],
+     "date": "2026-09-14"
+    },
+    {
+     "id": "m276",
+     "text": "Szia, mi újság?",
+     "slot": "daily_life",
+     "entities": [
+      "Szia"
+     ],
+     "date": "2026-09-14"
+    },
+    {
+     "id": "m277",
+     "text": "Szia, mi újság?",
+     "slot": "daily_life",
+     "entities": [
+      "Szia"
+     ],
+     "date": "2026-09-14"
+    },
+    {
+     "id": "m278",
+     "text": "Ez egy mikrofon teszt.",
+     "slot": "daily_life",
+     "entities": [],
+     "date": "2026-09-14"
+    },
+    {
+     "id": "m279",
+     "text": "Szia, hogy vagy ma?",
+     "slot": "daily_life",
+     "entities": [
+      "Szia"
+     ],
+     "date": "2026-09-14"
+    },
+    {
+     "id": "m280",
+     "text": "Szia, mi újság?",
+     "slot": "daily_life",
+     "entities": [
+      "Szia"
+     ],
+     "date": "2026-09-14"
+    },
+    {
+     "id": "m281",
+     "text": "Szia, mi újság?",
+     "slot": "daily_life",
+     "entities": [
+      "Szia"
+     ],
+     "date": "2026-09-14"
+    },
+    {
+     "id": "m282",
+     "text": "Szia, mi újság?",
+     "slot": "daily_life",
+     "entities": [
+      "Szia"
+     ],
+     "date": "2026-09-14"
+    }
+   ],
+   "right": [
+    {
+     "text": "The user mentioned: Hello, mivan?",
+     "slot": "preference",
+     "cluster": "preference",
+     "notes": [
+      {
+       "text": "Hello, mivan?",
+       "emotion": "",
+       "cause": ""
+      }
+     ]
+    },
+    {
+     "text": "The user mentioned: Hello, mivan?",
+     "slot": "preference",
+     "cluster": "preference",
+     "notes": [
+      {
+       "text": "Hello, mivan?",
+       "emotion": "",
+       "cause": ""
+      }
+     ]
+    },
+    {
+     "text": "The user mentioned: Szia, mi újság?",
+     "slot": "preference",
+     "cluster": "preference",
+     "notes": [
+      {
+       "text": "Szia, mi újság?",
+       "emotion": "",
+       "cause": ""
+      }
+     ]
+    },
+    {
+     "text": "The user mentioned: Szia, mi újság?",
+     "slot": "preference",
+     "cluster": "preference",
+     "notes": [
+      {
+       "text": "Szia, mi újság?",
+       "emotion": "",
+       "cause": ""
+      }
+     ]
+    },
+    {
+     "text": "The user mentioned: Szia, mi újság?",
+     "slot": "preference",
+     "cluster": "preference",
+     "notes": [
+      {
+       "text": "Szia, mi újság?",
+       "emotion": "",
+       "cause": ""
+      }
+     ]
+    },
+    {
+     "text": "The user mentioned: Szia, mi újság?",
+     "slot": "preference",
+     "cluster": "preference",
+     "notes": [
+      {
+       "text": "Szia, mi újság?",
+       "emotion": "",
+       "cause": ""
+      }
+     ]
+    },
+    {
+     "text": "The user mentioned: Szia, hogy vagy ma?",
+     "slot": "preference",
+     "cluster": "preference",
+     "notes": [
+      {
+       "text": "Szia, hogy vagy ma?",
+       "emotion": "",
+       "cause": ""
+      }
+     ]
+    },
+    {
+     "text": "The user mentioned: Szia, mi újság?",
+     "slot": "preference",
+     "cluster": "preference",
+     "notes": [
+      {
+       "text": "Szia, mi újság?",
+       "emotion": "",
+       "cause": ""
+      }
+     ]
+    },
+    {
+     "text": "The user mentioned: teszt",
+     "slot": "preference",
+     "cluster": "preference",
+     "notes": [
+      {
+       "text": "teszt",
+       "emotion": "",
+       "cause": ""
+      }
+     ]
+    },
+    {
+     "text": "The user mentioned: Szia, mi újság?",
+     "slot": "preference",
+     "cluster": "preference",
+     "notes": [
+      {
+       "text": "Szia, mi újság?",
+       "emotion": "",
+       "cause": ""
+      }
+     ]
+    },
+    {
+     "text": "The user mentioned: Hello, mivan?",
+     "slot": "preference",
+     "cluster": "preference",
+     "notes": [
+      {
+       "text": "Hello, mivan?",
+       "emotion": "",
+       "cause": ""
+      }
+     ]
+    },
+    {
+     "text": "The user mentioned: Szia, mi újság?",
+     "slot": "preference",
+     "cluster": "preference",
+     "notes": [
+      {
+       "text": "Szia, mi újság?",
+       "emotion": "",
+       "cause": ""
+      }
+     ]
+    },
+    {
+     "text": "The user mentioned: Szia, mi újság?",
+     "slot": "preference",
+     "cluster": "preference",
+     "notes": [
+      {
+       "text": "Szia, mi újság?",
+       "emotion": "",
+       "cause": ""
+      }
+     ]
+    },
+    {
+     "text": "The user mentioned: Szia kézzel",
+     "slot": "preference",
+     "cluster": "preference",
+     "notes": [
+      {
+       "text": "Szia kézzel",
+       "emotion": "",
+       "cause": ""
+      }
+     ]
+    },
+    {
+     "text": "The user mentioned: teszt log",
+     "slot": "preference",
+     "cluster": "preference",
+     "notes": [
+      {
+       "text": "teszt log",
+       "emotion": "",
+       "cause": ""
+      }
+     ]
+    },
+    {
+     "text": "The user mentioned: Szia, mi újság?",
+     "slot": "preference",
+     "cluster": "preference",
+     "notes": [
+      {
+       "text": "Szia, mi újság?",
+       "emotion": "",
+       "cause": ""
+      }
+     ]
+    },
+    {
+     "text": "The user mentioned: Szia, mi újság?",
+     "slot": "preference",
+     "cluster": "preference",
+     "notes": [
+      {
+       "text": "Szia, mi újság?",
+       "emotion": "",
+       "cause": ""
+      }
+     ]
+    },
+    {
+     "text": "The user mentioned: Szia, mi újság?",
+     "slot": "preference",
+     "cluster": "preference",
+     "notes": [
+      {
+       "text": "Szia, mi újság?",
+       "emotion": "",
+       "cause": ""
+      }
+     ]
+    },
+    {
+     "text": "The user mentioned: Szia, mi újság?",
+     "slot": "preference",
+     "cluster": "preference",
+     "notes": [
+      {
+       "text": "Szia, mi újság?",
+       "emotion": "",
+       "cause": ""
+      }
+     ]
+    },
+    {
+     "text": "The user mentioned: Szia, mi újság?",
+     "slot": "preference",
+     "cluster": "preference",
+     "notes": [
+      {
+       "text": "Szia, mi újság?",
+       "emotion": "",
+       "cause": ""
+      }
+     ]
+    },
+    {
+     "text": "The user mentioned: Hello, mivan?",
+     "slot": "preference",
+     "cluster": "preference",
+     "notes": [
+      {
+       "text": "Hello, mivan?",
+       "emotion": "",
+       "cause": ""
+      }
+     ]
+    },
+    {
+     "text": "The user mentioned: Szia, mi újság?",
+     "slot": "preference",
+     "cluster": "preference",
+     "notes": [
+      {
+       "text": "Szia, mi újság?",
+       "emotion": "",
+       "cause": ""
+      }
+     ]
+    },
+    {
+     "text": "The user mentioned: Szia, mi újság?",
+     "slot": "preference",
+     "cluster": "preference",
+     "notes": [
+      {
+       "text": "Szia, mi újság?",
+       "emotion": "",
+       "cause": ""
+      }
+     ]
+    },
+    {
+     "text": "The user mentioned: Szia, mi újság?",
+     "slot": "preference",
+     "cluster": "preference",
+     "notes": [
+      {
+       "text": "Szia, mi újság?",
+       "emotion": "",
+       "cause": ""
+      }
+     ]
+    },
+    {
+     "text": "The user mentioned: Ez egy mikrofon teszt.",
+     "slot": "preference",
+     "cluster": "preference",
+     "notes": [
+      {
+       "text": "Ez egy mikrofon teszt.",
+       "emotion": "",
+       "cause": ""
+      }
+     ]
+    },
+    {
+     "text": "The user mentioned: teszt",
+     "slot": "preference",
+     "cluster": "preference",
+     "notes": [
+      {
+       "text": "teszt",
+       "emotion": "",
+       "cause": ""
+      }
+     ]
+    },
+    {
+     "text": "The user mentioned: Szia, mi újság?",
+     "slot": "preference",
+     "cluster": "preference",
+     "notes": [
+      {
+       "text": "Szia, mi újság?",
+       "emotion": "",
+       "cause": ""
+      }
+     ]
+    },
+    {
+     "text": "The user mentioned: Szia, mi újság?",
+     "slot": "preference",
+     "cluster": "preference",
+     "notes": [
+      {
+       "text": "Szia, mi újság?",
+       "emotion": "",
+       "cause": ""
+      }
+     ]
+    },
+    {
+     "text": "The user mentioned: Szia, mi újság?",
+     "slot": "preference",
+     "cluster": "preference",
+     "notes": [
+      {
+       "text": "Szia, mi újság?",
+       "emotion": "",
+       "cause": ""
+      }
+     ]
+    },
+    {
+     "text": "The user mentioned: Szia, mi újság?",
+     "slot": "preference",
+     "cluster": "preference",
+     "notes": [
+      {
+       "text": "Szia, mi újság?",
+       "emotion": "",
+       "cause": ""
+      }
+     ]
+    },
+    {
+     "text": "The user mentioned: Szia, mi újság?",
+     "slot": "preference",
+     "cluster": "preference",
+     "notes": [
+      {
+       "text": "Szia, mi újság?",
+       "emotion": "",
+       "cause": ""
+      }
+     ]
+    },
+    {
+     "text": "The user mentioned: Szia, mi újság?",
+     "slot": "preference",
+     "cluster": "preference",
+     "notes": [
+      {
+       "text": "Szia, mi újság?",
+       "emotion": "",
+       "cause": ""
+      }
+     ]
+    },
+    {
+     "text": "The user mentioned: Hello, mivan?",
+     "slot": "preference",
+     "cluster": "preference",
+     "notes": [
+      {
+       "text": "Hello, mivan?",
+       "emotion": "",
+       "cause": ""
+      }
+     ]
+    },
+    {
+     "text": "The user mentioned: Szia, mi újság?",
+     "slot": "preference",
+     "cluster": "preference",
+     "notes": [
+      {
+       "text": "Szia, mi újság?",
+       "emotion": "",
+       "cause": ""
+      }
+     ]
+    },
+    {
+     "text": "The user mentioned: Szia, mi újság?",
+     "slot": "preference",
+     "cluster": "preference",
+     "notes": [
+      {
+       "text": "Szia, mi újság?",
+       "emotion": "",
+       "cause": ""
+      }
+     ]
+    },
+    {
+     "text": "The user mentioned: Szia, mi újság?",
+     "slot": "preference",
+     "cluster": "preference",
+     "notes": [
+      {
+       "text": "Szia, mi újság?",
+       "emotion": "",
+       "cause": ""
+      }
+     ]
+    },
+    {
+     "text": "The user mentioned: Szia, mi újság?",
+     "slot": "preference",
+     "cluster": "preference",
+     "notes": [
+      {
+       "text": "Szia, mi újság?",
+       "emotion": "",
+       "cause": ""
+      }
+     ]
+    },
+    {
+     "text": "The user mentioned: Szia, mi újság?",
+     "slot": "preference",
+     "cluster": "preference",
+     "notes": [
+      {
+       "text": "Szia, mi újság?",
+       "emotion": "",
+       "cause": ""
+      }
+     ]
+    },
+    {
+     "text": "The user mentioned: Szia, mi újság?",
+     "slot": "preference",
+     "cluster": "preference",
+     "notes": [
+      {
+       "text": "Szia, mi újság?",
+       "emotion": "",
+       "cause": ""
+      }
+     ]
+    },
+    {
+     "text": "The user mentioned: Szia, mi újság?",
+     "slot": "preference",
+     "cluster": "preference",
+     "notes": [
+      {
+       "text": "Szia, mi újság?",
+       "emotion": "",
+       "cause": ""
+      }
+     ]
+    },
+    {
+     "text": "The user mentioned: Szia, mi újság?",
+     "slot": "preference",
+     "cluster": "preference",
+     "notes": [
+      {
+       "text": "Szia, mi újság?",
+       "emotion": "",
+       "cause": ""
+      }
+     ]
+    },
+    {
+     "text": "The user mentioned: Szia, mi újság?",
+     "slot": "preference",
+     "cluster": "preference",
+     "notes": [
+      {
+       "text": "Szia, mi újság?",
+       "emotion": "",
+       "cause": ""
+      }
+     ]
+    },
+    {
+     "text": "The user mentioned: Szia, mi újság?",
+     "slot": "preference",
+     "cluster": "preference",
+     "notes": [
+      {
+       "text": "Szia, mi újság?",
+       "emotion": "",
+       "cause": ""
+      }
+     ]
+    },
+    {
+     "text": "The user mentioned: Szia, mi újság?",
+     "slot": "preference",
+     "cluster": "preference",
+     "notes": [
+      {
+       "text": "Szia, mi újság?",
+       "emotion": "",
+       "cause": ""
+      }
+     ]
+    },
+    {
+     "text": "The user mentioned: Hello, mivan?",
+     "slot": "preference",
+     "cluster": "preference",
+     "notes": [
+      {
+       "text": "Hello, mivan?",
+       "emotion": "",
+       "cause": ""
+      }
+     ]
+    },
+    {
+     "text": "The user mentioned: Szia, mi újság?",
+     "slot": "preference",
+     "cluster": "preference",
+     "notes": [
+      {
+       "text": "Szia, mi újság?",
+       "emotion": "",
+       "cause": ""
+      }
+     ]
+    },
+    {
+     "text": "The user mentioned: Szia, mi újság?",
+     "slot": "preference",
+     "cluster": "preference",
+     "notes": [
+      {
+       "text": "Szia, mi újság?",
+       "emotion": "",
+       "cause": ""
+      }
+     ]
+    },
+    {
+     "text": "The user mentioned: Szia, mi újság?",
+     "slot": "preference",
+     "cluster": "preference",
+     "notes": [
+      {
+       "text": "Szia, mi újság?",
+       "emotion": "",
+       "cause": ""
+      }
+     ]
+    },
+    {
+     "text": "The user mentioned: teszt",
+     "slot": "preference",
+     "cluster": "preference",
+     "notes": [
+      {
+       "text": "teszt",
+       "emotion": "",
+       "cause": ""
+      }
+     ]
+    },
+    {
+     "text": "The user mentioned: Szia, mi újság?",
+     "slot": "preference",
+     "cluster": "preference",
+     "notes": [
+      {
+       "text": "Szia, mi újság?",
+       "emotion": "",
+       "cause": ""
+      }
+     ]
+    },
+    {
+     "text": "The user mentioned: Hello, mivan?",
+     "slot": "preference",
+     "cluster": "preference",
+     "notes": [
+      {
+       "text": "Hello, mivan?",
+       "emotion": "",
+       "cause": ""
+      }
+     ]
+    },
+    {
+     "text": "The user mentioned: Szia, mi újság?",
+     "slot": "preference",
+     "cluster": "preference",
+     "notes": [
+      {
+       "text": "Szia, mi újság?",
+       "emotion": "",
+       "cause": ""
+      }
+     ]
+    },
+    {
+     "text": "The user mentioned: Szia, mi újság?",
+     "slot": "preference",
+     "cluster": "preference",
+     "notes": [
+      {
+       "text": "Szia, mi újság?",
+       "emotion": "",
+       "cause": ""
+      }
+     ]
+    },
+    {
+     "text": "The user mentioned: Szia, mi újság?",
+     "slot": "preference",
+     "cluster": "preference",
+     "notes": [
+      {
+       "text": "Szia, mi újság?",
+       "emotion": "",
+       "cause": ""
+      }
+     ]
+    },
+    {
+     "text": "The user mentioned: Szia, mi újság?",
+     "slot": "preference",
+     "cluster": "preference",
+     "notes": [
+      {
+       "text": "Szia, mi újság?",
+       "emotion": "",
+       "cause": ""
+      }
+     ]
+    },
+    {
+     "text": "The user mentioned: Szia, mi újság?",
+     "slot": "preference",
+     "cluster": "preference",
+     "notes": [
+      {
+       "text": "Szia, mi újság?",
+       "emotion": "",
+       "cause": ""
+      }
+     ]
+    },
+    {
+     "text": "The user mentioned: Szia, mi újság?",
+     "slot": "preference",
+     "cluster": "preference",
+     "notes": [
+      {
+       "text": "Szia, mi újság?",
+       "emotion": "",
+       "cause": ""
+      }
+     ]
+    },
+    {
+     "text": "The user mentioned: Szia, mi újság?",
+     "slot": "preference",
+     "cluster": "preference",
+     "notes": [
+      {
+       "text": "Szia, mi újság?",
+       "emotion": "",
+       "cause": ""
+      }
+     ]
+    },
+    {
+     "text": "The user mentioned: teszt",
+     "slot": "preference",
+     "cluster": "preference",
+     "notes": [
+      {
+       "text": "teszt",
+       "emotion": "",
+       "cause": ""
+      }
+     ]
+    },
+    {
+     "text": "The user mentioned: Szia, mi újság?",
+     "slot": "preference",
+     "cluster": "preference",
+     "notes": [
+      {
+       "text": "Szia, mi újság?",
+       "emotion": "",
+       "cause": ""
+      }
+     ]
+    },
+    {
+     "text": "The user mentioned: Hello, mivan?",
+     "slot": "preference",
+     "cluster": "preference",
+     "notes": [
+      {
+       "text": "Hello, mivan?",
+       "emotion": "",
+       "cause": ""
+      }
+     ]
+    },
+    {
+     "text": "The user mentioned: Szia, mi újság?",
+     "slot": "preference",
+     "cluster": "preference",
+     "notes": [
+      {
+       "text": "Szia, mi újság?",
+       "emotion": "",
+       "cause": ""
+      }
+     ]
+    },
+    {
+     "text": "The user mentioned: Szia, mi újság?",
+     "slot": "preference",
+     "cluster": "preference",
+     "notes": [
+      {
+       "text": "Szia, mi újság?",
+       "emotion": "",
+       "cause": ""
+      }
+     ]
+    },
+    {
+     "text": "The user mentioned: Szia, mi újság?",
+     "slot": "preference",
+     "cluster": "preference",
+     "notes": [
+      {
+       "text": "Szia, mi újság?",
+       "emotion": "",
+       "cause": ""
+      }
+     ]
+    },
+    {
+     "text": "The user mentioned: Hello, mivan?",
+     "slot": "preference",
+     "cluster": "preference",
+     "notes": [
+      {
+       "text": "Hello, mivan?",
+       "emotion": "",
+       "cause": ""
+      }
+     ]
+    },
+    {
+     "text": "The user mentioned: Szia, mi újság?",
+     "slot": "preference",
+     "cluster": "preference",
+     "notes": [
+      {
+       "text": "Szia, mi újság?",
+       "emotion": "",
+       "cause": ""
+      }
+     ]
+    },
+    {
+     "text": "The user mentioned: Szia, mi újság?",
+     "slot": "preference",
+     "cluster": "preference",
+     "notes": [
+      {
+       "text": "Szia, mi újság?",
+       "emotion": "",
+       "cause": ""
+      }
+     ]
+    },
+    {
+     "text": "The user mentioned: Szia kézzel",
+     "slot": "preference",
+     "cluster": "preference",
+     "notes": [
+      {
+       "text": "Szia kézzel",
+       "emotion": "",
+       "cause": ""
+      }
+     ]
+    },
+    {
+     "text": "The user mentioned: Szia, mi újság?",
+     "slot": "preference",
+     "cluster": "preference",
+     "notes": [
+      {
+       "text": "Szia, mi újság?",
+       "emotion": "",
+       "cause": ""
+      }
+     ]
+    },
+    {
+     "text": "The user mentioned: Szia, mi újság?",
+     "slot": "preference",
+     "cluster": "preference",
+     "notes": [
+      {
+       "text": "Szia, mi újság?",
+       "emotion": "",
+       "cause": ""
+      }
+     ]
+    },
+    {
+     "text": "The user mentioned: Szia kézzel",
+     "slot": "preference",
+     "cluster": "preference",
+     "notes": [
+      {
+       "text": "Szia kézzel",
+       "emotion": "",
+       "cause": ""
+      }
+     ]
+    },
+    {
+     "text": "The user mentioned: Szia, mi újság?",
+     "slot": "preference",
+     "cluster": "preference",
+     "notes": [
+      {
+       "text": "Szia, mi újság?",
+       "emotion": "",
+       "cause": ""
+      }
+     ]
+    },
+    {
+     "text": "The user mentioned: Szia, mi újság?",
+     "slot": "preference",
+     "cluster": "preference",
+     "notes": [
+      {
+       "text": "Szia, mi újság?",
+       "emotion": "",
+       "cause": ""
+      }
+     ]
+    },
+    {
+     "text": "The user mentioned: Szia, mi újság?",
+     "slot": "preference",
+     "cluster": "preference",
+     "notes": [
+      {
+       "text": "Szia, mi újság?",
+       "emotion": "",
+       "cause": ""
+      }
+     ]
+    },
+    {
+     "text": "The user mentioned: Szia, mi újság?",
+     "slot": "preference",
+     "cluster": "preference",
+     "notes": [
+      {
+       "text": "Szia, mi újság?",
+       "emotion": "",
+       "cause": ""
+      }
+     ]
+    },
+    {
+     "text": "The user mentioned: Szia, mi újság?",
+     "slot": "preference",
+     "cluster": "preference",
+     "notes": [
+      {
+       "text": "Szia, mi újság?",
+       "emotion": "",
+       "cause": ""
+      }
+     ]
+    },
+    {
+     "text": "The user mentioned: Szia, mi újság?",
+     "slot": "preference",
+     "cluster": "preference",
+     "notes": [
+      {
+       "text": "Szia, mi újság?",
+       "emotion": "",
+       "cause": ""
+      }
+     ]
+    },
+    {
+     "text": "The user mentioned: Szia, mi újság?",
+     "slot": "preference",
+     "cluster": "preference",
+     "notes": [
+      {
+       "text": "Szia, mi újság?",
+       "emotion": "",
+       "cause": ""
+      }
+     ]
+    },
+    {
+     "text": "The user mentioned: Szia, mi újság?",
+     "slot": "preference",
+     "cluster": "preference",
+     "notes": [
+      {
+       "text": "Szia, mi újság?",
+       "emotion": "",
+       "cause": ""
+      }
+     ]
+    },
+    {
+     "text": "The user mentioned: Szia, mi újság?",
+     "slot": "preference",
+     "cluster": "preference",
+     "notes": [
+      {
+       "text": "Szia, mi újság?",
+       "emotion": "",
+       "cause": ""
+      }
+     ]
+    },
+    {
+     "text": "The user mentioned: Szia, mi újság?",
+     "slot": "preference",
+     "cluster": "preference",
+     "notes": [
+      {
+       "text": "Szia, mi újság?",
+       "emotion": "",
+       "cause": ""
+      }
+     ]
+    },
+    {
+     "text": "The user mentioned: Szia, mi újság?",
+     "slot": "preference",
+     "cluster": "preference",
+     "notes": [
+      {
+       "text": "Szia, mi újság?",
+       "emotion": "",
+       "cause": ""
+      }
+     ]
+    },
+    {
+     "text": "The user mentioned: Szia, mi újság?",
+     "slot": "preference",
+     "cluster": "preference",
+     "notes": [
+      {
+       "text": "Szia, mi újság?",
+       "emotion": "",
+       "cause": ""
+      }
+     ]
+    },
+    {
+     "text": "The user mentioned: Hello, mivan?",
+     "slot": "preference",
+     "cluster": "preference",
+     "notes": [
+      {
+       "text": "Hello, mivan?",
+       "emotion": "",
+       "cause": ""
+      }
+     ]
+    },
+    {
+     "text": "The user mentioned: Szia, mi újság?",
+     "slot": "preference",
+     "cluster": "preference",
+     "notes": [
+      {
+       "text": "Szia, mi újság?",
+       "emotion": "",
+       "cause": ""
+      }
+     ]
+    },
+    {
+     "text": "The user mentioned: teszt log",
+     "slot": "preference",
+     "cluster": "preference",
+     "notes": [
+      {
+       "text": "teszt log",
+       "emotion": "",
+       "cause": ""
+      }
+     ]
+    },
+    {
+     "text": "The user mentioned: Szia, mi újság?",
+     "slot": "preference",
+     "cluster": "preference",
+     "notes": [
+      {
+       "text": "Szia, mi újság?",
+       "emotion": "",
+       "cause": ""
+      }
+     ]
+    },
+    {
+     "text": "The user mentioned: teszt",
+     "slot": "preference",
+     "cluster": "preference",
+     "notes": [
+      {
+       "text": "teszt",
+       "emotion": "",
+       "cause": ""
+      }
+     ]
+    },
+    {
+     "text": "The user mentioned: Hello, mivan?",
+     "slot": "preference",
+     "cluster": "preference",
+     "notes": [
+      {
+       "text": "Hello, mivan?",
+       "emotion": "",
+       "cause": ""
+      }
+     ]
+    },
+    {
+     "text": "The user mentioned: Szia kézzel",
+     "slot": "preference",
+     "cluster": "preference",
+     "notes": [
+      {
+       "text": "Szia kézzel",
+       "emotion": "",
+       "cause": ""
+      }
+     ]
+    },
+    {
+     "text": "The user mentioned: Szia, mi újság?",
+     "slot": "preference",
+     "cluster": "preference",
+     "notes": [
+      {
+       "text": "Szia, mi újság?",
+       "emotion": "",
+       "cause": ""
+      }
+     ]
+    },
+    {
+     "text": "The user mentioned: Ez egy mikrofon teszt.",
+     "slot": "preference",
+     "cluster": "preference",
+     "notes": [
+      {
+       "text": "Ez egy mikrofon teszt.",
+       "emotion": "",
+       "cause": ""
+      }
+     ]
+    },
+    {
+     "text": "The user mentioned: Szia, mi újság?",
+     "slot": "preference",
+     "cluster": "preference",
+     "notes": [
+      {
+       "text": "Szia, mi újság?",
+       "emotion": "",
+       "cause": ""
+      }
+     ]
+    },
+    {
+     "text": "The user mentioned: Szia, hogy vagy ma?",
+     "slot": "preference",
+     "cluster": "preference",
+     "notes": [
+      {
+       "text": "Szia, hogy vagy ma?",
+       "emotion": "",
+       "cause": ""
+      }
+     ]
+    },
+    {
+     "text": "The user mentioned: Szia, mi újság?",
+     "slot": "preference",
+     "cluster": "preference",
+     "notes": [
+      {
+       "text": "Szia, mi újság?",
+       "emotion": "",
+       "cause": ""
+      }
+     ]
+    },
+    {
+     "text": "The user mentioned: Szia, mi újság?",
+     "slot": "preference",
+     "cluster": "preference",
+     "notes": [
+      {
+       "text": "Szia, mi újság?",
+       "emotion": "",
+       "cause": ""
+      }
+     ]
+    },
+    {
+     "text": "The user mentioned: Szia, mi újság?",
+     "slot": "preference",
+     "cluster": "preference",
+     "notes": [
+      {
+       "text": "Szia, mi újság?",
+       "emotion": "",
+       "cause": ""
+      }
+     ]
+    },
+    {
+     "text": "The user mentioned: Szia, hogy vagy ma?",
+     "slot": "preference",
+     "cluster": "preference",
+     "notes": [
+      {
+       "text": "Szia, hogy vagy ma?",
+       "emotion": "",
+       "cause": ""
+      }
+     ]
+    },
+    {
+     "text": "The user mentioned: Szia, mi újság?",
+     "slot": "preference",
+     "cluster": "preference",
+     "notes": [
+      {
+       "text": "Szia, mi újság?",
+       "emotion": "",
+       "cause": ""
+      }
+     ]
+    },
+    {
+     "text": "The user mentioned: teszt log",
+     "slot": "preference",
+     "cluster": "preference",
+     "notes": [
+      {
+       "text": "teszt log",
+       "emotion": "",
+       "cause": ""
+      }
+     ]
+    },
+    {
+     "text": "The user mentioned: Szia, mi újság?",
+     "slot": "preference",
+     "cluster": "preference",
+     "notes": [
+      {
+       "text": "Szia, mi újság?",
+       "emotion": "",
+       "cause": ""
+      }
+     ]
+    },
+    {
+     "text": "The user mentioned: Szia, mi újság?",
+     "slot": "preference",
+     "cluster": "preference",
+     "notes": [
+      {
+       "text": "Szia, mi újság?",
+       "emotion": "",
+       "cause": ""
+      }
+     ]
+    },
+    {
+     "text": "The user mentioned: Szia, mi újság?",
+     "slot": "preference",
+     "cluster": "preference",
+     "notes": [
+      {
+       "text": "Szia, mi újság?",
+       "emotion": "",
+       "cause": ""
+      }
+     ]
+    },
+    {
+     "text": "The user mentioned: Szia, mi újság?",
+     "slot": "preference",
+     "cluster": "preference",
+     "notes": [
+      {
+       "text": "Szia, mi újság?",
+       "emotion": "",
+       "cause": ""
+      }
+     ]
+    },
+    {
+     "text": "The user mentioned: Hello, mivan?",
+     "slot": "preference",
+     "cluster": "preference",
+     "notes": [
+      {
+       "text": "Hello, mivan?",
+       "emotion": "",
+       "cause": ""
+      }
+     ]
+    },
+    {
+     "text": "The user mentioned: Szia, mi újság?",
+     "slot": "preference",
+     "cluster": "preference",
+     "notes": [
+      {
+       "text": "Szia, mi újság?",
+       "emotion": "",
+       "cause": ""
+      }
+     ]
+    },
+    {
+     "text": "The user mentioned: teszt log",
+     "slot": "preference",
+     "cluster": "preference",
+     "notes": [
+      {
+       "text": "teszt log",
+       "emotion": "",
+       "cause": ""
+      }
+     ]
+    },
+    {
+     "text": "The user mentioned: Szia, mi újság?",
+     "slot": "preference",
+     "cluster": "preference",
+     "notes": [
+      {
+       "text": "Szia, mi újság?",
+       "emotion": "",
+       "cause": ""
+      }
+     ]
+    },
+    {
+     "text": "The user mentioned: Szia, hogy vagy ma?",
+     "slot": "preference",
+     "cluster": "preference",
+     "notes": [
+      {
+       "text": "Szia, hogy vagy ma?",
+       "emotion": "",
+       "cause": ""
+      }
+     ]
+    },
+    {
+     "text": "The user mentioned: Szia, mi újság?",
+     "slot": "preference",
+     "cluster": "preference",
+     "notes": [
+      {
+       "text": "Szia, mi újság?",
+       "emotion": "",
+       "cause": ""
+      }
+     ]
+    },
+    {
+     "text": "The user mentioned: Szia, mi újság?",
+     "slot": "preference",
+     "cluster": "preference",
+     "notes": [
+      {
+       "text": "Szia, mi újság?",
+       "emotion": "",
+       "cause": ""
+      }
+     ]
+    },
+    {
+     "text": "The user mentioned: Szia kézzel",
+     "slot": "preference",
+     "cluster": "preference",
+     "notes": [
+      {
+       "text": "Szia kézzel",
+       "emotion": "",
+       "cause": ""
+      }
+     ]
+    },
+    {
+     "text": "The user mentioned: Szia, mi újság?",
+     "slot": "preference",
+     "cluster": "preference",
+     "notes": [
+      {
+       "text": "Szia, mi újság?",
+       "emotion": "",
+       "cause": ""
+      }
+     ]
+    },
+    {
+     "text": "The user mentioned: Hello, mivan?",
+     "slot": "preference",
+     "cluster": "preference",
+     "notes": [
+      {
+       "text": "Hello, mivan?",
+       "emotion": "",
+       "cause": ""
+      }
+     ]
+    },
+    {
+     "text": "The user mentioned: Szia, mi újság?",
+     "slot": "preference",
+     "cluster": "preference",
+     "notes": [
+      {
+       "text": "Szia, mi újság?",
+       "emotion": "",
+       "cause": ""
+      }
+     ]
+    },
+    {
+     "text": "The user mentioned: Hello, mivan?",
+     "slot": "preference",
+     "cluster": "preference",
+     "notes": [
+      {
+       "text": "Hello, mivan?",
+       "emotion": "",
+       "cause": ""
+      }
+     ]
+    },
+    {
+     "text": "The user mentioned: Szia, mi újság?",
+     "slot": "preference",
+     "cluster": "preference",
+     "notes": [
+      {
+       "text": "Szia, mi újság?",
+       "emotion": "",
+       "cause": ""
+      }
+     ]
+    },
+    {
+     "text": "The user mentioned: Szia, mi újság?",
+     "slot": "preference",
+     "cluster": "preference",
+     "notes": [
+      {
+       "text": "Szia, mi újság?",
+       "emotion": "",
+       "cause": ""
+      }
+     ]
+    },
+    {
+     "text": "The user mentioned: Szia, mi újság?",
+     "slot": "preference",
+     "cluster": "preference",
+     "notes": [
+      {
+       "text": "Szia, mi újság?",
+       "emotion": "",
+       "cause": ""
+      }
+     ]
+    },
+    {
+     "text": "The user mentioned: Hello, mivan?",
+     "slot": "preference",
+     "cluster": "preference",
+     "notes": [
+      {
+       "text": "Hello, mivan?",
+       "emotion": "",
+       "cause": ""
+      }
+     ]
+    },
+    {
+     "text": "The user mentioned: Szia, mi újság?",
+     "slot": "preference",
+     "cluster": "preference",
+     "notes": [
+      {
+       "text": "Szia, mi újság?",
+       "emotion": "",
+       "cause": ""
+      }
+     ]
+    },
+    {
+     "text": "The user mentioned: Hello, mivan?",
+     "slot": "preference",
+     "cluster": "preference",
+     "notes": [
+      {
+       "text": "Hello, mivan?",
+       "emotion": "",
+       "cause": ""
+      }
+     ]
+    },
+    {
+     "text": "The user mentioned: Szia, mi újság?",
+     "slot": "preference",
+     "cluster": "preference",
+     "notes": [
+      {
+       "text": "Szia, mi újság?",
+       "emotion": "",
+       "cause": ""
+      }
+     ]
+    },
+    {
+     "text": "The user mentioned: Szia, mi újság?",
+     "slot": "preference",
+     "cluster": "preference",
+     "notes": [
+      {
+       "text": "Szia, mi újság?",
+       "emotion": "",
+       "cause": ""
+      }
+     ]
+    },
+    {
+     "text": "The user mentioned: Szia, mi újság?",
+     "slot": "preference",
+     "cluster": "preference",
+     "notes": [
+      {
+       "text": "Szia, mi újság?",
+       "emotion": "",
+       "cause": ""
+      }
+     ]
+    },
+    {
+     "text": "The user mentioned: Szia, mi újság?",
+     "slot": "preference",
+     "cluster": "preference",
+     "notes": [
+      {
+       "text": "Szia, mi újság?",
+       "emotion": "",
+       "cause": ""
+      }
+     ]
+    },
+    {
+     "text": "The user mentioned: Szia, mi újság?",
+     "slot": "preference",
+     "cluster": "preference",
+     "notes": [
+      {
+       "text": "Szia, mi újság?",
+       "emotion": "",
+       "cause": ""
+      }
+     ]
+    },
+    {
+     "text": "The user mentioned: Szia, mi újság?",
+     "slot": "preference",
+     "cluster": "preference",
+     "notes": [
+      {
+       "text": "Szia, mi újság?",
+       "emotion": "",
+       "cause": ""
+      }
+     ]
+    },
+    {
+     "text": "The user mentioned: Szia, mi újság?",
+     "slot": "preference",
+     "cluster": "preference",
+     "notes": [
+      {
+       "text": "Szia, mi újság?",
+       "emotion": "",
+       "cause": ""
+      }
+     ]
+    },
+    {
+     "text": "The user mentioned: Szia, mi újság?",
+     "slot": "preference",
+     "cluster": "preference",
+     "notes": [
+      {
+       "text": "Szia, mi újság?",
+       "emotion": "",
+       "cause": ""
+      }
+     ]
+    },
+    {
+     "text": "The user mentioned: Szia, mi újság?",
+     "slot": "preference",
+     "cluster": "preference",
+     "notes": [
+      {
+       "text": "Szia, mi újság?",
+       "emotion": "",
+       "cause": ""
+      }
+     ]
+    },
+    {
+     "text": "The user mentioned: Szia, mi újság?",
+     "slot": "preference",
+     "cluster": "preference",
+     "notes": [
+      {
+       "text": "Szia, mi újság?",
+       "emotion": "",
+       "cause": ""
+      }
+     ]
+    },
+    {
+     "text": "The user mentioned: Szia, mi újság?",
+     "slot": "preference",
+     "cluster": "preference",
+     "notes": [
+      {
+       "text": "Szia, mi újság?",
+       "emotion": "",
+       "cause": ""
+      }
+     ]
+    },
+    {
+     "text": "The user mentioned: Szia, mi újság?",
+     "slot": "preference",
+     "cluster": "preference",
+     "notes": [
+      {
+       "text": "Szia, mi újság?",
+       "emotion": "",
+       "cause": ""
+      }
+     ]
+    },
+    {
+     "text": "The user mentioned: Szia, mi újság?",
+     "slot": "preference",
+     "cluster": "preference",
+     "notes": [
+      {
+       "text": "Szia, mi újság?",
+       "emotion": "",
+       "cause": ""
+      }
+     ]
+    },
+    {
+     "text": "The user mentioned: teszt",
+     "slot": "preference",
+     "cluster": "preference",
+     "notes": [
+      {
+       "text": "teszt",
+       "emotion": "",
+       "cause": ""
+      }
+     ]
+    },
+    {
+     "text": "The user mentioned: Szia, mi újság?",
+     "slot": "preference",
+     "cluster": "preference",
+     "notes": [
+      {
+       "text": "Szia, mi újság?",
+       "emotion": "",
+       "cause": ""
+      }
+     ]
+    },
+    {
+     "text": "The user mentioned: Szia, mi újság?",
+     "slot": "preference",
+     "cluster": "preference",
+     "notes": [
+      {
+       "text": "Szia, mi újság?",
+       "emotion": "",
+       "cause": ""
+      }
+     ]
+    },
+    {
+     "text": "The user mentioned: Szia, mi újság?",
+     "slot": "preference",
+     "cluster": "preference",
+     "notes": [
+      {
+       "text": "Szia, mi újság?",
+       "emotion": "",
+       "cause": ""
+      }
+     ]
+    },
+    {
+     "text": "The user mentioned: Szia, hogy vagy ma?",
+     "slot": "preference",
+     "cluster": "preference",
+     "notes": [
+      {
+       "text": "Szia, hogy vagy ma?",
+       "emotion": "",
+       "cause": ""
+      }
+     ]
+    },
+    {
+     "text": "The user mentioned: Szia, mi újság?",
+     "slot": "preference",
+     "cluster": "preference",
+     "notes": [
+      {
+       "text": "Szia, mi újság?",
+       "emotion": "",
+       "cause": ""
+      }
+     ]
+    }
+   ],
+   "next_id": 283
+  }
+ }
+}
