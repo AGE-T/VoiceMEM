@@ -72,6 +72,7 @@ from fastapi.staticfiles import StaticFiles
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
+from app.background_memory import BackgroundMemoryGate
 from app.config import AgentConfig
 from app.gguf import (
     EXPECTED_MODEL_LABEL,
@@ -148,7 +149,24 @@ _HISTORY_WINDOW = 8
 #: are estimated from characters (~2-3 chars/token for HU/EN text on the
 #: Qwen3.6 tokenizer - deliberately conservative) and the prompt is trimmed
 #: OLDEST-first: memory block capped, then oldest history entries dropped.
-_MEMORY_CONTEXT_MAX_CHARS = 6000
+#:
+#: v0.9.2 (PART 11) CANONICAL MEMORY BUDGET (measured, see
+#: audit/VoiceMEM_v092): the effective conversational memory funnel is
+#:   top_k=5 (config/voicemem_config.yaml) + rb[:3] (rendered here)
+#:   -> at most 8 rendered items, ~123 tokens on a realistic 30-fact store
+#:      (cardinality benchmark), 1200 chars ~= 15 lines — NOT reachable at
+#:      realistic densities.
+#: Therefore:
+#:   _MEMORY_CONTEXT_MAX_CHARS = 1200  = the PRIMARY render guard
+#:       (defense-in-depth: keeps the system prompt bounded if top_k is ever
+#:       raised or memory lines get long; measured not-binding at top_k=5).
+#:   _PROMPT_CHAR_BUDGET = 14000      = the HISTORY guard (drops oldest
+#:       entries; measured not-binding at the 8-entry window).
+#: The legacy 6000 inner cap was REMOVED as dead configuration — it applied
+#: AFTER the 1200 slice (web path), so it could never bind; keeping two
+#: character caps with different limits on the same string was misleading
+#: (the v0.9.1 audit flagged it as "dead by construction").
+_MEMORY_CONTEXT_MAX_CHARS = 1200
 _PROMPT_CHAR_BUDGET = 14000
 
 
@@ -158,6 +176,11 @@ def _cap_memory_context(memory_context: str) -> str:
     Cuts at the last line boundary inside the cap (when one exists in the
     second half of the block) and appends a visible truncation note, so the
     model knows the block was shortened on purpose.
+
+    v0.9.2 (PART 11): this is now the SINGLE canonical character guard for
+    the memory block (the dead 6000 pre-cap is gone — see the constants
+    above; behaviour is unchanged for every reachable input because the
+    1200 slice in the renderer already bounded the string first).
     """
     if not memory_context or not memory_context.strip():
         return memory_context
@@ -636,11 +659,19 @@ class RealMemoryLayer:
             return None
         return vm.search(query, emotion=emotion or None)
 
-    def ingest(self, text: str, agent_reply: str = "") -> None:
+    def ingest(self, text: str, agent_reply: str = "", *, wait: bool = False) -> None:
+        """Consolidate one turn into long-term memory.
+
+        v0.9.2 (PART 5): ``wait=True`` runs the vendor chain synchronously
+        (``async_facts=False``) so the caller — the background memory gate —
+        can see REAL completion and serialize background LLM work behind the
+        conversation. The default ``wait=False`` keeps the historical
+        fire-and-forget shape (used by non-gated callers/tests).
+        """
         vm = self._facade(self._active)
         if vm is None:
             return
-        vm.ingest(text, agent_reply=agent_reply or None, async_facts=True)
+        vm.ingest(text, agent_reply=agent_reply or None, async_facts=not wait)
 
     def classify(self, query: str) -> Any:
         vm = self._facade(self._active)
@@ -881,7 +912,10 @@ class DemoMemoryLayer:
         ]
         return _DemoSearchResult(hits[:5], rb[:3], _DemoClassification([self._slot_of(query)], self._entities_of(query)))
 
-    def ingest(self, text: str, agent_reply: str = "") -> None:
+    def ingest(self, text: str, agent_reply: str = "", *, wait: bool = False) -> None:
+        """Demo store — the ``wait`` flag is accepted for interface parity
+        with :class:`RealMemoryLayer` (v0.9.2 PART 5) and ignored: the demo
+        path is synchronous already and involves no LLM work."""
         if not text.strip():
             return
         store = self._spaces[self._active]
@@ -1808,6 +1842,18 @@ class WebSession:
         # be garbage-collected mid-flight (fire-and-forget tasks with no
         # reference can be dropped by the GC between checkpoints).
         self._bg_store_task: Optional[asyncio.Task] = None
+        # v0.9.2 (PART 5): conversation-first background memory scheduling.
+        # The pair-ingest extraction (~10.4K-token prompt on the same single
+        # llama-server slot) is DEFERRED while a turn is active — armed from
+        # the first VAD speech frame, released after the reply + grace. See
+        # app/background_memory.py for the measured contention evidence.
+        self._memory_gate = BackgroundMemoryGate(
+            self._gated_memory_ingest,
+            on_begin=self._c.status.components["memory"].begin,
+            on_end=self._c.status.components["memory"].end,
+            on_fail=self._c.status.components["memory"].fail,
+            spawn=self._spawn,
+        )
         # v0.4.9 (report issue #9): registry of EVERY task this session owns
         # (turn, audio loop, background store, late-emotion flush). On WS
         # disconnect all of them are cancelled — an orphaned LLM streaming
@@ -2262,6 +2308,11 @@ class WebSession:
             self._utterance = None
             self._asr_fed = False
             session["vad_in_speech"] = True
+            # v0.9.2 (PART 5): the user started speaking — a chat LLM request
+            # is imminent. Hold background memory work (the extraction would
+            # otherwise occupy the single llama-server slot when the turn's
+            # chat request arrives).
+            self._memory_gate.arm("speech")
             session["speech_ms"] = 0
             session["utterances"] = session.get("utterances", 0) + 1
             st.components["vad"].begin()
@@ -2291,7 +2342,19 @@ class WebSession:
                     )
             else:
                 self._asr_streaming = False
-            return
+            # v0.9.1 (web VAD onset fix): NO early return here. The frame that
+            # crossed the threshold — the SPEECH_START trigger frame — falls
+            # through to the capture block below and becomes the FIRST frame
+            # of the utterance, matching the CLI path (app/main.py appends it
+            # because state.in_speech is already true on SPEECH_START). The
+            # old `return` systematically dropped the 32 ms trigger frame; on
+            # sibilant onsets Silero needs ~86 ms to cross the threshold, and
+            # losing the trigger frame on top of that was measured to turn
+            # "Szia" into "Fia" (forensic ground truth: audio cut at the VAD
+            # start frame kept "Szia, hogyan vagy!", audio cut at the old
+            # capture start did not). Streaming engines now also receive the
+            # trigger frame via the feed below (start -> feed order kept).
+            # vad_threshold, frame size and hangover are all unchanged.
 
         if self._in_speech:
             # Collect + (streaming engines only) partial ASR while the user
@@ -2477,6 +2540,15 @@ class WebSession:
         task.add_done_callback(self._session_tasks.discard)
         return task
 
+    def _gated_memory_ingest(self, user_text: str, reply: str) -> None:
+        """v0.9.2 (PART 5): the gate's ingest runner — synchronous vendor
+        chain (``wait=True`` -> async_facts=False) so the gate sees REAL
+        completion of the whole background LLM work (extraction + conflict
+        + scoring) instead of the vendor's fire-and-forget daemon thread.
+        Runs inside ``asyncio.to_thread`` from the gate worker.
+        """
+        self._c.memory.ingest(user_text, reply, wait=True)
+
     async def _cancel_session_tasks(self) -> None:
         """v0.4.9 (issue #9): cancel and await every task this session owns.
 
@@ -2517,6 +2589,10 @@ class WebSession:
             except (asyncio.CancelledError, Exception):  # noqa: BLE001
                 pass
         self._turn_task = None
+        # v0.9.2 (PART 5): the interrupted answer ends the turn — open the
+        # background gate after grace (if the user speaks again, the VAD
+        # speech_start re-arms it immediately).
+        self._memory_gate.release()
         await self._send_json({"type": "answer_interrupt"})
 
     async def _start_turn(
@@ -2544,6 +2620,9 @@ class WebSession:
             session["speech_ms"] = 0
         self._turn_started_at = time.perf_counter()
         session["turns"] = session.get("turns", 0) + 1
+        # v0.9.2 (PART 5): covers typed turns too (the VAD arm() only fires
+        # on live speech); idempotent when speech already armed it.
+        self._memory_gate.arm(source)
         self._turn_task = self._spawn(
             self._guarded_turn(text, audio=audio, source=source, asr_result=asr_result)
         )
@@ -2571,6 +2650,9 @@ class WebSession:
                 if comp.state == _STATE_PROCESSING:
                     comp.fail(f"turn crashed: {exc}")
             self._diag(f"turn CRASHED: {str(exc)[:140]}")
+            # v0.9.2 (PART 5): crashed turn — release the background gate so
+            # memory work is not starved by a dead turn.
+            self._memory_gate.release()
             try:
                 await self._send_json({"type": "error", "message": f"Turn failed: {exc}"})
                 await self._send_json(
@@ -2958,6 +3040,10 @@ class WebSession:
             )
 
         if llm_error:
+            # v0.9.2 (PART 5): failed turn — release the gate so queued memory
+            # work still runs (nothing was submitted this turn; the queue
+            # keeps earlier turns).
+            self._memory_gate.release()
             await self._send_json({"type": "answer_done", "timings": timings, "error": llm_error})
             return
 
@@ -2968,27 +3054,22 @@ class WebSession:
         )
         await self._send_json({"type": "answer_done", "timings": timings})
         await self._send_status()
+        # v0.9.2 (PART 5): reply finished — open the background memory gate
+        # after the grace period (a new speech frame re-arms it instantly).
+        self._memory_gate.release()
 
         # --- remember the turn (background; the UI polls /api/memories) -------
         if user_text and reply:
             self._history.append({"role": "user", "content": user_text})
             self._history.append({"role": "assistant", "content": reply})
-
-            async def _store() -> None:
-                st.components["memory"].begin()
-                try:
-                    await asyncio.to_thread(c.memory.ingest, user_text, reply)
-                    st.components["memory"].end()
-                except Exception as exc:  # noqa: BLE001
-                    st.components["memory"].fail(str(exc))
-                await self._send_status()
-
-            # v0.4.4: get_event_loop() inside a running loop is deprecated
-            # and a task with no reference can be garbage-collected
-            # mid-flight; create it on the running loop and keep a reference.
-            # v0.4.9 (issue #9): spawn through the session task registry so
-            # disconnect cancels it too.
-            self._bg_store_task = self._spawn(_store())
+            # v0.9.2 (PART 5): the pair goes through the conversation-first
+            # gate instead of a free-running background task — the extraction
+            # (10.4K-token prompt on the SAME single llama-server slot) waits
+            # until the conversation is idle. Coalesced, never dropped;
+            # status chips reflect the ACTUAL memory work now (the old
+            # fire-and-forget _store marked "done" before the vendor thread
+            # even started). Disconnect cancels the worker (session task).
+            await self._memory_gate.submit(user_text, reply)
 
     async def _synthesize_chunk(self, chunk: str, fused: Any) -> Optional[bytes]:
         """TTS one chunk via Supertonic 3, convert to 24 kHz PCM16 for the browser.

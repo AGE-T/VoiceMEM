@@ -2,6 +2,20 @@
 
 源代码对齐：mem0/configs/prompts.py（``generate_additive_extraction_prompt`` 及辅助函数）。
 System 侧长文本见 ``data/additive_extraction_prompt.txt``（同源仓库摘出）。
+
+v0.9.2（PART 7）: system 正文相对 mem0 原版做了**保守缩减**（7,923 → 6,118
+token，-22.8%）。每一处删减都是三档证据之一（manifest:
+audit/VoiceMEM_v092/prompt_reduction_manifest.json）：
+  EXAMPLE_OVERLAP     — 该示例的教训由保留的示例或行内规则完整承载
+                       （删 Example 2/5/9，保留 1/3/6/7/10/12 重编号）；
+  TEXTUAL_DUPLICATION — 与保留段逐字重复（Example 8 的 Bajimaya 正反例在
+                       Integrity Rules "No Meta-Extraction" 里原文存在；
+                       Example 11 的多主题教训在 ROLE 和 Checklist 里重复；
+                       "Extract ALL dimensions" 段与 ROLE 重复）；
+  INPUT_DOMAIN        — 语音链路的输入是 ASR 转写文本，"Shared Photos and
+                       Images" 一节针对的输入在本系统不可能出现。
+未删任何质量标准、完整性规则、时序锚定、输出 schema。判定/去重/链接/
+跨说话人语义全部保留。等价性验证：tests/unit/test_prompt_reduction.py。
 """
 
 from __future__ import annotations

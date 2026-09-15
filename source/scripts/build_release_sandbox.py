@@ -45,8 +45,8 @@ from pathlib import Path
 REPO = Path(__file__).resolve().parent.parent
 RELEASES = REPO / "releases"
 
-NEW_VERSION = "0.9.0"
-PREV_VERSION = "0.8.1"
+NEW_VERSION = "0.9.2"
+PREV_VERSION = "0.9.1"
 ZIP_NAME = f"VoiceMemAgent_v{NEW_VERSION}.zip"
 
 PLACEHOLDER_DIRS = [
@@ -74,38 +74,45 @@ ROOT_FILES = [
 ]
 
 NOTES = (
-    "v0.9.0 MEMORIA-JELENTESSEMANTIKA (operator order: contradiction, "
-    "supersession es ervenyesseg a trait-retvegen). A MERT BIZONYITEK: "
-    "scripts/measure_semantic_matrix.py a valodi lokalis "
-    "multilingual-e5-small-lal megmerte a teljes szemantikai matrixot "
-    "(docs/SEMANTIC_MATRIX.md) - az antipatia (utalja 0.9685), a mult-ido "
-    "(regen szerette 0.9821 / used to like 0.9865), a magyar hatarolt "
-    "allitas (kiveve telen 0.9552) es a visszavaltas (megint szereti "
-    "0.9521) MIND a 0.95-os merge-kuszob FELETT: a v0.8.1 merge egy negalt "
-    "megfigyelest megerositeskent volt kepes beolvasztani. VM-LOCAL-015 "
-    "(uj vendor patch, VOICEMEM_PIN.json + CONTROLLED_PATCHES "
-    "regisztralva): (1) voicemem/rightbrain/stance.py - determinisztikus "
-    "(0 LLM) EN+HU cue-szkenner: stance-osztalyok "
-    "pos/neg/past/qualified/uncertain, scan-sorrend "
-    "uncertain>qualified>past>neg>pos; (2) TraitStore.add harom EXPLICIT "
-    "kimenet: MERGE (egyezo stance, 0.95 valtozatlan), SUPERSEDE "
-    "(ellentetes pos/neg stance + mert sav [0.90; presuppozicios negacional "
-    "0.88] + tema-token atfedes + nem-stale-replay: uj sor lesz az "
-    "aktualis, a regi sor CSAK superseded_by/superseded_at jelzot kap - "
-    "occurrence/confidence FAGYASZTVA), SEPARATE (hatarolt/mult/bizonytalan: "
-    "onallo sor, elhalasztott feloldas); (3) additiv idempotens migracio "
-    "(stance/supersedes/superseded_by/superseded_at); (4) search_scored "
-    "aktualis-elso rendezes + x0.75 lejarolas + hit-metadata bovites; (5) "
-    "app/retrieval_contract.py kiterjesztes + '[... | superseded]' "
-    "prompt-jelzo. Stale-replay or: az elutasitott flip egyezo stance-u "
-    "superseded lancszemre csatolja a bizonyitekat (fagyasztva). "
-    "OBSERVATION-STORE DONTS: NEM SZUKSEGES. Archivum/TTL: a trait-retegben "
-    "nincs interakcio (nincs archivum/TTL a trait tablan); a teny-oldali "
-    "interakciok tesztekkel rogzitve. Tesztek: +84 uj viselkedes-teszt; a "
-    "validacios teszt a mert E5-matrixot regresszio-orzi. HATARON KIVUL "
-    "(tudatosan): Observation-store, tanulasi reteg, confidence-csokkentes, "
-    "modellvaltas, search_rich, archivum-atalakitas, TTL-producer, "
-    "UI-atalakitas."
+    "v0.9.2 FUTTATASI-IDEJU OPTIMALIZALAS + MEMORIA-VISSZAKERESI KOLTSEGKERET "
+    "(operator order: measure first, implement the justified fix). MERT "
+    "BIZONYITEK (verzio-pontos llama.cpp b10717 ubuntu-x64 + Qwen3 tokenizer; "
+    "sandbox wall-times a celgepen masok - a cache-ratok es token-szamok "
+    "modell-fuggetlenek): (1) a b10717 RAM-backed prompt cache (PR #16391) "
+    "LCP-alapu allapot-visszaallitasa egy kozbejovo chat-keres UTAN az "
+    "extrakcio 85.7%-at allitotta vissza (8912/10399, E2); (2) az extrakcios "
+    "prompt 95.4%-a statikus, a tenyleges uj beszelgetes ~180 token; (3) az "
+    "extrakcio es a conflict-resolver max_tokens nelkul futott (n_predict=-1) "
+    "- a v0.9.1 audit P0-2. IMPLEMENTALVA: (A) max_tokens=1536/1024 "
+    "(VOICEMEM_EXTRACT_MAX_TOKENS / VOICEMEM_RESOLVE_MAX_TOKENS, ervenytelen "
+    "env ertek alapertekre esik, csonkolt JSON fail-closed, tesztelt); (B) "
+    "prompt-redukcio 7923 -> 6118 alap-token (-22.8%; minden vagas "
+    "EXAMPLE_OVERLAP / TEXTUAL_DUPLICATION / INPUT_DOMAIN bizonyitasi "
+    "osztaly, manifest az audit csomagban; 38 szignalas strukturaklis "
+    "ekvivalencia-teszttel orzi); (C) a merged addendum (1040 statikus token) "
+    "a user-uzenet ELOJEBRE kerult - a cache-elheto prefix ~9.6K tokenre no; "
+    "(D) app/background_memory.py BackgroundMemoryGate - a hatter-munka VAR "
+    "beszelt-turn alatt (felfegyverzes az elso VAD-beszed-keret + turn "
+    "inditas, engedes answer_done/hiba/interrupt + 2s grace, uj beszed a "
+    "grace-ban azonnal ujra zar; a sor sosem dobodik el, pontos "
+    "duplikatumok osszevontak; az ingest async_facts=False-szal a to_thread-ben "
+    "fut - a TELJES hatter-lanc lathato es valodi vegezesig var; a futos "
+    "extrakciot NEM szakítja meg - idotartamat a kimeneti korlat es a redukalt "
+    "prompt korlatozza; worker a session-regisztraban - disconnect lemondja, a "
+    "regi _bg_store_task kontrakt megtartva); (E) a halott 6000-es belso "
+    "karakterlimit elszamolva - _MEMORY_CONTEXT_MAX_CHARS=1200 az EGYETLEN "
+    "kanonikus karakter-ori, a valodi budget: top_k=5 + rb[:3] = max 8 tétel "
+    "~123-197 token; (F) kardinalitas-meres (valodi E5+qdrant, 30 teny, 12 "
+    "fix kerdes): recall 0.875/0.917/0.917/0.917/0.917 k=5/8/10/12/16-on - "
+    "k>=8 utan a plato (a maradek hiba beagyazasi hiba, nem vagas), zaj "
+    "3.67 -> 14.58, ctx 123 -> 392 token: KEEP top_k=5, rb[:3]. PART 12: 8 "
+    "bejegyzes = 592 token, budget sosem feszul - KEEP. EREDETMENY (E4, "
+    "produkcios konfig): hideg 405.3s -> meleg 111.3s (-72.6%), 82.7% "
+    "cached, alkalmazas-oldali prompt 10397 -> 8415 token (-19.1%). HATARON "
+    "KIVUL: modell, ctx 32768, parallel=1, VoiceMem/E5/ASR/TTS, search_rich, "
+    "Observation Store, offline garancia - MIND valtozatlan. Tesztek: +23 uj "
+    "(limits 6 + gate 12 + reduction 5) + teljes regresszio (VAD 3/3, "
+    "szemantika 87/87)."
 )
 #: v0.6.0 markers: the modular ASR engine contract - asr_core (AudioBuffer,
 #: AsrResult, AsrError, registry, select_engine), the two NVIDIA adapters,
@@ -647,6 +654,60 @@ V090_MARKERS = {
     ],
     "scripts/measure_semantic_matrix.py": [
         "def embed_passages",
+    ],
+}
+
+#: v0.9.2 markers: the conversation-first background memory gate, the
+#: extraction/conflict output limits, the prompt reduction + addendum
+#: reorder, and the unified 1200-character canonical memory budget.
+V092_MARKERS = {
+    "app/background_memory.py": [
+        "class BackgroundMemoryGate",
+        "USER CONVERSATION HAS ABSOLUTE PRIORITY",
+        "VOICEMEM_BG_GRACE_S",
+    ],
+    "app/web_server.py": [
+        "v0.9.2 (PART 5): conversation-first background memory scheduling",
+        "_memory_gate.arm(\"speech\")",
+        "await self._memory_gate.submit(user_text, reply)",
+        "v0.9.2 (PART 11) CANONICAL MEMORY BUDGET",
+    ],
+    "vendor/voicemem/voicemem/leftbrain/extract_facts_openai.py": [
+        "VOICEMEM_EXTRACT_MAX_TOKENS",
+        "VOICEMEM_RESOLVE_MAX_TOKENS",
+        "_warn_if_truncated",
+        "prompt_addendum() + \"\\n\\n\" + user_content",
+    ],
+    "tests/unit/test_extraction_output_limits.py": [
+        "test_truncated_output_fails_closed",
+        "test_extract_request_carries_max_tokens",
+    ],
+    "tests/unit/test_background_memory_gate.py": [
+        "test_ingest_waits_while_turn_active",
+        "test_speech_rearm_inside_grace_defers",
+    ],
+    "tests/unit/test_prompt_reduction.py": [
+        "test_required_signals_present",
+        "test_forbidden_removals_stay_removed",
+    ],
+}
+
+#: v0.9.1 markers: the web VAD onset fix - the SPEECH_START trigger frame
+#: is CAPTURED (no early return in the speech_start branch), CLI parity is
+#: pinned by a dedicated regression test, and the gate baseline records the
+#: venv-drift env-gap pins.
+V091_MARKERS = {
+    "app/web_server.py": [
+        "v0.9.1 (web VAD onset fix): NO early return here",
+        "matching the CLI path (app/main.py appends it",
+    ],
+    "tests/unit/test_web_vad_trigger_frame.py": [
+        "TestTriggerFrameRetention",
+        "test_cli_collection_parity",
+        "test_trigger_frame_is_first_captured_frame",
+    ],
+    "scripts/run_release_gate.py": [
+        "degraded-mode simulation no longer degrades (stash-verified)",
     ],
 }
 
@@ -2113,7 +2174,7 @@ def build() -> int:
                             f"self-check: {rel} lacks v0.4.11 marker {m!r}"
                         )
             # v0.4.12: stale-page detection + raw capture + send-as-turn
-            for rel, markers in {**V0412_MARKERS, **V0413_MARKERS, **V0414_MARKERS, **V0415_MARKERS, **V0416_MARKERS, **V0417_MARKERS, **V0418_MARKERS, **V0419_MARKERS, **V0420_MARKERS, **V0421_MARKERS, **V050_MARKERS, **V052_MARKERS, **V060_MARKERS, **V061_MARKERS, **V062_MARKERS, **V063_MARKERS, **V064_MARKERS, **V070_MARKERS, **V071_MARKERS, **V072_MARKERS, **V080_MARKERS, **V081_MARKERS, **V090_MARKERS}.items():
+            for rel, markers in {**V0412_MARKERS, **V0413_MARKERS, **V0414_MARKERS, **V0415_MARKERS, **V0416_MARKERS, **V0417_MARKERS, **V0418_MARKERS, **V0419_MARKERS, **V0420_MARKERS, **V0421_MARKERS, **V050_MARKERS, **V052_MARKERS, **V060_MARKERS, **V061_MARKERS, **V062_MARKERS, **V063_MARKERS, **V064_MARKERS, **V070_MARKERS, **V071_MARKERS, **V072_MARKERS, **V080_MARKERS, **V081_MARKERS, **V090_MARKERS, **V091_MARKERS, **V092_MARKERS}.items():
                 src_text = zf.read(root_prefix + rel).decode("utf-8", errors="replace")
                 for m in markers:
                     if m not in src_text:

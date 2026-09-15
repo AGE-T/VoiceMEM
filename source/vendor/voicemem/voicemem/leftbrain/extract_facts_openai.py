@@ -176,6 +176,50 @@ def parse_additive_memory_response(raw_json: str) -> list[ExtractedAdditiveMemor
 _MERGED_UTTERANCE: dict[str, str] = {}
 
 
+# ── 输出上限（v0.9.2 P0：原先不传 max_tokens，llama-server n_predict=-1 无界）──────
+#:
+#: 抽取/冲突判定是后台请求，但和会话聊天共用同一个 llama-server 槽位；无界的
+#: 输出会占住槽位任意久（实测 30-50s 卡顿尾巴的头号嫌疑）。上限按输出 schema 的
+#: 现实最坏情况选定（详见 VoiceMEM v0.9.2 审计 E5 实验）：单轮事实 ≤6 条 ×
+#: (文本 15-80 词 + slot/entities/relations/attribute 标注) + traits + emotion ≈
+#: ≤800 token，1536 ≈ 2× 余量。截断的 JSON 过不了 json.loads —— 整轮抽取失败、
+#: 不落库（宁缺勿错），finish_reason=length 时在这里大声报出来。
+#:
+#: 环境变量可覆盖（运维逃生门），值必须 > 0。
+def _positive_int_env(name: str, default: int) -> int:
+    raw = os.environ.get(name, "").strip()
+    if not raw:
+        return default
+    try:
+        v = int(raw)
+    except ValueError:
+        return default
+    return v if v > 0 else default
+
+
+#: 抽取（pair-ingest merged extraction）输出上限（token）。默认 1536，
+#: 环境变量 VOICEMEM_EXTRACT_MAX_TOKENS 覆盖。
+_EXTRACT_MAX_TOKENS = _positive_int_env("VOICEMEM_EXTRACT_MAX_TOKENS", 1536)
+
+#: 冲突判定（ADD/UPDATE/DELETE/NONE）输出上限（token）。NONE 条目被要求省略，
+#: 正常输出只有 0-3 条；默认 1024，环境变量 VOICEMEM_RESOLVE_MAX_TOKENS 覆盖。
+_RESOLVE_MAX_TOKENS = _positive_int_env("VOICEMEM_RESOLVE_MAX_TOKENS", 1024)
+
+
+def _warn_if_truncated(resp: Any, what: str) -> None:
+    """finish_reason=length 时大声报出 —— 截断的 JSON 解析必失败，这一轮抽取/判定
+    会整体丢失（后台线程打印，调用方 _bg 只打日志不重试）。把它和"模型没抽出
+    东西"区分开，否则排查时看不出是上限不够。"""
+    try:
+        fr = (resp.choices[0].finish_reason or "") if resp.choices else ""
+    except Exception:
+        return
+    if fr == "length":
+        print(f"[extract] 警告：{what} 输出被 max_tokens 截断（finish_reason=length）——"
+              f"本结果大概率不完整，解析将失败。如频繁出现请调大对应"
+              f"VOICEMEM_*_MAX_TOKENS。", flush=True)
+
+
 @dataclass
 class OpenAIAdditiveExtractorConfig:
     """OpenAI Chat 客户端配置。"""
@@ -316,13 +360,23 @@ class OpenAIMem0V3AdditiveExtractor:
         # 合并模式：让这一次调用顺便把 slot/实体/关系/右脑标签也吐出来，
         # 省掉下游 annotator 和 _extract_rb_traits 各自那次 LLM 往返。
         #
-        # 追加到**用户消息**末尾。接在 system 后面时顶层的 emotion/traits 会被模型
-        # 丢掉（用户消息里的输出格式说明写死了顶层只有 "memory"，它照做），
-        # 右脑于是每轮都拿到空的，一个节点都长不出来。见 merged_extraction。
+        # 必须放在**用户消息**里（不能进 system）：接在 system 后面时顶层的
+        # emotion/traits 会被模型丢掉（用户消息里的输出格式说明写死了顶层
+        # 只有 "memory"，它照做），右脑于是每轮都拿到空的，一个节点都长不出
+        # 来。见 merged_extraction。
+        #
+        # v0.9.2（PART 3 前缀缓存）：放在用户消息的**最前面**，而不是末尾。
+        # llama-server b10717 的 RAM prompt cache 按"最长公共前缀"恢复状态：
+        # 末尾时这段 1,040 token 的静态文本落在动态数据之后，前缀复用只到
+        # 动态数据为止，每轮都要重新评估它；放开头后缓存前缀从 ~8.9K 提高
+        # 到 ~10.0K token，实测（沙箱 b10717 + 生产形状载荷）每轮评估量从
+        # ~1.5K 降到 ~0.45K。语义不变：这段是输出 schema 说明，"The prompt
+        # above" 指的仍是 system 提示词，先读 schema 再读数据不改变任何
+        # 判定规则。
         from voicemem.leftbrain import merged_extraction
         system = self._system
         if merged_extraction.enabled():
-            user_content = user_content + merged_extraction.prompt_addendum()
+            user_content = merged_extraction.prompt_addendum() + "\n\n" + user_content
             _MERGED_UTTERANCE["text"] = " ".join(
                 (m.get("content") or "") for m in new_messages
                 if (m.get("role") or "user") != "assistant").strip()
@@ -337,7 +391,9 @@ class OpenAIMem0V3AdditiveExtractor:
             ],
             response_format={"type": "json_object"},
             temperature=0,
+            max_tokens=_EXTRACT_MAX_TOKENS,
         )
+        _warn_if_truncated(resp, "extraction")
         _log_usage("extract", self._cfg.resolved_model(), getattr(resp, "usage", None))
         raw_text = (resp.choices[0].message.content or "").strip()
         json_str = extract_json(remove_code_blocks(raw_text))
@@ -587,7 +643,9 @@ class ConflictResolver:
             messages=[{"role": "user", "content": user_content}],
             response_format={"type": "json_object"},
             temperature=0,
+            max_tokens=_RESOLVE_MAX_TOKENS,
         )
+        _warn_if_truncated(resp, "conflict-resolution")
         raw = (resp.choices[0].message.content or "").strip()
 
         try:
