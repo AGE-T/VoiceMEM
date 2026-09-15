@@ -235,33 +235,38 @@ class ThinkingAlignmentV0421ContractTests(FeatureValidationTest):
 
 
 class TransformersFloorContractTests(FeatureValidationTest):
-    """ASR requires transformers >= 5.6 — pinned everywhere.
+    """ASR requires the EXACT pinned transformers 5.17.0 — everywhere.
 
-    v0.6.1: the floor moved from 5.0 to 5.6 — ParakeetForTDT (the v0.6.0
-    production ASR engine, app/asr_parakeet.py +
-    models/asr/parakeet-tdt-0.6b-v3) exists only from transformers 5.6.
-    (v0.4.7 note: the old 5.0 floor was for the retired qwen3_asr module
-    — app/asr.py, the non-production migration module, keeps its own
-    historical hint.)"""
+    v0.10.1 (P0 ASR forensic): the floating ">= 5.6" pin is replaced by an
+    EXACT pin. Two proven defects of the floor: (1) ParakeetForTDT (the
+    v0.6.0 production ASR engine, app/asr_parakeet.py +
+    models/asr/parakeet-tdt-0.6b-v3) actually exists only from transformers
+    5.9 — the v0.6.1 "5.6" floor was WRONG (5.6.x-5.8.x fail the import
+    loudly); (2) a floating pin resolved a DIFFERENT version per install
+    time on the target — the one non-reproducible component of the ASR
+    stack in the v0.10.0 P0 investigation. 5.17.0 = the v0.10.0 sandbox
+    gate version, corpus-verified on CPU (5.9-5.17: byte-identical
+    transcripts).
+    """
 
     def test_requirements_floor(self) -> None:
-        self.assertIn("transformers>=5.6", _read(REPO_ROOT / "requirements.txt"))
+        self.assertIn("transformers==5.17.0", _read(REPO_ROOT / "requirements.txt"))
 
     def test_pyproject_floor(self) -> None:
-        self.assertIn("transformers>=5.6", _read(REPO_ROOT / "pyproject.toml"))
+        self.assertIn("transformers==5.17.0", _read(REPO_ROOT / "pyproject.toml"))
 
     def test_lock_note_explains_the_voicemem_pin(self) -> None:
         lock = _read(REPO_ROOT / "requirements.lock")
-        self.assertIn("transformers>=5.6", lock)
+        self.assertIn("transformers==5.17.0", lock)
         self.assertIn("4.52.3", lock)  # the voicemem pin that caused the outage
 
     def test_installer_guard_step(self) -> None:
         installer = _read_ascii(SCRIPTS / "install_m1.ps1")
         self.assertIn("# 16) transformers OR", installer)
-        self.assertIn('pip install "transformers>=$TransformersFloor"', installer)
-        self.assertIn('$TransformersFloor = "5.6"', installer)
+        self.assertIn('pip install "transformers==$TransformersPin"', installer)
+        self.assertIn('$TransformersPin = "5.17.0"', installer)
         # tuple-compare assert (string compare would rank "4.9" < "5.0")
-        self.assertIn("v >= (5, 6)", installer)
+        self.assertIn("v == (5, 17)", installer)
 
     def test_installer_guard_is_the_last_pip_step(self) -> None:
         """The guard must run AFTER voicemem/funasr/speechbrain (any of them

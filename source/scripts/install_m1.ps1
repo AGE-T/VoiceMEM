@@ -886,11 +886,12 @@ if (-not (Test-TorchTrio)) {
 }
 
 # ===========================================================================
-# 16) transformers OR (v0.6.1): >= 5.6 - a ParakeetForTDT class (a v0.6.0
-#     production ASR nvidia/parakeet-tdt-0.6b-v3, app/asr_parakeet.py)
-#     CSAK a transformers >= 5.6-ban letezik; regebbi verzioval az ASR
+# 16) transformers OR (v0.10.1): EXACT PIN 5.17.0 - a ParakeetForTDT class
+#     (a v0.6.0 production ASR nvidia/parakeet-tdt-0.6b-v3, app/asr_parakeet.py)
+#     CSAK a transformers >= 5.9-ben letezik (v0.10.1 forenzik: a 5.6-os padlo
+#     TEVES volt); a lebego pin a celgepen mas verziot oldhatott fel (P0).
 # ===========================================================================
-Write-Step "transformers or (>= 5.6: Parakeet TDT tamogatas - voicemem pin-javitas)"
+Write-Step "transformers or (== 5.17.0 pin: Parakeet TDT tamogatas - reprodukalhato ASR stack)"
 # v0.4.4 FIELD REPORT: a 12. lepes "pip install -e vendor\voicemem" a vendored
 # csomag pyproject.toml-ja miatt a transformers-t 4.52.3-ra DOWNGRADELI - az
 # a verzio NEM ismeri a qwen3_asr architekturat, igy a Qwen3-ASR-0.6B (ASR
@@ -900,10 +901,20 @@ Write-Step "transformers or (>= 5.6: Parakeet TDT tamogatas - voicemem pin-javit
 # v0.4.5: a bootstrap.ps1 dependency-probe most VERZIO-ERZEKENY (a
 # voicemem PyPI pin miatt visszamarado 4.52.3-et kiszuri), igy egy
 # meglevo venven ez a lepes AUTOMATIKUSAN lefut - nem kell repair mod.
-$TransformersFloor = "5.6"
-& $VenvPython -m pip install "transformers>=$TransformersFloor"
+# v0.10.1 (P0 ASR forensic): FLOATING pin -> EXACT pin. A >= 5.6 padlo ket
+# bizonyitott hibat hordozott: (1) a ParakeetForTDT class valojaban CSAK a
+# transformers >= 5.9-ben letezik (5.6.x/5.7.x/5.8.x: "cannot import name
+# 'ParakeetForTDT'" - tesztelt), azaz egy friss telepites garantaltan
+# elhasalhat; (2) a lebego pin miatt a celgep telepitesi-idopont szerint
+# MAS verziot oldhatott fel - a v0.10.0 P0 ASR forenzik egzaktusan ezt a
+# komponenst nevezte meg az egyetlen nem-reprodukalhato fuggosegi
+# valtozonak. A 5.17.0 az a verzio, amin a v0.10.0 sandbox gate futott ES
+# amin a teljes HU korpusz (6 fajl) CPU-n ellenorizve lett (5.9-5.17 kozott
+# a kiadasok byte-azonosak).
+$TransformersPin = "5.17.0"
+& $VenvPython -m pip install "transformers==$TransformersPin"
 if ($LASTEXITCODE -ne 0) {
-    Fail-Install "A transformers >= $TransformersFloor telepitese nem sikerult (a ParakeetForTDT classhoz EZ KELL - nelkule a production ASR motor nem toltodik be)." "Ujrafuttatas (idempotens), vagy inditsd ujra a START.bat-ot (repair)."
+    Fail-Install "A transformers == $TransformersPin telepitese nem sikerult (a ParakeetForTDT classhoz EZ KELL - nelkule a production ASR motor nem toltodik be)." "Ujrafuttatas (idempotens), vagy inditsd ujra a START.bat-ot (repair)."
 }
 $TfVersion = (& $VenvPython -c "import transformers; print(transformers.__version__)" 2>$null)
 if ($LASTEXITCODE -ne 0) {
@@ -911,11 +922,11 @@ if ($LASTEXITCODE -ne 0) {
 }
 # Verzio-ASSERT tuple-osszehasonlitassal (NE string-hasonlitas: "4.9" < "5.0"
 # stringkent hamisul meg) - kesz allapotban soha nem bukhat el:
-& $VenvPython -c "import sys, transformers; v = tuple(int(x) for x in transformers.__version__.split('+')[0].split('.')[:2]); sys.exit(0 if v >= (5, 6) else 1)"
+& $VenvPython -c "import sys, transformers; v = tuple(int(x) for x in transformers.__version__.split('+')[0].split('.')[:2]); sys.exit(0 if v == (5, 17) else 1)"
 if ($LASTEXITCODE -ne 0) {
-    Fail-Install ("A transformers verzio a or utan is < 5.6 ({0}) - a Parakeet ASR motor nem toltodik be vele." -f $TfVersion) "Valamelyik csomag (voicemem pin / funasr / speechbrain fuggoseg) visszabeszelte. Kezzel: .venv\Scripts\python.exe -m pip install "transformers>=5.6" es ujrafuttatas."
+    Fail-Install ("A transformers verzio a or utan sem == 5.17.0 ({0}) - a Parakeet ASR motor most EXAKT pinnel telepul (a lebego pin a v0.10.0 P0 ASR forenzik egyetlen nem-reprodukalhato fuggosegi valtozoja volt)." -f $TfVersion) "Valamelyik csomag (voicemem pin / funasr / speechbrain fuggoseg) visszabeszelte. Kezzel: .venv\Scripts\python.exe -m pip install "transformers==5.17.0" es ujrafuttatas."
 }
-Write-Host ("    transformers {0} rendben (>= 5.6: a ParakeetForTDT class betoltodik)." -f $TfVersion)
+Write-Host ("    transformers {0} rendben (== 5.17.0 pin: a ParakeetForTDT class betoltodik, a telepites reprodukalhato)." -f $TfVersion)
 
 # ===========================================================================
 # 17) Modellek letoltese (scripts\download_models.ps1, idempotens)

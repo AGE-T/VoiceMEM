@@ -45,8 +45,8 @@ from pathlib import Path
 REPO = Path(__file__).resolve().parent.parent
 RELEASES = REPO / "releases"
 
-NEW_VERSION = "0.10.0"
-PREV_VERSION = "0.9.2"
+NEW_VERSION = "0.10.1"
+PREV_VERSION = "0.10.0"
 ZIP_NAME = f"VoiceMemAgent_v{NEW_VERSION}.zip"
 
 PLACEHOLDER_DIRS = [
@@ -74,48 +74,43 @@ ROOT_FILES = [
 ]
 
 NOTES = (
-    "v0.10 MEMORIA-SZEMANTIKA ES TEMPORALIS MEMORIA (operator order: "
-    "PHASE 0 forenzikus alapvonal eloszor - audit/VoiceMEM_v010/"
-    "PHASE0_BASELINE_AND_SEMANTIC_MAP.md, a termelo kod valtoztatasa ELŐTT "
-    "commitolva). DONTES: NINCS Observation Store - a teljes temporalis "
-    "szemantika ADDITIV metaadatkent fer az existing sorokra (semmilyen "
-    "schema-migracio, semmilyen destruktiv valtozas; a v0.9.2 adat olvashato "
-    "marad, randomizalt bizonyitassal a sorrend-ekvivalencia). "
-    "IMPLEMENTALVA: (1) voicemem/leftbrain/temporal.py - determinisztikus "
-    "(0 LLM, 0 prompt-valtozas) teny-oldali temporalis osztalyozas: stance "
-    "(pos/neg/past/qualified/uncertain/FUTURE - egy szokincs mindket retegre, "
-    "stance.py bovitve) + valid_from/valid_until intervallum a teny sajat "
-    "szavaibol; status SZARMAZTATVA (current/historical/superseded/future - "
-    "sose tarolt enum); (2) esemenyido-horgony javitas - az orchestrator "
-    "ts-fallbackja valodi ISO datuma (a regi '15:18:36' idopont-string minden "
-    "parserben elhalt: az extrakcio Observation Date horgonya, a recency-suly "
-    "es a [datum] prefix mind halott volt a produkcios utban); (3) megszunes "
-    "zaroja - UPDATE eseten a REGI sor valid_until=observation date (a "
-    "struktura most rogzi MIKOR ert veget az allapot, nem csak azt hogy veget "
-    "ert); tiltott DELETE -> supersession-fallback (edig a blokkolt torles "
-    "SEMIT sem tarolt - 'abbyahagytam a kavét' csendben jelenlegi maradt a "
-    "'issza a kavét'); (4) retrieval temporalis rangsor a KANONIKUS utban "
-    "(top_k=5 + rb3 VALTOZATLAN): query-intent (most/mult/jovo, HU+EN) "
-    "szerinti tier - a jovo allitas mar nem jelenik meg jelen-allapotkent, a "
-    "mult-keres elozhelyezi a tortenetet, a bizonytalan megkulonboztetheto "
-    "(past/future/uncertain render-jelzok mindket masolatban: bridge + "
-    "web_server, <=25 karakter/talalat a valtozatlan 1200-as kupakon belul); "
-    "(5) PHASE 9 konszolidacios hook: memory_history(memory_id) - a teljes "
-    "szuperszession-lanc olvasas oldest->current; (6) TALALT ES JAVITOTT "
-    "LETEZO HIBA: a ConflictResolver explicit-NONE aga nem alkalmazta az "
-    "uuid-mappinget - a visszahelyesites-szamlalas ('Nx confirmed') sosem "
-    "mukodott indexelt id-kkel (a v0.6.3 ota env-gap-pinned "
-    "OccurrenceExplicitNoneTests most eloszor valban lefut es ZOLD); (7) "
-    "release_tree.py egg-info ignore javitva (a v0.9.2 utani "
-    "fingerprint-eltares tenyleges oka). PHASE 11 MERES: osztalyozas 55.8 "
-    "us/teny, rangsor-kiegeszites 2.3 us/talalat (<0.002% a vektoros "
-    "kereseshez kepest), extrakcios latencia es prompt VALTOZATLAN (0 LLM "
-    "hivas hozzaadva) - nincs optimalizalando regresszio. Tesztek: +76 uj "
-    "(37 unit test_temporal_semantics.py + 39 integration "
-    "test_temporal_memory.py - VALODI E5+mem0/qdrant lanc, A-G osztalyok, "
-    "A->B->A->B lancok, keresnyelvi ellentmondas, replay/esemenyido-"
-    "jelensegek, trait-future) + teljes regresszio (stance 104/104, "
-    "memory-safety 23/23 - a regi env-gap helyreallt)."
+    "v0.10.1 P0 ASR FORENZIKAI KIADAS (operator order: URGENT P0 - magyar "
+    "beszed orosz / osszefuggestelen angol atiratkent jelenik meg a "
+    "celgepen). A FORENZIKA ALLASA (sandbox, pinned modell + produkcios "
+    "utvonal, 2026-09-15): (1) a v0.9.2->v0.10.0 TERMEK-DELTA NEM erinti "
+    "a hangutat (teljes fa-diff: csak memoria-szemantika fajlok valtoztak; "
+    "ASR/VAD/audio/web kod byte-azonos); (2) transformers 5.9.0-5.17.0 "
+    "CPU-n a TELJES HU korpuszon (6 fajl: piper-HU + valodi Windows "
+    "capture) HELYES, byte-azonos kiadasokkal - tiszta "
+    "konyvtar-verzio-regresszio NINCS (5.6.x-5.8.x: a ParakeetForTDT class "
+    "hianyzik, hangos import-hiba); (3) a produkcios Silero VAD "
+    "szegmentacio helyes (pmax 1.0, sane hatarok); (4) a kiadott gate SOSEM "
+    "futtatott valodi Parakeet-inferenciat (csak contract-tesztek) - a "
+    "verifikacios RES, most zarva. JAVITVA: (A) web_server VAD idle-riport: "
+    "a 'peak 0.97 < 0.25' HALO log-dontes (a riportablokk a vsm.update "
+    "ELOTT futott - a speech-start trigger-keret beszamitott a csucsba, az "
+    "uzenet szovege feltetel nelkul allitotta a 'peak < kuszob'-ot; most "
+    "az update UTAN fut + explicit feltetel - a VAD dontesi ut VALTOZATLAN, "
+    "pure logging); (B) bizonyitk-megorzes: cirilles atirat eseten a "
+    "bemeno hullamforma MINDIG dumpolodik (logs/asr_wrong_language_<ts>.wav "
+    "- edig csak az URES atiratok mentodtek), opt-in asr_dump_utterances "
+    "konfig a teljes catch-all dumpra; (C) transformers EXAKT PIN 5.17.0 "
+    "(install_m1.ps1 16. lepes + egyenloseg-assert; a '>= 5.6' padlo TEVES "
+    "volt, a class az 5.9-ben landolt; a lebego pin a celgepen "
+    "telepitesi-idopont szerint MAS verziot oldhatott fel - az ASR stack "
+    "egyetlen nem-reprodukalhato komponense, most pin-elve); (D) UJ valodi "
+    "inferencios regresszio-tesztek (test_real_asr_hungarian.py: valodi "
+    "korpusz a produkcios uton, CER-budget 0.25 a mert 0.000-0.099 felett, "
+    "cirill-tiltas; env-neutral skip) + unit tesztek a log-fixre "
+    "(test_vad_idle_report.py); (E) scripts/asr_regression_forensic.py: a "
+    "celgepi matrix-cella (tenyleges env-dump + modell-SHA-ellenorzes a "
+    "pinned revizio ellen + korpusz-futtatas a konfiguralt es a cpu "
+    "eszkozon) - a CUDA lanc a sandboxbol hianyzo dimenzio, ez a szkript "
+    "zarja le. HATAROK (oszinten): a celgepi gyoker (CUDA-specifikus "
+    "konyvtar-viselkedes vagy elo mikrofon-lanc) tavoli diagnozissal NEM "
+    "bizonyithato - a v0.10.1 a BIZONYITHATO hibakat javitja es a teljes "
+    "diagnosztikai eszkoztart szallitja; a celgepi 10 perces "
+    "forensic-futtatas + a wrong-language WAV dumpok zarjak a maradekot."
 )
 #: v0.6.0 markers: the modular ASR engine contract - asr_core (AudioBuffer,
 #: AsrResult, AsrError, registry, select_engine), the two NVIDIA adapters,
@@ -203,16 +198,18 @@ V061_MARKERS = {
         "nvidia/parakeet-tdt-0.6b-v3",
     ],
     "scripts/bootstrap.ps1": [
-        "(5, 6)",
+        # v0.10.1: the probe floor is 5.9 (where ParakeetForTDT exists)
+        "(5, 9)",
     ],
     "scripts/install_m1.ps1": [
-        "5.6",
+        "5.9",
     ],
     "scripts/verify_m1.ps1": [
         "parakeet-tdt-0.6b-v3",
     ],
     "requirements.txt": [
-        "transformers>=5.6",
+        # v0.10.1: exact pin (P0 forensic)
+        "transformers==5.17.0",
     ],
     "app/asr_parakeet.py": [
         "does not contain",
@@ -749,6 +746,45 @@ V0100_MARKERS = {
     ],
 }
 
+#: v0.10.1 markers: the P0 ASR forensic release — the idle-VAD report fix
+#: (below the state machine + explicit condition), the wrong-language
+#: evidence dump, the asr_dump_utterances flag, the exact transformers pin
+#: (installer + bootstrap floor reality 5.9), the on-target forensic
+#: script, and the two new regression suites.
+V0101_MARKERS = {
+    "app/web_server.py": [
+        "v0.10.1 (P0 ASR forensic fix): this block moved BELOW the state",
+        "elif peak < float(self._config.vad_threshold):",
+        "asr_wrong_language_",
+        "def _has_cyrillic",
+    ],
+    "app/config.py": [
+        "asr_dump_utterances: bool = False",
+    ],
+    "config/voicemem_config.yaml": [
+        "asr_dump_utterances: false",
+    ],
+    "requirements.txt": [
+        "transformers==5.17.0",
+    ],
+    "scripts/install_m1.ps1": [
+        "$TransformersPin = \"5.17.0\"",
+    ],
+    "scripts/bootstrap.ps1": [
+        "sys.exit(0 if v >= (5, 9) else 5)",
+    ],
+    "scripts/asr_regression_forensic.py": [
+        "PINNED_MODEL_SHA256",
+        "asr-regression-forensic/1",
+    ],
+    "tests/unit/test_vad_idle_report.py": [
+        "IdleVadReportTests",
+    ],
+    "tests/integration/test_real_asr_hungarian.py": [
+        "RealParakeetHungarianTests",
+    ],
+}
+
 #: v0.9.1 markers: the web VAD onset fix - the SPEECH_START trigger frame
 #: is CAPTURED (no early return in the speech_start branch), CLI parity is
 #: pinned by a dedicated regression test, and the gate baseline records the
@@ -796,8 +832,9 @@ V044_MARKERS = {
         '$LlamaArgs += @("--reasoning", $ReasoningFlag)',
     ],
     "scripts/install_m1.ps1": [
-        "$TransformersFloor",
-        "v >= (5, 6)",
+        # v0.10.1: the floor guard became the EXACT pin (P0 forensic)
+        "$TransformersPin",
+        "v == (5, 17)",
     ],
     "scripts/verify_m1.ps1": [
         '"chat_template_kwargs":{"enable_thinking":false}',
@@ -811,7 +848,8 @@ V044_MARKERS = {
         "LLM_DISABLE_THINKING",
     ],
     "requirements.txt": [
-        "transformers>=5.6",
+        # v0.10.1: exact pin (P0 forensic)
+        "transformers==5.17.0",
     ],
     "config/llm_config.yaml": [
         # v0.7.2 realignment: the thinking flag moved to the canonical
@@ -835,7 +873,8 @@ V045_MARKERS = {
     "scripts/bootstrap.ps1": [
         "$TfProbe",
         "transformers.__version__",
-        "(5, 6)",
+        # v0.10.1: the probe floor is 5.9 (ParakeetForTDT reality)
+        "(5, 9)",
         "else 5",
         "ParakeetForTDT",
     ],
@@ -910,20 +949,23 @@ V047_MARKERS = {
     ],
     "scripts/install_m1.ps1": [
         "patch_voicemem_english.py",
-        '$TransformersFloor = "5.6"',
+        # v0.10.1: the floating floor became the EXACT pin (P0 forensic)
+        '$TransformersPin = "5.17.0"',
     ],
     "scripts/bootstrap.ps1": [
         "patch_voicemem_english.py",
-        "v >= (5, 6)",
+        "v >= (5, 9)",
     ],
     "scripts/start_agent.ps1": [
         "localise_memories.py",
     ],
     "requirements.txt": [
-        "transformers>=5.6",
+        # v0.10.1: exact pin (P0 forensic)
+        "transformers==5.17.0",
     ],
     "pyproject.toml": [
-        "transformers>=5.6",
+        # v0.10.1: exact pin (P0 forensic)
+        "transformers==5.17.0",
     ],
 }
 
@@ -2038,6 +2080,16 @@ def build() -> int:
                     raise AssertionError(
                         f"self-check: v0.10.0 file missing from the ZIP: {must}"
                     )
+            # v0.10.1: the P0 forensic deliverables must ship in the ZIP.
+            for must in (
+                "scripts/asr_regression_forensic.py",
+                "tests/unit/test_vad_idle_report.py",
+                "tests/integration/test_real_asr_hungarian.py",
+            ):
+                if root_prefix + must not in names:
+                    raise AssertionError(
+                        f"self-check: v0.10.1 file missing from the ZIP: {must}"
+                    )
             # cumulative markers (v0.3.5 web payload, v0.3.6 CRLF START.bat)
             for rel, markers in CUMULATIVE_MARKERS.items():
                 content = zf.read(root_prefix + rel)
@@ -2243,7 +2295,7 @@ def build() -> int:
                             f"self-check: {rel} lacks v0.4.11 marker {m!r}"
                         )
             # v0.4.12: stale-page detection + raw capture + send-as-turn
-            for rel, markers in {**V0412_MARKERS, **V0413_MARKERS, **V0414_MARKERS, **V0415_MARKERS, **V0416_MARKERS, **V0417_MARKERS, **V0418_MARKERS, **V0419_MARKERS, **V0420_MARKERS, **V0421_MARKERS, **V050_MARKERS, **V052_MARKERS, **V060_MARKERS, **V061_MARKERS, **V062_MARKERS, **V063_MARKERS, **V064_MARKERS, **V070_MARKERS, **V071_MARKERS, **V072_MARKERS, **V080_MARKERS, **V081_MARKERS, **V090_MARKERS, **V091_MARKERS, **V092_MARKERS, **V0100_MARKERS}.items():
+            for rel, markers in {**V0412_MARKERS, **V0413_MARKERS, **V0414_MARKERS, **V0415_MARKERS, **V0416_MARKERS, **V0417_MARKERS, **V0418_MARKERS, **V0419_MARKERS, **V0420_MARKERS, **V0421_MARKERS, **V050_MARKERS, **V052_MARKERS, **V060_MARKERS, **V061_MARKERS, **V062_MARKERS, **V063_MARKERS, **V064_MARKERS, **V070_MARKERS, **V071_MARKERS, **V072_MARKERS, **V080_MARKERS, **V081_MARKERS, **V090_MARKERS, **V091_MARKERS, **V092_MARKERS, **V0100_MARKERS, **V0101_MARKERS}.items():
                 src_text = zf.read(root_prefix + rel).decode("utf-8", errors="replace")
                 for m in markers:
                     if m not in src_text:

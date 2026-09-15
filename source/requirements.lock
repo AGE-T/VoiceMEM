@@ -24,14 +24,24 @@ websockets==16.0        # uvicorn WS support - sandbox-igazolt
 # --- TARGET-ONLY (csak a celgepen; a telepito reszletezi a sorrendet) --------
 # Kutatott pin-ek a V1 spec 16.2 alapjan. A sandboxban ezek NEM telepulnek -
 # a kod guardolt/lazy importokkal kezeli hianyukat (CONTRACT.md 2. pont).
-# transformers>=5.6           # v0.6.1: a ParakeetForTDT class (a v0.6.0
-#                              # production ASR, nvidia/parakeet-tdt-0.6b-v3)
-#                              # CSAK a transformers >= 5.6-ban letezik - a
-#                              # regebbi 5.x (es 4.x) elutasitja. A
-#                              # vendor\voicemem pyproject pin-je (4.52.3) a
+# transformers==5.17.0        # v0.10.1 (P0 ASR forensic): EXAKT PIN (ez a
+#                              # sor TAJEKOZTATO - a tenyleges telepites az
+#                              # install_m1.ps1 16. lepeseben tortenik, most
+#                              # mar exakt pinnel + egyenloseg-assert).
+#                              # A ParakeetForTDT class valojaban CSAK a
+#                              # transformers >= 5.9-ben letezik (a v0.6.1-es
+#                              # ">= 5.6" padlo TEVES volt - 5.6.x..5.8.x
+#                              # import-hibaval elutasit, tesztelve). A lebego
+#                              # pin a celgepen telepitesi-idopont szerint
+#                              # mas verziot oldhatott fel - a v0.10.0 P0 ASR
+#                              # forenzik egyetlen nem-reprodukalhato
+#                              # fuggosegi valtozoja. A 5.17.0: a v0.10.0
+#                              # sandbox gate verzioja + a teljes HU korpusz
+#                              # CPU-ellenorzese (5.9-5.17 byte-azonos).
+#                              # A vendor\voicemem pyproject pin-je (4.52.3) a
 #                              # 12. lepesben visszavesz - az install_m1.ps1
 #                              # 16. lepesi OR (pip install
-#                              # "transformers>=5.6" + verzio-assert) a
+#                              # "transformers==5.17.0" + verzio-assert) a
 #                              # funasr/speechbrain UTAN viszaallitja.
 # onnxruntime==1.23.0          # Silero VAD ONNX (CPU build) - v0.3.4: a
 #                              # telepito a 13. lepesben KULON telepiti (a

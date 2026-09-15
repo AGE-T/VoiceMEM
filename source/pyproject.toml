@@ -17,7 +17,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "voicemem-agent"
-version = "0.10.0"
+version = "0.10.1"
 description = "Fully local HU/EN voice agent with long-term memory - M0/M1"
 requires-python = ">=3.11"
 dependencies = [
@@ -30,7 +30,7 @@ dependencies = [
 # Celgep (Windows 11 + RTX 5070): GPU/hang/kulso engine kotelezok.
 # A torch cu128 wheel kulon indexrol telepitendo (lasd requirements.lock).
 target = [
-    "transformers>=5.6",
+    "transformers==5.17.0",  # v0.10.1 P0 forensic: EXACT pin (ParakeetForTDT exists from 5.9; floating pin = non-reproducible ASR stack)
     "onnxruntime>=1.20",
     "sounddevice>=0.5.0",
     "soundfile>=0.12",

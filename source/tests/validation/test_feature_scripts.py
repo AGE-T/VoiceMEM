@@ -564,10 +564,11 @@ class StartupV034FieldReportTests(FeatureValidationTest):
         installer."""
         code = self._code("bootstrap.ps1")
         self.assertIn("transformers.__version__", code)
-        # v0.6.1: the floor is 5.6 - ParakeetForTDT (the v0.6.0 production
+        # v0.10.1: the floor is 5.9 - ParakeetForTDT (the v0.6.0 production
         # ASR engine, app/asr_parakeet.py) exists only from transformers
-        # 5.6; older 5.x releases do not contain it.
-        self.assertIn("(5, 6)", code)
+        # 5.9 (the v0.6.1 "5.6" floor was wrong - tested 5.6.x-5.8.x);
+        # the installer then PINS exactly 5.17.0.
+        self.assertIn("(5, 9)", code)
         self.assertIn("else 5", code)
         # exit 5 must NOT pass as ready -> the installer (self-healing) runs
         self.assertIn("if ($LASTEXITCODE -eq 5) {", code)
@@ -590,7 +591,7 @@ class StartupV034FieldReportTests(FeatureValidationTest):
         # the escaped single quotes survive as Python string literals
         self.assertIn("split(''+'')", inner)
         self.assertIn("split(''.'')", inner)
-        self.assertIn("sys.exit(0 if v >= (5, 6) else 5)", inner)
+        self.assertIn("sys.exit(0 if v >= (5, 9) else 5)", inner)
 
     # --- (2) cp1252 crash guard ------------------------------------------
 

@@ -222,7 +222,7 @@ class SpeakerFeatureTest(FeatureValidationTest):
         # 22 steps now (v0.4.4 added the transformers >= 4.57 guard; was 21)
         self.assertIn("# 22) Vegso install report", src)
         self.assertIn("# 16) transformers OR", src)
-        self.assertIn('pip install "transformers>=$TransformersFloor"', src)
+        self.assertIn('pip install "transformers==$TransformersPin"', src)
 
     def test_logic_requirements_mention_speechbrain(self):
         self.assertIn("speechbrain", _read(REQUIREMENTS))

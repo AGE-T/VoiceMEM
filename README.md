@@ -5,7 +5,7 @@ voice memory agent. This repository hosts the versioned release packages
 and their verification artifacts — the canonical build source lives in
 the agent workspace.
 
-**Latest stable release: `v0.10.0`**
+**Latest stable release: `v0.10.1`**
 
 ---
 
@@ -13,8 +13,9 @@ the agent workspace.
 
 | File | What it is | Size |
 | --- | --- | --- |
-| `VoiceMemAgent_v0.10.0.zip` | **The product.** Full agent source, machine-independent (no runtime state inside: no `.venv`, models, or memory). Install = unzip + `START.bat`. | 2.5 MB |
+| `VoiceMemAgent_v0.10.1.zip` | **The product.** Full agent source, machine-independent (no runtime state inside: no `.venv`, models, or memory). Install = unzip + `START.bat`. | 2.6 MB |
 | `VoiceMemAgent_v0.10.0_MirrorSync.zip` | **Evidence package** for the `MirrorSync.zip` work unit (GOLDEN RULE deliverable: RECOVERY.md + identity.json + evidence). | 9 KB |
+| `VoiceMem_asrregression_v0101_recovery.zip` | **The recovery package** for this release: `RECOVERY.md` + `identity.json` + evidence (the GREEN gate record, the code diff, changed files, test output, the release ZIP hash) — the versioned, independently restorable rollback anchor (what changed, how to verify it, how to roll back). | 33 KB |
 | `VoiceMem_memoryfixes_v080_recovery.zip` | **The recovery package** for this release: `RECOVERY.md` + `identity.json` + evidence (the GREEN gate record, the code diff, changed files, test output, the release ZIP hash) — the versioned, independently restorable rollback anchor (what changed, how to verify it, how to roll back). | 13 KB |
 | `VoiceMem_memorysemantics_v090_recovery.zip` | **The recovery package** for this release: `RECOVERY.md` + `identity.json` + evidence (the GREEN gate record, the code diff, changed files, test output, the release ZIP hash) — the versioned, independently restorable rollback anchor (what changed, how to verify it, how to roll back). | 61 KB |
 | `VoiceMem_runtimeopt_v092_recovery.zip` | **The recovery package** for this release: `RECOVERY.md` + `identity.json` + evidence (the GREEN gate record, the code diff, changed files, test output, the release ZIP hash) — the versioned, independently restorable rollback anchor (what changed, how to verify it, how to roll back). | 45 KB |
@@ -25,14 +26,15 @@ the agent workspace.
 ## Verify your download
 
 ```bash
-sha256sum VoiceMemAgent_v0.10.0.zip VoiceMemAgent_v0.10.0_MirrorSync.zip VoiceMem_memoryfixes_v080_recovery.zip VoiceMem_memorysemantics_v090_recovery.zip VoiceMem_runtimeopt_v092_recovery.zip VoiceMem_stabilization_v081_recovery.zip VoiceMem_temporal_v010_recovery.zip VoiceMem_vadfix_v091_recovery.zip
+sha256sum VoiceMemAgent_v0.10.1.zip VoiceMemAgent_v0.10.0_MirrorSync.zip VoiceMem_asrregression_v0101_recovery.zip VoiceMem_memoryfixes_v080_recovery.zip VoiceMem_memorysemantics_v090_recovery.zip VoiceMem_runtimeopt_v092_recovery.zip VoiceMem_stabilization_v081_recovery.zip VoiceMem_temporal_v010_recovery.zip VoiceMem_vadfix_v091_recovery.zip
 ```
 
 Expected:
 
 ```text
-472fb043ecfbac43a5487b91c60f81889527f803601b1e3c73d2a816a2220e67  VoiceMemAgent_v0.10.0.zip
+a9c781e0d4de8f9843d196ab43fdd945df686b772370fc9466e6ecd5b866b541  VoiceMemAgent_v0.10.1.zip
 5ca6eec78f3079515d62d4cdb12418ab5a4030002cda8d800e980322de83c20b  VoiceMemAgent_v0.10.0_MirrorSync.zip
+59f0df85711dd0eb6b6d4a2848878c47c421a204a504d31963d2b74c0571bb9c  VoiceMem_asrregression_v0101_recovery.zip
 cc54ffbb29af3b4cad14bf03da9f5ad288389958bc8001d21cb204fec1dcb28e  VoiceMem_memoryfixes_v080_recovery.zip
 25d35796d6abbce8e2325f2401218d8fe65ede79f71e2c255cfb1e37c86a5a5c  VoiceMem_memorysemantics_v090_recovery.zip
 f8052ecb67451be38dfddfc428ff3ec6f18976a6f8865f0051182c18a168487e  VoiceMem_runtimeopt_v092_recovery.zip
@@ -45,7 +47,7 @@ e5ac3e542790cdfc6f1649502910513bad2e886cab0482cc887845c9d2b29cee  VoiceMem_tempo
 
 ## Install (Windows)
 
-1. Unzip `VoiceMemAgent_v0.10.0.zip` into any folder (e.g. `F:\Voicemem\VoiceMemAgent`).
+1. Unzip `VoiceMemAgent_v0.10.1.zip` into any folder (e.g. `F:\Voicemem\VoiceMemAgent`).
 2. Double-click **`START.bat`** — that is the single user entry point.
 3. Wait for the bootstrap: Python check, `.venv`, dependencies, HF tooling,
    model download (`MODELS.lock.json`), configuration, smoke tests.
@@ -54,7 +56,7 @@ e5ac3e542790cdfc6f1649502910513bad2e886cab0482cc887845c9d2b29cee  VoiceMem_tempo
 Advanced modes: `START.bat mock` · `check` · `benchmark` · `repair` · `build`.
 At a single end-to-end failure, re-run `START.bat repair`.
 
-## The verification story (v0.10.0)
+## The verification story (v0.10.1)
 
 - **Vendor identity:** `vendor/voicemem` pinned at
   `e8384e087bd2f44eb05fc7ae1a3c525ea8244179` (= upstream tag `v0.0.1`;
@@ -97,9 +99,9 @@ At a single end-to-end failure, re-run `START.bat repair`.
 ## Magyar összefoglaló
 
 Ez a repó a **VoiceMemAgent** kiadásainak külső tükre. A legfrissebb
-stabil verzió a **v0.10.0**. Mit találhat itt:
+stabil verzió a **v0.10.1**. Mit találhat itt:
 
-- **`VoiceMemAgent_v0.10.0.zip`** — maga a termék. Gépfüggetlen forrás,
+- **`VoiceMemAgent_v0.10.1.zip`** — maga a termék. Gépfüggetlen forrás,
   telepítés: kicsomagolás + `START.bat` dupla kattintás, minden mást a
   bootstrap elintézi.
 - **Verifikációs / evidencia ZIP-ek** — a kiadások független

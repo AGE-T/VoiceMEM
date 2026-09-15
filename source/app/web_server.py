@@ -408,6 +408,19 @@ def resample_linear(x: Any, from_sr: int, to_sr: int) -> Any:
     return (x[i0] * (1.0 - frac) + x[i1] * frac).astype(np.float32)
 
 
+def _has_cyrillic(text: str) -> bool:
+    """True when the transcript contains any Cyrillic character (U+0400..U+04FF).
+
+    v0.10.1 (P0 ASR forensic): the reported failure signature is Hungarian
+    speech coming back as fluent Russian ("Я им работаю, валь."). Hungarian is
+    Latin script and the system's languages are HU/EN, so ANY Cyrillic in a
+    final transcript is unambiguous evidence that the engine heard a
+    different language than was spoken — the case where the exact input
+    waveform must be preserved for forensics (see _dump_utterance).
+    """
+    return any("\u0400" <= ch <= "\u04FF" for ch in text)
+
+
 def pcm16_to_float32(raw: bytes) -> Any:
     """PCM16 little-endian bytes -> float32 [-1, 1] (odd tails dropped)."""
     import numpy as np
@@ -1981,12 +1994,21 @@ class WebSession:
         elif message:
             self._diag(f"stage {stage} {status}: {message}")
 
-    def _dump_utterance(self, audio: Any, speech_ms: int, reason: str) -> None:
-        """Write an empty-transcript utterance to logs/last_empty_utterance.wav.
+    def _dump_utterance(
+        self, audio: Any, speech_ms: int, reason: str, name: Optional[str] = None
+    ) -> None:
+        """Write an utterance's exact waveform to logs/ for post-hoc forensics.
 
         v0.4.2: when ASR returns no text the user gets a toast, but the audio
         itself was lost - the one artifact that would show WHY (level too low,
         wrong language, model hiccup) is the sound. Never raises.
+
+        v0.10.1 (P0 ASR forensic): ``name`` parameter. The default keeps the
+        historical fixed file (last_empty_utterance.wav); the new callers
+        pass a timestamped name (asr_wrong_language_<ts>.wav for the Cyrillic
+        case, asr_utterance_<ts>.wav for the asr_dump_utterances catch-all)
+        so consecutive suspicious turns do NOT overwrite each other's
+        evidence.
         """
         try:
             import numpy as np
@@ -1995,7 +2017,7 @@ class WebSession:
                 return
             log_dir = self._config.logs_dir
             log_dir.mkdir(parents=True, exist_ok=True)
-            out = log_dir / "last_empty_utterance.wav"
+            out = log_dir / (name or "last_empty_utterance.wav")
             x = np.asarray(audio, dtype=np.float32)
             pcm = np.clip(x, -1.0, 1.0)
             pcm16 = (pcm * 32767.0).astype(np.int16)
@@ -2005,7 +2027,7 @@ class WebSession:
                 wav_file.setframerate(int(self._config.sample_rate))
                 wav_file.writeframes(pcm16.tobytes())
             logger.info(
-                "empty utterance dumped: %s (%d ms, reason=%s)",
+                "utterance dumped: %s (%d ms, reason=%s)",
                 out,
                 speech_ms,
                 reason[:80] or "empty transcript",
@@ -2252,47 +2274,9 @@ class WebSession:
 
         answering = self._turn_task is not None and not self._turn_task.done()
 
-        # v0.4.7: while frames flow but the VAD never crosses the threshold,
-        # log the rolling peak every ~5 s (150 frames x 32 ms). A peak near 0
-        # means the mic uplink carries silence; a peak like 0.3-0.9 without a
-        # speech_start means the threshold is too high for this mic/room —
-        # lower vad_threshold in config/voicemem_config.yaml. Without this
-        # line the failure mode is INVISIBLE (v0.4.6 field report: zero log
-        # lines between session_ready and the typed turns).
-        # v0.4.8 field-report fix: the line was gated on peak >= 0.05, so the
-        # MOST important case — the v0.4.7 log, 93 s at peak 0.00 — still
-        # printed NOTHING. Now every ~5 s prints a line, and the near-zero
-        # case gets its own message that names the actual suspects (Windows
-        # mic privacy / muted device / wrong input selected in the UI).
-        if not self._in_speech and not answering:
-            self._vad_peak = max(self._vad_peak, float(prob))
-            session["vad_peak"] = round(self._vad_peak, 3)
-            session["vad_threshold"] = round(float(self._config.vad_threshold), 3)
-            self._vad_frames_since_report += 1
-            if self._vad_frames_since_report >= 150:
-                peak = self._vad_peak
-                self._vad_peak = 0.0
-                self._vad_frames_since_report = 0
-                if peak < 0.05:
-                    logger.warning(
-                        "mic uplink carries silence: VAD peak %.2f over the last "
-                        "~5 s (mic frames %d) — the browser is streaming frames "
-                        "but the audio is (near-)zero. Check the mic test meter "
-                        "in the UI, the selected input device, Windows mic "
-                        "privacy/mute settings, or run the ASR test button.",
-                        peak,
-                        int(session.get("mic_frames", 0) or 0),
-                    )
-                else:
-                    logger.info(
-                        "VAD never reached the speech threshold: peak %.2f < %.2f "
-                        "over the last ~5 s (mic frames %d)",
-                        peak,
-                        float(self._config.vad_threshold),
-                        int(session.get("mic_frames", 0) or 0),
-                    )
-
         # -- barge-in detection while the assistant is answering ----------------
+        # (kept BEFORE the state machine: while answering, frames do not feed
+        # the speech state machine at all — barge-in is the only listener.)
         if answering:
             session["vad_in_speech"] = False
             # v0.4.14: barge-in reads the PRIMARY's own probability, never the
@@ -2374,6 +2358,47 @@ class WebSession:
             # trigger frame via the feed below (start -> feed order kept).
             # vad_threshold, frame size and hangover are all unchanged.
 
+        # -- idle-VAD rolling report (v0.4.7/v0.4.8) ----------------------------
+        # v0.10.1 (P0 ASR forensic fix): this block moved BELOW the state
+        # machine update. In its old position (before vsm.update) the report
+        # window could include the very frame that STARTS speech: the peak
+        # accumulated the trigger frame (in_speech was still False at that
+        # point), the 150-frame window closed on it, and the log printed the
+        # FALSE claim "VAD never reached the speech threshold: peak 0.97 <
+        # 0.25" immediately before "speech start (level 0.97)" — exactly the
+        # contradictory field log of the v0.10.0 P0 report. Below the update,
+        # any frame >= threshold has already flipped in_speech, so every
+        # accumulated frame is strictly below the threshold and the message
+        # is TRUE by construction (plus the explicit condition as defense).
+        if not self._in_speech and not answering:
+            self._vad_peak = max(self._vad_peak, float(prob))
+            session["vad_peak"] = round(self._vad_peak, 3)
+            session["vad_threshold"] = round(float(self._config.vad_threshold), 3)
+            self._vad_frames_since_report += 1
+            if self._vad_frames_since_report >= 150:
+                peak = self._vad_peak
+                self._vad_peak = 0.0
+                self._vad_frames_since_report = 0
+                if peak < 0.05:
+                    logger.warning(
+                        "mic uplink carries silence: VAD peak %.2f over the last "
+                        "~5 s (mic frames %d) — the browser is streaming frames "
+                        "but the audio is (near-)zero. Check the mic test meter "
+                        "in the UI, the selected input device, Windows mic "
+                        "privacy/mute settings, or run the ASR test button.",
+                        peak,
+                        int(session.get("mic_frames", 0) or 0),
+                    )
+                elif peak < float(self._config.vad_threshold):
+                    logger.info(
+                        "VAD never reached the speech threshold: peak %.2f < %.2f "
+                        "over the last ~5 s (mic frames %d)",
+                        peak,
+                        float(self._config.vad_threshold),
+                        int(session.get("mic_frames", 0) or 0),
+                    )
+
+        # -- capture block -------------------------------------------------------
         if self._in_speech:
             # Collect + (streaming engines only) partial ASR while the user
             # is speaking. v0.6.0: non-streaming engines (parakeet) get the
@@ -2501,6 +2526,30 @@ class WebSession:
             if final:
                 # Sound-only turns (noise, music) carry no text to answer in
                 # text_mode - they are dropped instead of sending " " to the LLM.
+                # v0.10.1 (P0 ASR forensic): preserve the EXACT waveform that
+                # entered the engine for wrong-language transcripts. The
+                # empty-transcript dump (v0.4.2) only covered silence/empty;
+                # the v0.10.0 field report (HU speech -> fluent Russian /
+                # unrelated English) lost the one artifact that discriminates
+                # "bad audio in" from "bad inference out". Cyrillic in a HU/EN
+                # system is unambiguous (_has_cyrillic); the catch-all
+                # asr_dump_utterances flag covers the English-flip class.
+                if _has_cyrillic(final) or self._config.asr_dump_utterances:
+                    ts = int(time.time() * 1000)
+                    if _has_cyrillic(final):
+                        self._dump_utterance(
+                            utterance,
+                            speech_ms,
+                            f"wrong-language transcript: {final[:60]!r}",
+                            name=f"asr_wrong_language_{ts}.wav",
+                        )
+                    else:
+                        self._dump_utterance(
+                            utterance,
+                            speech_ms,
+                            "asr_dump_utterances enabled",
+                            name=f"asr_utterance_{ts}.wav",
+                        )
                 self._diag(f"ASR final transcript: {final[:60]!r}")
                 self._diag("ASR turn dispatch (source=asr)")
                 await self._start_turn(

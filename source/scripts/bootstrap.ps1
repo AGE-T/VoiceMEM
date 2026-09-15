@@ -430,15 +430,18 @@ function Test-DepsReady {
     # step 16 upgrades it -> ASR loads again (self-healing START.bat).
     # No embedded double quotes (PS 5.1 native-argument quoting); the ''
     # pairs are escaped single quotes for the Python string literals.
-    $TfProbe = 'import sys, transformers; v = tuple(int(x) for x in transformers.__version__.split(''+'')[0].split(''.'')[:2]); sys.exit(0 if v >= (5, 6) else 5)'
+    # v0.10.1: a ParakeetForTDT class valojaban a transformers >= 5.9-ben letezik
+# (5.6-5.8: nincs benne - tesztelt); az install_m1.ps1 16. lepese EXACT
+# 5.17.0-t pin-el (reprodukalhato ASR stack, P0 forenzik).
+$TfProbe = 'import sys, transformers; v = tuple(int(x) for x in transformers.__version__.split(''+'')[0].split(''.'')[:2]); sys.exit(0 if v >= (5, 9) else 5)'
     try { & $VenvPython -c $TfProbe *> $null } catch { }
     if ($LASTEXITCODE -eq 0) { return $true }
     if ($LASTEXITCODE -eq 5) {
         $TfVersion = 'unknown'
         try { $TfVersion = ((& $VenvPython -c 'import transformers; print(transformers.__version__)' 2>$null | Out-String)).Trim() } catch { }
         if ([string]::IsNullOrWhiteSpace($TfVersion)) { $TfVersion = 'unknown' }
-        Write-BLog 'WARN' ('transformers ' + $TfVersion + ' < 5.6 in the venv - ParakeetForTDT (the v0.6.0 production ASR engine, nvidia/parakeet-tdt-0.6b-v3) does not exist below transformers 5.6; installer step 16 will upgrade it automatically')
-        Write-BWarn ('transformers ' + $TfVersion + ' < 5.6 (Parakeet ASR floor) -> will be upgraded automatically (ASR repair)')
+        Write-BLog 'WARN' ('transformers ' + $TfVersion + ' < 5.9 in the venv - ParakeetForTDT (the v0.6.0 production ASR engine, nvidia/parakeet-tdt-0.6b-v3) does not exist below transformers 5.9; installer step 16 will pin 5.17.0 automatically')
+        Write-BWarn ('transformers ' + $TfVersion + ' < 5.9 (Parakeet ASR floor) -> will be upgraded automatically (ASR repair)')
     } else {
         Write-BLog 'WARN' 'transformers import/version probe failed - installer step 16 will repair it'
         Write-BWarn 'transformers missing or broken -> will be installed automatically'

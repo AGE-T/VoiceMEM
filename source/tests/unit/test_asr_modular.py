@@ -525,6 +525,26 @@ class ParakeetEngineTests(unittest.TestCase):
     def setUpClass(cls) -> None:
         if not (_PARAKEET_DIR / "model.safetensors").is_file():
             raise unittest.SkipTest("parakeet model not downloaded")
+        # v0.10.1: sandbox OOM guard. The fp32 model (~2.4 GB) stays in the
+        # module-level backend cache for the REST of the process; inside the
+        # full unit battery (969 tests of accumulated allocations on a
+        # ~4 GB sandbox) the process gets SIGKILLed. On Linux skip when the
+        # free headroom cannot hold it; non-Linux (target) always runs.
+        try:
+            with open("/proc/meminfo", encoding="ascii") as fh:
+                mem = {}
+                for line in fh:
+                    k, _, v = line.partition(":")
+                    mem[k.strip()] = int(v.strip().split()[0]) * 1024
+            avail = mem.get("MemAvailable", 0)
+            if avail and avail < 3_600 * 1024 * 1024:
+                raise unittest.SkipTest(
+                    f"insufficient free memory for the fp32 model in this "
+                    f"process ({avail // (1024 * 1024)} MB available, "
+                    f"~3.6 GB needed with the battery's residue)"
+                )
+        except FileNotFoundError:
+            pass
         import torch
 
         torch.set_num_threads(1)  # sandbox memory/speed guard

@@ -140,6 +140,11 @@ class AgentConfig:
     asr_device: str = "cuda"          # cuda | cpu — execution config only, NOT a fallback
     asr_language: str = ""            # "" = engine default behaviour
     asr_max_new_tokens: int = 256     # generation cap per transcription call
+    # v0.10.1 (P0 ASR forensic): when True, EVERY final transcript's utterance
+    # is dumped to logs/asr_utterance_<ts>.wav (the exact waveform that
+    # entered the engine). Opt-in diagnostic for field forensics — the
+    # wrong-language (Cyrillic) case dumps ALWAYS, regardless of this flag.
+    asr_dump_utterances: bool = False
     # LEGACY (non-production, v0.6.0): consumed only by app/asr.py (the
     # retained Qwen3-ASR migration/debug module) and its historical tests.
     # The production engine layer resolves model identity from

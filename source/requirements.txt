@@ -27,22 +27,24 @@ websockets>=13        # uvicorn WS support (bongeszo <-> backend /ws)
 
 # --- TARGET-ONLY (nehez, guardolt import a kodban) --------------------------
 # Ezeket a sandboxba NEM kell telepiteni (nincs GPU / nincs hang).
-transformers>=5.6     # NVIDIA Parakeet TDT 0.6B v3 (v0.6.0 production ASR)
+transformers==5.17.0  # NVIDIA Parakeet TDT 0.6B v3 (v0.6.0 production ASR)
                      # betoltese a ParakeetForTDT + AutoProcessor utvonalan
                      # (app/asr_parakeet.py, models/asr/parakeet-tdt-0.6b-v3,
                      # MODELS.lock.json asr bejegyzes).
-                     # v0.6.1: a ParakeetForTDT class CSAK a transformers
-                     # >= 5.6-ban letezik - a regebbi 5.x elutasitja (a
-                     # v0.4.7-es 5.0-padlot mar a nyugdijazott Qwen3-ASR
-                     # ut irta elo; app/asr.py mar nem-termellesi migracios
-                     # modul). A 16. lepes OR-e es az assert ezt a padlot
-                     # kenyszeri.
+                     # v0.10.1 (P0 ASR forensic): EXAKT PIN. (1) A
+                     # ParakeetForTDT class valojaban CSAK a transformers
+                     # >= 5.9-ben letezik - a v0.6.1-es ">= 5.6" padlo
+                     # TEVES volt (5.6.x-5.8.x import-hibaval elutasit,
+                     # tesztelve). (2) A lebego pin miatt a celgep
+                     # telepitesi-idopont szerint MAS verziot oldhatott fel -
+                     # a v0.10.0 P0 ASR forenzikban ez volt az ASR stack
+                     # egyetlen nem-reprodukalhato komponense. A 5.17.0: a
+                     # v0.10.0 sandbox gate verzioja + a teljes HU korpusz
+                     # CPU-ellenorzese (5.9-5.17: byte-azonos kiadasok).
                      # FIGYELEM: a 12. lepes "pip install -e vendor\voicemem"
                      # a vendored pin miatt 4.52.3-ra DOWNGRADELI - az
                      # install_m1.ps1 16. lepeseben egy OR fut ezutan, ami
-                     # visszairanyitja 4.57+ ra (a funasr/speechbrain utan).
-                     # A spec 16.2 5.0+-a a MOSS-TTS Realtime kovetelmeny
-                     # (V2) - az M1-hez a 4.57+ elengedo.
+                     # a PIN-RE allitja vissza (a funasr/speechbrain utan).
 onnxruntime>=1.20     # CPU build (models/vad/silero-vad/silero_vad.onnx).
                      # A Blackwell sm_120 nincs benne a prebuilt GPU
                      # csomagokban -> a CPU futtatas SZANDERKOS
