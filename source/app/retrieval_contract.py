@@ -88,10 +88,13 @@ class TraitObservationInfo:
     first_seen: str
     last_seen: str
     # [v0.9.0 — VM-LOCAL-015] trait semantic state: the stance recorded at
-    # write time (pos/neg/past/qualified/uncertain, "" = neutral/legacy)
-    # and the supersession chain (this row superseded <id> / was superseded
-    # by <id> at <ts>). superseded_by non-empty => the trait is HISTORICAL,
-    # not current: consumers must not present it as current truth.
+    # write time (pos/neg/past/qualified/uncertain/future, "" = neutral/
+    # legacy) and the supersession chain (this row superseded <id> / was
+    # superseded by <id> at <ts>). superseded_by non-empty => the trait is
+    # HISTORICAL, not current: consumers must not present it as current
+    # truth. [v0.10] ``future`` = not-yet-valid forward-looking observation
+    # (never merges into / flips a current row — same class as the fact side,
+    # leftbrain/temporal.py).
     stance: str = ""
     supersedes: str = ""
     superseded_by: str = ""

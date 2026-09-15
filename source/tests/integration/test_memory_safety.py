@@ -51,10 +51,12 @@ VENDOR = REPO / "vendor" / "voicemem"
 sys.path.insert(0, str(REPO))
 sys.path.insert(0, str(VENDOR))
 
-E5_DIR = (
-    REPO / "models" / "hf" / "models--intfloat--multilingual-e5-small"
-    / "snapshots" / "614241f622f53c4eeff9890bdc4f31cfecc418b3"
-)
+# [v0.10] E5 model dir: the M0 layout copy (models/embedding/…) is the
+# authoritative local install (the app pins VOICEMEM_E5_MODEL at exactly
+# this path via pin_e5_local_model). The former models/hf snapshot cache
+# dir lost its weights in a sandbox state-recycle (README-only placeholder)
+# — same pinned model, same revision, working copy.
+E5_DIR = REPO / "models" / "embedding" / "multilingual-e5-small"
 
 MOCK_PORT = 8791
 USER_ID = "safety_gate_user"

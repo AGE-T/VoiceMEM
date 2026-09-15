@@ -54,6 +54,12 @@ class ExtractedAdditiveMemory:
     # 只用于冲突判定阶段的第二次候选检索（见 voice_input.py），空串 = 事件/经历类，
     # 没有可覆盖的属性。由抽取 prompt 顺带输出（_ATTRIBUTE_ADDENDUM），零额外调用。
     attribute: str = ""
+    # [v0.10] Per-fact temporal metadata (leftbrain/temporal.py):
+    # {"stance": …, "valid_from": …, "valid_until": …} — classified
+    # deterministically post-extraction (claim + the turn's utterance as
+    # ground-truth quote), merged into the stored row's metadata by
+    # append_extracted. None = legacy path / no temporal signal.
+    metadata: dict[str, Any] | None = None
 
     @classmethod
     def from_dict(cls, raw: dict[str, Any]) -> ExtractedAdditiveMemory:
@@ -666,6 +672,14 @@ class ConflictResolver:
                     raw_id = uuid_mapping[raw_id]
                 elif raw_id not in set(uuid_mapping.values()):
                     event = "ADD" if event == "UPDATE" else "NONE"
+            elif event == "NONE" and raw_id in uuid_mapping:
+                # [v0.10] 显式 NONE 也要过序号→UUID 映射：官方 prompt 的示例
+                # id 全是小整数，模型对 NONE 同样会回 "0"——之前只有 UPDATE/
+                # DELETE 做映射，NONE 拿着假 id 进 count_occurrence，静默
+                # "memory not found"，重复确认从未真正计数（v0.10 时间学
+                # 套件抓到的存量缺陷；explicit-NONE 集成测试一直被 env-gap
+                # 钉住，直到这次才真跑起来）。
+                raw_id = uuid_mapping[raw_id]
             results.append(ConflictResolution(
                 event=event,
                 memory_id=raw_id,

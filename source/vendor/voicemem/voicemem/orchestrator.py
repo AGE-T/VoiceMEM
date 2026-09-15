@@ -1041,7 +1041,17 @@ class Orchestrator:
         """
         import time
 
-        ts = observed_at or time.strftime("%H:%M:%S")
+        # [v0.10 PHASE 3] Event-time anchor fix. The old fallback
+        # time.strftime("%H:%M:%S") put a TIME-OF-DAY into begin_time, which
+        # then flowed (a) into the extraction prompt as "Observation Date"
+        # (so fact-text dates were resolved against "15:18:36"), (b) into
+        # metadata.time_start where _as_date() rejects it (observed_at fell
+        # back to write-time wall clock), and (c) into update_memory /
+        # count_occurrence as a bogus observed_at. The live path observes
+        # NOW, so the honest fallback is the full wall-clock ISO datetime.
+        # Legacy stored time-of-day strings keep their old read-side
+        # behaviour (parsers reject them exactly as before — no migration).
+        ts = observed_at or time.strftime("%Y-%m-%dT%H:%M:%S")
 
         if agent_reply is None:
             agent_reply = self._reply_to(text)       # 这轮的回复，左脑消歧用

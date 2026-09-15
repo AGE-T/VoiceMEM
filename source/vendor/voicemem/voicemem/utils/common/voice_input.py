@@ -556,6 +556,31 @@ def ingest_voice_input(
                 slots=vi.slots, messages_count=len(messages),
             )
 
+    # ── [v0.10 PHASE 2] per-fact temporal classification ─────────────
+    # Deterministic (0 LLM, leftbrain/temporal.py): stance (pos/neg/past/
+    # qualified/uncertain/future) + validity interval, classified from the
+    # fact text with the turn's raw utterance as the ground-truth quote
+    # (the extractor normalises "will like" → "likes"; the quote keeps it).
+    # Rides each row's metadata into storage — no prompt change, no extra
+    # LLM call, v0.9.2 prompt budget untouched.
+    from dataclasses import replace as _dc_replace
+    from voicemem.leftbrain.temporal import classify_fact_temporal
+    _turn_quote = " ".join(
+        t for t in (vi.full_transcript(), str(vi.agent_reply or "")) if t
+    ).strip()
+
+    def _temporal_meta(ft) -> dict:
+        return {k: v for k, v in (("stance", ft.stance),
+                                  ("valid_from", ft.valid_from),
+                                  ("valid_until", ft.valid_until)) if v}
+
+    _classified: list = []
+    for m in extracted:
+        ft = classify_fact_temporal(m.text, _turn_quote)
+        md = _temporal_meta(ft)
+        _classified.append(_dc_replace(m, metadata=md) if md else m)
+    extracted = _classified
+
     # ── Step 3-4: Conflict resolution (Mem0 V1 风格) ─────────────────────────
     from voicemem.leftbrain.extract_facts_openai import ConflictResolver
 
@@ -633,6 +658,9 @@ def ingest_voice_input(
                         local_id=r.memory_id,
                         text=r.text,
                         attributed_to=orig.attributed_to,
+                        # [v0.10] keep the ADD's temporal classification
+                        # (classified above from the same text + quote).
+                        metadata=getattr(orig, "metadata", None),
                     ))
             elif r.event == "UPDATE" and r.memory_id and r.text:
                 resolved_ids.add(str(r.memory_id))
@@ -642,11 +670,35 @@ def ingest_voice_input(
                     # 时间戳必须跟着走，否则新事实会挂在被并那条的旧日期上。
                     # user_id 传了才会重新跑认知图实体/关系抽取——之前 UPDATE
                     # 事实完全不会进认知图，只有 ADD 会，见 update_memory 文档。
-                    repo.update_memory(r.memory_id, r.text, session_id=session_id,
-                                       observed_at=vi.begin_time, user_id=user_id)
+                    # [v0.10 PHASE 4] the superseding observation carries its
+                    # own temporal classification, and the OLD row's interval
+                    # closes at the observation date (the replaced state ended
+                    # when the new one was observed — WHEN, not just THAT).
+                    _ft_u = classify_fact_temporal(r.text, _turn_quote)
+                    repo.update_memory(
+                        r.memory_id, r.text, session_id=session_id,
+                        observed_at=vi.begin_time, user_id=user_id,
+                        valid_until=_obs_date_or_none(vi.begin_time),
+                        new_meta=_temporal_meta(_ft_u))
             elif r.event == "DELETE" and r.memory_id:
                 resolved_ids.add(str(r.memory_id))
-                if hasattr(repo, "delete_memory"):
+                if hasattr(repo, "update_memory") and r.text:
+                    # [v0.10 PHASE 4] denied-DELETE → supersession fallback.
+                    # The controlled fork blocks destructive deletes
+                    # (VM-LOCAL-005); until now a blocked DELETE stored
+                    # NOTHING — "I stopped drinking coffee" silently left
+                    # "drinks coffee" as the current truth. The cessation
+                    # is now APPENDED as the new current row (chain intact,
+                    # old value historical, its interval closed at the
+                    # observation date).
+                    _ft_d = classify_fact_temporal(r.text, _turn_quote)
+                    resolved_texts.add(_norm_fact_text(r.text))
+                    repo.update_memory(
+                        r.memory_id, r.text, session_id=session_id,
+                        observed_at=vi.begin_time, user_id=user_id,
+                        valid_until=_obs_date_or_none(vi.begin_time),
+                        new_meta=_temporal_meta(_ft_d))
+                elif hasattr(repo, "delete_memory"):
                     repo.delete_memory(r.memory_id)
             elif r.event == "NONE" and r.memory_id:
                 # [CONTROLLED FORK - patch VM-LOCAL-012] 显式 NONE：同一观察的
@@ -755,3 +807,15 @@ def _norm_fact_text(text: str) -> str:
     ADD/UPDATE 的世界，模糊匹配会把不同记忆误计到一起）。"""
     import re as _re
     return _re.sub(r"\s+", " ", str(text or "").strip().lower()).strip(" \t\r\n.,;:!?'\"()[]。！？，；：")
+
+
+def _obs_date_or_none(begin_time: str) -> str | None:
+    """[v0.10 PHASE 3] Observation date (YYYY-MM-DD) from the event-time
+    anchor when it is ISO-shaped; None otherwise.
+
+    Legacy time-of-day strings ("15:18:36", the pre-v0.10 app-path anchor)
+    and anything unparseable → None → the caller skips the interval write
+    (the old no-interval behaviour). NEVER invent a date."""
+    from voicemem.leftbrain.temporal import parse_iso_date
+    d = parse_iso_date(begin_time)
+    return d.isoformat() if d else None

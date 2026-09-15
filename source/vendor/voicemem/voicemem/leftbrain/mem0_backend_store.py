@@ -294,7 +294,9 @@ class Mem0BackendStore:
     def update_memory(self, memory_id: str, new_text: str,
                        session_id: int | str | None = None,
                        observed_at: str | None = None,
-                       user_id: str | None = None) -> str | bool | None:
+                       user_id: str | None = None,
+                       valid_until: str | None = None,
+                       new_meta: dict[str, Any] | None = None) -> str | bool | None:
         """[CONTROLLED FORK - patch VM-LOCAL-008] UPDATE is NON-DESTRUCTIVE.
 
         Upstream (and this fork until v0.5.1) overwrote the fact text in
@@ -314,6 +316,14 @@ class Mem0BackendStore:
         3. retrieval prefers the current value (search marks hits with
            ``superseded_by`` and ranks non-superseded first) while the old
            observation stays queryable.
+
+        [v0.10 PHASE 4] ``valid_until`` (optional, ``YYYY-MM-DD``): when the
+        superseding observation is a CESSATION ("no longer likes X"), the
+        caller passes the observation date and the OLD row's interval is
+        CLOSED at it — the row becomes historical by interval, not only by
+        chain membership (the structure now records WHEN the state ended,
+        not just that it ended). Rides the same metadata-merge marking call
+        — one write, no extra round-trip.
 
         The owner of the new row: ``user_id`` when given, else the user_id
         of the existing row (mem0 payload). If neither can be resolved the
@@ -347,17 +357,21 @@ class Mem0BackendStore:
                 memory_id)
             return False
         role = "assistant" if str(existing.get("role") or existing.get("attributed_to") or "user") == "assistant" else "user"
-        new_meta: dict[str, Any] = {"supersedes": memory_id}
+        meta_new: dict[str, Any] = {"supersedes": memory_id}
+        # [v0.10] the superseding observation's own temporal classification
+        # (stance / valid_from / valid_until) rides the new row.
+        if new_meta:
+            meta_new.update({k: v for k, v in new_meta.items() if v})
         if session_id is not None:
-            new_meta["session_id"] = session_id
+            meta_new["session_id"] = session_id
         if observed_at is not None:
-            new_meta["created_at"] = observed_at
+            meta_new["created_at"] = observed_at
         try:
             res = self._mem0.add(
                 messages=[{"role": role, "content": t}],
                 user_id=owner,
                 infer=False,
-                metadata=new_meta,
+                metadata=meta_new,
             )
             entries = res.get("results") if isinstance(res, dict) else res
             if not entries:
@@ -372,9 +386,12 @@ class Mem0BackendStore:
         # prev_value) and the original created_at (event time preserved).
         from datetime import datetime, timezone
         now_iso = datetime.now(timezone.utc).isoformat()
+        old_mark: dict[str, Any] = {
+            "superseded_by": new_id, "superseded_at": now_iso}
+        if valid_until:
+            old_mark["valid_until"] = str(valid_until)[:10]
         try:
-            self._mem0.update(memory_id, metadata={
-                "superseded_by": new_id, "superseded_at": now_iso})
+            self._mem0.update(memory_id, metadata=old_mark)
         except Exception as e:
             # The new row exists but the link could not be written: keep the
             # new row (lossless append already done) and report loudly — the
@@ -611,6 +628,12 @@ class Mem0BackendStore:
             # [VM-LOCAL-008] 显式取代链：被 UPDATE 的旧观察保留 superseded_by
             # （新行 id），检索时当前值优先、历史值仍可查。
             superseded_by = str(inner.get("superseded_by") or "").strip()
+            # [v0.10] Fact-side temporal semantics (leftbrain/temporal.py):
+            # stance + validity interval, stored additively at ingest. Legacy
+            # rows carry no keys → "" → status "current" (v0.9.2 behaviour).
+            f_stance = str(inner.get("stance") or "").strip()
+            f_valid_from = str(inner.get("valid_from") or "").strip()
+            f_valid_until = str(inner.get("valid_until") or "").strip()
             hits.append(MemorySearchHit(
                 memory_id=mid, text=text, score=cos + bonus,
                 attributed_to=str(e.get("attributed_to") or "user"),
@@ -618,6 +641,8 @@ class Mem0BackendStore:
                 observed_at=observed, superseded_by=superseded_by,
                 recency_boost=rec_boost, occurrence_count=occ_count,
                 last_observed_at=last_obs,
+                stance=f_stance, valid_from=f_valid_from,
+                valid_until=f_valid_until,
             ))
 
         # [VM-LOCAL-008] 排序：非 superseded（当前值）优先，余弦分高者先。
@@ -625,8 +650,33 @@ class Mem0BackendStore:
         # [VM-LOCAL-011] 余弦之上叠加时效加分（量级 ≤ 0.10，与 _TIME_WEIGHT
         # 同级）——"我最近说过什么"从今往后偏向新观察；无日期行加分 0，
         # 行为不变。加分进排序键，不进展示用 score（词面/时间加分留在 score）。
+        #
+        # [v0.10 PHASE 6] TEMPORAL RANKING TIERS (leftbrain/temporal.py).
+        # The query's temporal intent (now/past/future, default now) picks
+        # a tier per hit from its DERIVED status:
+        #   current-intent:  current(0) < historical(1) = future(1) < superseded(2)
+        #   past-intent:     historical(0) = superseded(0) < current(1) < future(2)
+        #   future-intent:   future(0) < current(1) < historical(2)
+        # LEGACY EQUIVALENCE (proof): a legacy row has no temporal keys, so
+        # row_status() returns "superseded" iff superseded_by is set — under
+        # the default current-intent the tier is then 0/2, i.e. EXACTLY the
+        # old (not superseded_by, …) partition, and the composed key below
+        # keeps the same order. Old data, old order. The negated tier keeps
+        # the descending sort direction shared with the other keys.
+        from voicemem.leftbrain.temporal import (
+            query_temporal_intent, row_status, temporal_rank_tier,
+        )
+        q_intent = query_temporal_intent(q)
         hits.sort(
-            key=lambda h: (not h.superseded_by, h.base_score + h.recency_boost),
+            key=lambda h: (
+                -temporal_rank_tier(
+                    row_status(superseded_by=h.superseded_by, stance=h.stance,
+                               valid_from=h.valid_from, valid_until=h.valid_until,
+                               today=today),
+                    q_intent),
+                not h.superseded_by,
+                h.base_score + h.recency_boost,
+            ),
             reverse=True,
         )
         base = hits[:top_k]

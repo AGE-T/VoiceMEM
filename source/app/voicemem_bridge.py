@@ -102,6 +102,11 @@ def hit_provenance_suffix(h: Any) -> str:
     suffix so the reply model can reason about freshness, confidence and
     currency. Raw cosine scores are deliberately NOT shown (noise for the
     reply model); occurrence count is the audit's OCC-1 signal.
+
+    [v0.10 PHASE 6] temporal-semantic markers (past / future [from <date>]
+    / uncertain / qualified) from the fact's stored stance + validity
+    interval — mirrors web_server.hit_provenance_suffix exactly (the
+    documented duplication contract).
     """
     bits: list[str] = []
     obs = str(getattr(h, "observed_at", "") or "")[:10]
@@ -113,6 +118,16 @@ def hit_provenance_suffix(h: Any) -> str:
         occ = 0
     if occ > 1:
         bits.append(f"{occ}x confirmed")
+    st = str(getattr(h, "stance", "") or "").strip()
+    vf = str(getattr(h, "valid_from", "") or "").strip()
+    if st == "future":
+        bits.append(f"future from {vf}" if vf else "future")
+    elif st == "past":
+        bits.append("past")
+    elif st == "uncertain":
+        bits.append("uncertain")
+    elif st == "qualified":
+        bits.append("qualified")
     if str(getattr(h, "superseded_by", "") or "").strip():
         bits.append("superseded")
     attr = str(getattr(h, "attributed_to", "") or "").strip()

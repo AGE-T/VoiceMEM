@@ -464,6 +464,14 @@ def hit_provenance_suffix(h: Any) -> str:
     Raw cosine scores are deliberately NOT shown to the persona. Duplicated
     in app/voicemem_bridge.py (the same render helper pattern as
     clean_rb_content) so the CLI and web paths stay identical.
+
+    [v0.10 PHASE 6] temporal-semantic markers, additive and bounded:
+    ``past`` / ``future from <date>`` / ``future`` / ``uncertain`` /
+    ``qualified`` — from the fact's stored stance + validity interval
+    (leftbrain/temporal.py). The persona can now distinguish "used to like"
+    from "likes", a not-yet-valid future preference from a current one,
+    and a hedged observation from a confirmed one. Absent markers =
+    current confirmed knowledge (the existing convention).
     """
     bits: list[str] = []
     obs = str(getattr(h, "observed_at", "") or "")[:10]
@@ -475,6 +483,16 @@ def hit_provenance_suffix(h: Any) -> str:
         occ = 0
     if occ > 1:
         bits.append(f"{occ}x confirmed")
+    st = str(getattr(h, "stance", "") or "").strip()
+    vf = str(getattr(h, "valid_from", "") or "").strip()
+    if st == "future":
+        bits.append(f"future from {vf}" if vf else "future")
+    elif st == "past":
+        bits.append("past")
+    elif st == "uncertain":
+        bits.append("uncertain")
+    elif st == "qualified":
+        bits.append("qualified")
     if str(getattr(h, "superseded_by", "") or "").strip():
         bits.append("superseded")
     attr = str(getattr(h, "attributed_to", "") or "").strip()
@@ -3169,6 +3187,13 @@ class WebSession:
                     "occurrence_count": getattr(h, "occurrence_count", 0) or 0,
                     "last_observed_at": getattr(h, "last_observed_at", "") or "",
                     "superseded_by": getattr(h, "superseded_by", "") or "",
+                    # v0.10: fact-side temporal semantics (stance +
+                    # validity interval; "" = legacy row / no signal).
+                    # Machine consumers (UI/tests) read these; the LLM
+                    # render uses the provenance-suffix markers instead.
+                    "stance": getattr(h, "stance", "") or "",
+                    "valid_from": getattr(h, "valid_from", "") or "",
+                    "valid_until": getattr(h, "valid_until", "") or "",
                 }
                 for h in hits
             ],

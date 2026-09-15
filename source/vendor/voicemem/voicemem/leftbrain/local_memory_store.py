@@ -309,6 +309,15 @@ class MemorySearchHit:
     #: last_observed_at（ISO 时间戳）。
     occurrence_count: int = 0
     last_observed_at: str = ""
+    #: [v0.10] Fact-side temporal semantics (see leftbrain/temporal.py).
+    #: stance: pos/neg/past/qualified/uncertain/future/"" — "" = legacy row
+    #: (stored before v0.10) or affect-neutral fact.
+    stance: str = ""
+    #: Temporal validity detected from the statement's own words (ISO date,
+    #: "" = open/unknown). valid_from > today ⇒ future status (ranked below
+    #: current for present-tense questions); valid_until < today ⇒ historical.
+    valid_from: str = ""
+    valid_until: str = ""
 
 
 @dataclass

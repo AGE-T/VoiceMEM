@@ -55,6 +55,17 @@ def _ignored(name: str) -> bool:
     return any(fnmatch(name, pat) for pat in IGNORE_PATTERNS)
 
 
+def _ignored_path(rel: Path) -> bool:
+    """Path-aware ignore: a pattern matching ANY RELATIVE PATH COMPONENT
+    ignores the file ("*.egg-info" must exclude the CONTENTS of an egg-info
+    directory, not only a file literally named *.egg-info — the v0.9.2
+    post-release fingerprint drift was exactly this: pip's editable-install
+    metadata regenerated under vendor/voicemem/voicemem.egg-info/ after the
+    gate and silently changed the tree fingerprint while all 328 SHIPPED
+    files stayed byte-identical)."""
+    return any(_ignored(part) for part in rel.parts)
+
+
 def staged_files(repo: Path) -> list[Path]:
     """Every file that would ship in the release ZIP, sorted by repo-relative
     posix path (docs/ included when present; releases/ ledgers excluded)."""
@@ -67,7 +78,7 @@ def staged_files(repo: Path) -> list[Path]:
         if not base.is_dir():
             continue
         for p in base.rglob("*"):
-            if p.is_file() and not _ignored(p.name):
+            if p.is_file() and not _ignored_path(p.relative_to(repo)):
                 out.append(p)
     for name in ROOT_FILES:
         p = repo / name

@@ -45,8 +45,8 @@ from pathlib import Path
 REPO = Path(__file__).resolve().parent.parent
 RELEASES = REPO / "releases"
 
-NEW_VERSION = "0.9.2"
-PREV_VERSION = "0.9.1"
+NEW_VERSION = "0.10.0"
+PREV_VERSION = "0.9.2"
 ZIP_NAME = f"VoiceMemAgent_v{NEW_VERSION}.zip"
 
 PLACEHOLDER_DIRS = [
@@ -74,45 +74,48 @@ ROOT_FILES = [
 ]
 
 NOTES = (
-    "v0.9.2 FUTTATASI-IDEJU OPTIMALIZALAS + MEMORIA-VISSZAKERESI KOLTSEGKERET "
-    "(operator order: measure first, implement the justified fix). MERT "
-    "BIZONYITEK (verzio-pontos llama.cpp b10717 ubuntu-x64 + Qwen3 tokenizer; "
-    "sandbox wall-times a celgepen masok - a cache-ratok es token-szamok "
-    "modell-fuggetlenek): (1) a b10717 RAM-backed prompt cache (PR #16391) "
-    "LCP-alapu allapot-visszaallitasa egy kozbejovo chat-keres UTAN az "
-    "extrakcio 85.7%-at allitotta vissza (8912/10399, E2); (2) az extrakcios "
-    "prompt 95.4%-a statikus, a tenyleges uj beszelgetes ~180 token; (3) az "
-    "extrakcio es a conflict-resolver max_tokens nelkul futott (n_predict=-1) "
-    "- a v0.9.1 audit P0-2. IMPLEMENTALVA: (A) max_tokens=1536/1024 "
-    "(VOICEMEM_EXTRACT_MAX_TOKENS / VOICEMEM_RESOLVE_MAX_TOKENS, ervenytelen "
-    "env ertek alapertekre esik, csonkolt JSON fail-closed, tesztelt); (B) "
-    "prompt-redukcio 7923 -> 6118 alap-token (-22.8%; minden vagas "
-    "EXAMPLE_OVERLAP / TEXTUAL_DUPLICATION / INPUT_DOMAIN bizonyitasi "
-    "osztaly, manifest az audit csomagban; 38 szignalas strukturaklis "
-    "ekvivalencia-teszttel orzi); (C) a merged addendum (1040 statikus token) "
-    "a user-uzenet ELOJEBRE kerult - a cache-elheto prefix ~9.6K tokenre no; "
-    "(D) app/background_memory.py BackgroundMemoryGate - a hatter-munka VAR "
-    "beszelt-turn alatt (felfegyverzes az elso VAD-beszed-keret + turn "
-    "inditas, engedes answer_done/hiba/interrupt + 2s grace, uj beszed a "
-    "grace-ban azonnal ujra zar; a sor sosem dobodik el, pontos "
-    "duplikatumok osszevontak; az ingest async_facts=False-szal a to_thread-ben "
-    "fut - a TELJES hatter-lanc lathato es valodi vegezesig var; a futos "
-    "extrakciot NEM szakítja meg - idotartamat a kimeneti korlat es a redukalt "
-    "prompt korlatozza; worker a session-regisztraban - disconnect lemondja, a "
-    "regi _bg_store_task kontrakt megtartva); (E) a halott 6000-es belso "
-    "karakterlimit elszamolva - _MEMORY_CONTEXT_MAX_CHARS=1200 az EGYETLEN "
-    "kanonikus karakter-ori, a valodi budget: top_k=5 + rb[:3] = max 8 tétel "
-    "~123-197 token; (F) kardinalitas-meres (valodi E5+qdrant, 30 teny, 12 "
-    "fix kerdes): recall 0.875/0.917/0.917/0.917/0.917 k=5/8/10/12/16-on - "
-    "k>=8 utan a plato (a maradek hiba beagyazasi hiba, nem vagas), zaj "
-    "3.67 -> 14.58, ctx 123 -> 392 token: KEEP top_k=5, rb[:3]. PART 12: 8 "
-    "bejegyzes = 592 token, budget sosem feszul - KEEP. EREDETMENY (E4, "
-    "produkcios konfig): hideg 405.3s -> meleg 111.3s (-72.6%), 82.7% "
-    "cached, alkalmazas-oldali prompt 10397 -> 8415 token (-19.1%). HATARON "
-    "KIVUL: modell, ctx 32768, parallel=1, VoiceMem/E5/ASR/TTS, search_rich, "
-    "Observation Store, offline garancia - MIND valtozatlan. Tesztek: +23 uj "
-    "(limits 6 + gate 12 + reduction 5) + teljes regresszio (VAD 3/3, "
-    "szemantika 87/87)."
+    "v0.10 MEMORIA-SZEMANTIKA ES TEMPORALIS MEMORIA (operator order: "
+    "PHASE 0 forenzikus alapvonal eloszor - audit/VoiceMEM_v010/"
+    "PHASE0_BASELINE_AND_SEMANTIC_MAP.md, a termelo kod valtoztatasa ELŐTT "
+    "commitolva). DONTES: NINCS Observation Store - a teljes temporalis "
+    "szemantika ADDITIV metaadatkent fer az existing sorokra (semmilyen "
+    "schema-migracio, semmilyen destruktiv valtozas; a v0.9.2 adat olvashato "
+    "marad, randomizalt bizonyitassal a sorrend-ekvivalencia). "
+    "IMPLEMENTALVA: (1) voicemem/leftbrain/temporal.py - determinisztikus "
+    "(0 LLM, 0 prompt-valtozas) teny-oldali temporalis osztalyozas: stance "
+    "(pos/neg/past/qualified/uncertain/FUTURE - egy szokincs mindket retegre, "
+    "stance.py bovitve) + valid_from/valid_until intervallum a teny sajat "
+    "szavaibol; status SZARMAZTATVA (current/historical/superseded/future - "
+    "sose tarolt enum); (2) esemenyido-horgony javitas - az orchestrator "
+    "ts-fallbackja valodi ISO datuma (a regi '15:18:36' idopont-string minden "
+    "parserben elhalt: az extrakcio Observation Date horgonya, a recency-suly "
+    "es a [datum] prefix mind halott volt a produkcios utban); (3) megszunes "
+    "zaroja - UPDATE eseten a REGI sor valid_until=observation date (a "
+    "struktura most rogzi MIKOR ert veget az allapot, nem csak azt hogy veget "
+    "ert); tiltott DELETE -> supersession-fallback (edig a blokkolt torles "
+    "SEMIT sem tarolt - 'abbyahagytam a kavét' csendben jelenlegi maradt a "
+    "'issza a kavét'); (4) retrieval temporalis rangsor a KANONIKUS utban "
+    "(top_k=5 + rb3 VALTOZATLAN): query-intent (most/mult/jovo, HU+EN) "
+    "szerinti tier - a jovo allitas mar nem jelenik meg jelen-allapotkent, a "
+    "mult-keres elozhelyezi a tortenetet, a bizonytalan megkulonboztetheto "
+    "(past/future/uncertain render-jelzok mindket masolatban: bridge + "
+    "web_server, <=25 karakter/talalat a valtozatlan 1200-as kupakon belul); "
+    "(5) PHASE 9 konszolidacios hook: memory_history(memory_id) - a teljes "
+    "szuperszession-lanc olvasas oldest->current; (6) TALALT ES JAVITOTT "
+    "LETEZO HIBA: a ConflictResolver explicit-NONE aga nem alkalmazta az "
+    "uuid-mappinget - a visszahelyesites-szamlalas ('Nx confirmed') sosem "
+    "mukodott indexelt id-kkel (a v0.6.3 ota env-gap-pinned "
+    "OccurrenceExplicitNoneTests most eloszor valban lefut es ZOLD); (7) "
+    "release_tree.py egg-info ignore javitva (a v0.9.2 utani "
+    "fingerprint-eltares tenyleges oka). PHASE 11 MERES: osztalyozas 55.8 "
+    "us/teny, rangsor-kiegeszites 2.3 us/talalat (<0.002% a vektoros "
+    "kereseshez kepest), extrakcios latencia es prompt VALTOZATLAN (0 LLM "
+    "hivas hozzaadva) - nincs optimalizalando regresszio. Tesztek: +76 uj "
+    "(37 unit test_temporal_semantics.py + 39 integration "
+    "test_temporal_memory.py - VALODI E5+mem0/qdrant lanc, A-G osztalyok, "
+    "A->B->A->B lancok, keresnyelvi ellentmondas, replay/esemenyido-"
+    "jelensegek, trait-future) + teljes regresszio (stance 104/104, "
+    "memory-safety 23/23 - a regi env-gap helyreallt)."
 )
 #: v0.6.0 markers: the modular ASR engine contract - asr_core (AudioBuffer,
 #: AsrResult, AsrError, registry, select_engine), the two NVIDIA adapters,
@@ -689,6 +692,60 @@ V092_MARKERS = {
     "tests/unit/test_prompt_reduction.py": [
         "test_required_signals_present",
         "test_forbidden_removals_stay_removed",
+    ],
+}
+
+#: v0.10.0 markers: the deterministic temporal classification module, the
+#: shared stance vocabulary extended with "future", the event-time ISO
+#: anchor fix, cessation closing valid_until, the denied-DELETE
+#: supersession fallback, temporal ranking in the canonical search path,
+#: render markers in both copies, the memory_history() consolidation hook,
+#: and the memory-semantics document.
+V0100_MARKERS = {
+    "vendor/voicemem/voicemem/leftbrain/temporal.py": [
+        "def fact_stance",
+        "def fact_validity",
+        "def query_temporal_intent",
+        "def fact_status",
+        "def temporal_rank_tier",
+        "zero LLM calls, zero prompt changes",
+    ],
+    "vendor/voicemem/voicemem/rightbrain/stance.py": [
+        '"future"',
+        "_FUTURE_CUES",
+    ],
+    "vendor/voicemem/voicemem/leftbrain/mem0_backend_store.py": [
+        "query_temporal_intent, row_status, temporal_rank_tier",
+    ],
+    "vendor/voicemem/voicemem/leftbrain/memory_repository.py": [
+        "def memory_history",
+    ],
+    "vendor/voicemem/voicemem/orchestrator.py": [
+        "v0.10",
+        "isoformat",
+    ],
+    "app/voicemem_bridge.py": [
+        "[v0.10 PHASE 6] temporal-semantic markers",
+    ],
+    "app/web_server.py": [
+        "[v0.10 PHASE 6] temporal-semantic markers",
+        "v0.10: fact-side temporal semantics",
+    ],
+    "app/retrieval_contract.py": [
+        "[v0.10] ``future`` = not-yet-valid forward-looking observation",
+    ],
+    "docs/MEMORY_SEMANTICS.md": [
+        "no Observation Store was introduced",
+        "DERIVED, never stored",
+    ],
+    "tests/unit/test_temporal_semantics.py": [
+        "RankingTierTests",
+        "test_legacy_sort_order_is_byte_identical",
+    ],
+    "tests/integration/test_temporal_memory.py": [
+        "SupersessionChainTests",
+        "ObservationTimeTests",
+        "TraitFutureStanceTests",
     ],
 }
 
@@ -1969,6 +2026,18 @@ def build() -> int:
                     f"VERSION (expected {want_page!r}) — the served page "
                     "would show a false staleness warning"
                 )
+            # v0.10.0: the temporal-semantics module, the memory-semantics
+            # document, and BOTH regression suites must ship in the ZIP.
+            for must in (
+                "vendor/voicemem/voicemem/leftbrain/temporal.py",
+                "docs/MEMORY_SEMANTICS.md",
+                "tests/unit/test_temporal_semantics.py",
+                "tests/integration/test_temporal_memory.py",
+            ):
+                if root_prefix + must not in names:
+                    raise AssertionError(
+                        f"self-check: v0.10.0 file missing from the ZIP: {must}"
+                    )
             # cumulative markers (v0.3.5 web payload, v0.3.6 CRLF START.bat)
             for rel, markers in CUMULATIVE_MARKERS.items():
                 content = zf.read(root_prefix + rel)
@@ -2174,7 +2243,7 @@ def build() -> int:
                             f"self-check: {rel} lacks v0.4.11 marker {m!r}"
                         )
             # v0.4.12: stale-page detection + raw capture + send-as-turn
-            for rel, markers in {**V0412_MARKERS, **V0413_MARKERS, **V0414_MARKERS, **V0415_MARKERS, **V0416_MARKERS, **V0417_MARKERS, **V0418_MARKERS, **V0419_MARKERS, **V0420_MARKERS, **V0421_MARKERS, **V050_MARKERS, **V052_MARKERS, **V060_MARKERS, **V061_MARKERS, **V062_MARKERS, **V063_MARKERS, **V064_MARKERS, **V070_MARKERS, **V071_MARKERS, **V072_MARKERS, **V080_MARKERS, **V081_MARKERS, **V090_MARKERS, **V091_MARKERS, **V092_MARKERS}.items():
+            for rel, markers in {**V0412_MARKERS, **V0413_MARKERS, **V0414_MARKERS, **V0415_MARKERS, **V0416_MARKERS, **V0417_MARKERS, **V0418_MARKERS, **V0419_MARKERS, **V0420_MARKERS, **V0421_MARKERS, **V050_MARKERS, **V052_MARKERS, **V060_MARKERS, **V061_MARKERS, **V062_MARKERS, **V063_MARKERS, **V064_MARKERS, **V070_MARKERS, **V071_MARKERS, **V072_MARKERS, **V080_MARKERS, **V081_MARKERS, **V090_MARKERS, **V091_MARKERS, **V092_MARKERS, **V0100_MARKERS}.items():
                 src_text = zf.read(root_prefix + rel).decode("utf-8", errors="replace")
                 for m in markers:
                     if m not in src_text:

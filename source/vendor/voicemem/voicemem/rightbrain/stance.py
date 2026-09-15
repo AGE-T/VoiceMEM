@@ -67,15 +67,22 @@ _CUE_BOUNDARY_RE = {
 #:              winter", "kivéve télen", "not always")
 #: * ``uncertain`` — hedged change of state ("might no longer",
 #:              "talán már nem") — never a hard replacement
-STANCE_VALUES = ("pos", "neg", "past", "qualified", "uncertain", "")
+#: * ``future`` — [v0.10] a NOT-YET-VALID state ("will like",
+#:              "szeretni fogom", "jövő hónapban") — never merges into
+#:              a current row and never flips one; it is its own
+#:              (forward-looking) observation. Deliberately narrow: a
+#:              present-tense fact about a future EVENT ("flight on
+#:              Dec 1") carries no future cue and stays current.
+STANCE_VALUES = ("pos", "neg", "past", "qualified", "uncertain", "future", "")
 
 #: Scan order: the FIRST class that matches wins. Uncertainty beats a hard
 #: negation ("talán már nem szeretem" → uncertain, not neg); a qualifier
 #: beats plain polarity ("kivéve télen" → qualified); a current-state
 #: negation beats a past marker when both are present ("régen szerettem,
 #: de már nem" → neg: the "no longer" is the current truth, the "régen"
-#: half is historical colour).
-_SCAN_ORDER = ("uncertain", "qualified", "past", "neg", "pos")
+#: half is historical colour); a future marker beats only plain positive
+#: ("will like" must never read as current pos).
+_SCAN_ORDER = ("uncertain", "qualified", "past", "neg", "future", "pos")
 
 # ── cue tables (lowercase; matched on lowercased text) ──────────────────────
 
@@ -168,6 +175,25 @@ _POS_CUES = (
     "rajong", "őrül", "orul", "tetszik", "kedvel",
 )
 
+#: [v0.10] Future-affect cues — the statement asserts a NOT-YET-VALID
+#: preference or state change. Hungarian has no future tense; the
+#: periphrastic "fog/fogom/fogjuk + infinitive" and explicit future
+#: adverbs carry the signal. Present-tense knowledge about future events
+#: ("flight on 2026-12-01") deliberately does NOT match (design boundary:
+#: current knowledge, not future validity).
+_FUTURE_CUES = (
+    # English
+    "will like", "will love", "will enjoy", "will prefer", "will start",
+    "will begin", "will probably like", "will get into", "going to like",
+    "going to love", "plans to like", "wants to try",
+    # Hungarian (fog-periphrasis on affect verbs + future adverbs)
+    "szeretni fog", "kedvelni fog", "imádni fog", "szeretni fogom",
+    "kedvelni fogom", "szeretni fogjuk", "kedvelni fogjuk",
+    "meg fogja szeretni", "meg fogom szeretni", "majd megszereti",
+    "jövő hónapban", "jövő héten", "jövő évben", "jovo honapban",
+    "jovo heten", "jovo evben", "hamarosan kedveli", "hamarosan szereti",
+)
+
 #: Hungarian negated affect: "nem" + an affect verb within a couple of
 #: words ("nem szeretem", "nem kedvelem", "nem is szeretem már").
 _HU_NEG_AFFECT_RE = re.compile(
@@ -253,6 +279,10 @@ def classify_stance(text: str) -> str:
         return "neg"
     if _has_cue(low, _NEG_PLAIN_CUES) or _has_cue(low, _NEG_PRESUPPOSITION_CUES):
         return "neg"
+    # [v0.10] future before plain pos: "will like" must never read as a
+    # current positive. (After neg so "don't like it now but will" → neg.)
+    if _has_cue(low, _FUTURE_CUES):
+        return "future"
     if _has_cue(low, _POS_CUES):
         return "pos"
     return ""
@@ -278,7 +308,10 @@ def observation_stance(claim: str, quote: str = "") -> str:
 
     When both carry different non-empty stances, the QUOTE's class wins for
     ``uncertain``/``qualified`` (they qualify the whole utterance), and the
-    strongest current-state signal (``neg``) otherwise.
+    strongest current-state signal (``neg``) otherwise. [v0.10] ``future``
+    follows the same either-side rule as ``neg``: the extractor normalises
+    "szeretni fogom" to a present-tense claim ("likes"), so the future
+    signal usually survives ONLY in the quote — never miss it.
     """
     s_claim = classify_stance(claim)
     s_quote = classify_stance(quote) if quote else ""
@@ -293,6 +326,8 @@ def observation_stance(claim: str, quote: str = "") -> str:
             return cls
     if "neg" in (s_claim, s_quote):
         return "neg"
+    if "future" in (s_claim, s_quote):
+        return "future"
     if "past" in (s_claim, s_quote):
         return "past"
     return s_claim

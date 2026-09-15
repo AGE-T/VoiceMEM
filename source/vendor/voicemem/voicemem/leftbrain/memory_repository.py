@@ -156,7 +156,9 @@ class LeftBrainMemoryRepository:
     def update_memory(self, memory_id: str, new_text: str,
                       session_id: int | str | None = None,
                       observed_at: str | None = None,
-                      user_id: str | None = None) -> str | bool | None:
+                      user_id: str | None = None,
+                      valid_until: str | None = None,
+                      new_meta: dict[str, Any] | None = None) -> str | bool | None:
         """[CONTROLLED FORK - patch VM-LOCAL-008] 非破坏性 UPDATE（追加 + 显式取代）。
 
         向量层（见 ``mem0_backend_store.update_memory``）把新观察写成**新行**，
@@ -167,11 +169,16 @@ class LeftBrainMemoryRepository:
         · 认知图：新事实的实体/关系抽取挂到**新 id** 上（旧行的图记录
           与旧行文本保持一致，历史可追溯）。
 
+        [v0.10] ``valid_until`` 闭合并取代行的区间（何时结束）；
+        ``new_meta`` 随新行入库（stance / valid_from / valid_until —
+        取代性观察自己的时间学分类）。两者都同步进 JSON 镜像。
+
         返回新记忆 id（真值）或 False（拒绝/失败）。
         """
         new_id = self._vector_store.update_memory(
             memory_id, new_text, session_id=session_id,
-            observed_at=observed_at, user_id=user_id)
+            observed_at=observed_at, user_id=user_id,
+            valid_until=valid_until, new_meta=new_meta)
         if new_id:
             from datetime import datetime, timezone
             now_iso = datetime.now(timezone.utc).isoformat()
@@ -180,11 +187,15 @@ class LeftBrainMemoryRepository:
                 if isinstance(obj, dict) and str(obj.get("id", "")) == memory_id:
                     obj["superseded_by"] = new_id
                     obj["superseded_at"] = now_iso
+                    if valid_until:
+                        obj["valid_until"] = str(valid_until)[:10]
                     break
             new_entry: dict[str, Any] = {
                 "id": new_id, "memory": new_text,
                 "supersedes": memory_id,
             }
+            if new_meta:
+                new_entry.update({k: v for k, v in new_meta.items() if v})
             if observed_at is not None:
                 new_entry["created_at"] = observed_at
             if session_id is not None:
@@ -231,6 +242,57 @@ class LeftBrainMemoryRepository:
                     break
             self._write_json_store(store["results"])
         return counted
+
+    def memory_history(self, memory_id: str) -> list[dict[str, Any]]:
+        """[v0.10 PHASE 9] The full supersession chain of ONE semantic claim.
+
+        The minimal consolidation hook: given any row id in a chain, walk
+        ``supersedes``/``superseded_by`` through the JSON mirror and return
+        the chain OLDEST → CURRENT. This is the structure a future
+        consolidation engine (observation → current → historical) builds on;
+        v0.10 itself only exposes it (no scheduled background work, no
+        interference with the v0.9.2 BackgroundMemoryGate — the chain grows
+        at ingest, this only READS it).
+
+        Each entry carries the temporal bookkeeping: id, text, stance,
+        valid_from/valid_until, event date, superseded_at, occurrence_count.
+        Unknown/unlinked ids return a single-entry list (the row itself)
+        when the row exists, else [].
+        """
+        rows = {str(o.get("id", "")): o for o in self.load_json_store()["results"]
+                if isinstance(o, dict)}
+        node = rows.get(memory_id)
+        if node is None:
+            return []
+        # walk to the chain head (oldest)
+        seen: set[str] = set()
+        head = memory_id
+        while True:
+            prev = str((rows.get(head) or {}).get("supersedes") or "")
+            if not prev or prev in seen or prev not in rows:
+                break
+            seen.add(head)
+            head = prev
+        # walk forward to current
+        out: list[dict[str, Any]] = []
+        cur = head
+        seen.clear()
+        while cur and cur not in seen:
+            seen.add(cur)
+            o = rows[cur]
+            out.append({
+                "id": cur,
+                "text": str(o.get("memory", "")),
+                "stance": str(o.get("stance", "") or ""),
+                "valid_from": str(o.get("valid_from", "") or ""),
+                "valid_until": str(o.get("valid_until", "") or ""),
+                "created_at": str(o.get("created_at", "") or ""),
+                "superseded_at": str(o.get("superseded_at", "") or ""),
+                "occurrence_count": o.get("occurrence_count", 0),
+                "superseded_by": str(o.get("superseded_by", "") or ""),
+            })
+            cur = str(o.get("superseded_by") or "")
+        return out
 
     def delete_memory(self, memory_id: str) -> bool:
         """删除单条记忆。同步更新 JSON 镜像 + 认知图级联。
@@ -288,6 +350,11 @@ class LeftBrainMemoryRepository:
                 md["extractor_local_id"] = m.local_id
             if m.linked_memory_ids:
                 md["linked_memory_ids"] = list(m.linked_memory_ids)
+            # [v0.10] per-fact temporal metadata (stance / valid_from /
+            # valid_until, classified in voice_input) rides the same dict —
+            # one metadata channel, no second write path.
+            if getattr(m, "metadata", None):
+                md.update(m.metadata)
             md["mem0_attributed_to"] = m.attributed_to or "user"
             attributed_to = m.attributed_to or "user"
             vector_items.append(("", body, attributed_to, md))
