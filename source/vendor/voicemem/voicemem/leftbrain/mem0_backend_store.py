@@ -664,9 +664,17 @@ class Mem0BackendStore:
         # keeps the same order. Old data, old order. The negated tier keeps
         # the descending sort direction shared with the other keys.
         from voicemem.leftbrain.temporal import (
-            query_temporal_intent, row_status, temporal_rank_tier,
+            query_temporal_intent, row_status, temporal_rank_tier, wants_recency,
         )
         q_intent = query_temporal_intent(q)
+        # [VM-LOCAL-018, v0.10.3 — adapted from upstream a507978]: the
+        # recency_boost joins the sort key ONLY for recency-type questions
+        # ("what's new lately" / "mostan mit csinálsz"). Attribute questions
+        # ("where do I study") keep pure similarity — long-term attributes
+        # have no newer version, so an always-on recency term punishes the
+        # CORRECT old answer (upstream measured exactly this: best-similarity
+        # 0.810 pushed to 6th behind a newer 0.773 hit).
+        q_wants_recency = wants_recency(q)
         hits.sort(
             key=lambda h: (
                 -temporal_rank_tier(
@@ -675,7 +683,7 @@ class Mem0BackendStore:
                                today=today),
                     q_intent),
                 not h.superseded_by,
-                h.base_score + h.recency_boost,
+                h.base_score + (h.recency_boost if q_wants_recency else 0.0),
             ),
             reverse=True,
         )

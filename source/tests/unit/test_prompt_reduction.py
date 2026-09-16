@@ -172,13 +172,26 @@ class PromptReductionTests(unittest.TestCase):
             self.assertTrue(any(must in t for t in titles), f"lost example: {must}")
 
     def test_size_contract(self):
-        """6,118 base tokens +/- 1% (measured with the Qwen tokenizer)."""
+        """6,265 base tokens +/- 1% (measured with the PRODUCTION tokenizer).
+
+        v0.10.3 (sandbox state-restore re-measurement): the v0.9.2-v0.10.2
+        band of 6,118 was measured with the Qwen3-0.6B STAND-IN tokenizer
+        (the b10717 forensic stand-in model's vocab). The production model is
+        Qwen3.6 35B A3B — its tokenizer measures the SAME prompt file at
+        6,265 tokens (+147 from added tokens in the 3.6 vocab; the prompt
+        text itself is byte-identical, git-committed at eda974f). The band
+        now uses the production tokenizer as the authoritative measuring
+        stick: /home/z/vmforensic/qwen_tok (Qwen/Qwen3.6-35B-A3B, revision
+        995ad96e). Both measurements recorded here so the +147 is never
+        misread as a prompt regression.
+        """
         out = self._isolated("size")
-        self.assertAlmostEqual(out["base_tokens"], 6118, delta=62,
+        self.assertAlmostEqual(out["base_tokens"], 6265, delta=63,
                                msg="base prompt size outside the documented band")
-        self.assertLess(out["system_tokens"], 7050,
+        self.assertLess(out["system_tokens"], 7250,
                         "full system (base+3 addenda) must be materially smaller "
-                        "than the v0.9.1 8,844")
+                        "than the v0.9.1 8,844 (band scaled with the production "
+                        "tokenizer's +147-token vocab offset)")
 
     def test_request_shape_contract(self):
         out = self._isolated("request-shape")

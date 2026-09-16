@@ -96,7 +96,13 @@ from app.llm_model_settings import (
 from app.native_picker import is_supported as picker_supported, pick_file
 from app.retrieval_contract import trait_fields_payload, trait_prompt_suffix
 from app.teacher_persona import build_messages, build_system_prompt
-from app.text_utils import LANG_EN, LANG_HU, SentenceStream, detect_language
+from app.text_utils import (
+    LANG_EN,
+    LANG_HU,
+    SentenceStream,
+    detect_language,
+    normalize_for_speech,
+)
 from app.voice_settings import (
     PREVIEW_SENTENCES,
     VOICE_MODES,
@@ -129,6 +135,15 @@ COMPONENT_KEYS = ("mic", "vad", "asr", "memory", "embedding", "llm", "tts")
 #: How long a turn's memory/emotion stage may hold the reply (ms) before the
 #: prosody emotion is demoted to a background tag_update.
 _EMOTION_WAIT_S = 0.6
+#: v0.10.3 (upstream audit PORT, upstream 7581656): slack added to the
+#: sent-audio estimate when deciding whether the browser is still playing
+#: our reply (network/scheduling jitter + the 80 ms browser prebuffer).
+_PLAYBACK_TAIL_SLACK_S = 0.35
+#: v0.10.3 (upstream audit PORT, upstream 7f842a8): how many TTS chunks may
+#: synthesize concurrently. The first chunk is unaffected (it starts alone);
+#: this bounds how far synthesis of later chunks runs ahead of playback.
+#: 2 = the next chunk synthesizes while the current one plays.
+_TTS_MAX_PARALLEL_CHUNKS = 2
 #: v0.4.13 (field report: "text understood but never reaches the LLM"):
 #: hard ceiling on the emotion analyzer INITIALISATION inside a turn. The
 #: construction imports funasr (-> torch; 30-180 s cold on Windows, worse
@@ -1853,6 +1868,15 @@ class WebSession:
         self._history: list[dict] = []
         self._last_reply = ""
         self._speaking = False  # assistant audio currently streaming to browser
+        # v0.10.3 (upstream audit PORT "hearing", upstream 7581656): the
+        # browser keeps playing our PCM after the turn task has sent its
+        # last chunk — "turn task done" is NOT "user can no longer hear us".
+        # Track the audio we actually SENT: _audio_sent_s accumulates every
+        # PCM chunk's duration, _first_audio_at stamps the first send (the
+        # barge-in grace period must start when the user first HEARS us, not
+        # when the turn task was created — TTS first frame takes ~1 s).
+        self._audio_sent_s = 0.0
+        self._first_audio_at: Optional[float] = None
         # Barge-in bookkeeping (speech during answer playback)
         self._barge_frames = 0
         self._barge_ms = 0.0
@@ -2283,7 +2307,16 @@ class WebSession:
         # -- barge-in detection while the assistant is answering ----------------
         # (kept BEFORE the state machine: while answering, frames do not feed
         # the speech state machine at all — barge-in is the only listener.)
-        if answering:
+        # v0.10.3 (upstream audit PORT, upstream 7581656 "hearing"): the turn
+        # task finishing means the last PCM was SENT, not that the browser
+        # finished PLAYING it. Until our sent-audio estimate drains, the user
+        # is still listening — barge-in must stay live there (otherwise speech
+        # during the tail fell into the speech state machine and spliced our
+        # own TTS echo into a phantom "new turn"). This window also keeps the
+        # mic out of the VSM during the tail, closing the v0.4.4 echo-leak
+        # path without touching the VAD itself.
+        hearing = answering or self._playback_tail_active()
+        if hearing:
             session["vad_in_speech"] = False
             # v0.10.2 (PART 9): speech energy while the answer is streaming
             # counts as activity too (a barge-in is coming).
@@ -2298,11 +2331,16 @@ class WebSession:
                 self._barge_ms += t_frame * 1000.0
             else:
                 self._barge_ms = max(0.0, self._barge_ms - t_frame * 200.0)
-            since_start = (time.perf_counter() - self._turn_started_at) * 1000.0
-            if (
-                self._barge_ms >= self._config.barge_in_min_speech_ms
-                and since_start > 500.0
-            ):
+            # v0.10.3: the grace period starts when the user first HEARS us
+            # (first PCM sent), not when the turn task was created — TTS first
+            # frame takes ~1 s, so a turn-start grace had already expired
+            # before any audio existed to talk over (upstream 7581656).
+            # Before any audio was sent the user may interrupt freely.
+            if self._first_audio_at is None:
+                grace_ok = (time.perf_counter() - self._turn_started_at) * 1000.0 > 500.0
+            else:
+                grace_ok = (time.perf_counter() - self._first_audio_at) * 1000.0 > 500.0
+            if self._barge_ms >= self._config.barge_in_min_speech_ms and grace_ok:
                 logger.info(
                     "[barge-in] sustained speech %.0f ms during answer - interrupting",
                     self._barge_ms,
@@ -2652,6 +2690,42 @@ class WebSession:
         self._bg_store_task = None
         self._session_tasks.clear()
 
+    def _playback_tail_active(self) -> bool:
+        """v0.10.3: True while the browser is (by our estimate) still playing
+        audio we already sent, even after the turn task completed.
+
+        ``_first_audio_at`` stamps the first PCM send of the current answer;
+        ``_audio_sent_s`` accumulates every sent chunk's duration (24 kHz
+        PCM16). Sent audio drains at wall-clock speed, so the tail ends
+        ``_audio_sent_s + slack`` after the first send. The slack covers
+        network/scheduling jitter and the browser's 80 ms prebuffer — the
+        cost of a wrong estimate is one barge-in slightly after the true
+        end of playback (harmless), never a lost one.
+        """
+        if self._first_audio_at is None or self._audio_sent_s <= 0.0:
+            return False
+        elapsed = time.perf_counter() - self._first_audio_at
+        return elapsed < self._audio_sent_s + _PLAYBACK_TAIL_SLACK_S
+
+    def _reset_playback_accounting(self) -> None:
+        """Forget the sent-audio ledger (answer start / interrupt / supersede)."""
+        self._audio_sent_s = 0.0
+        self._first_audio_at = None
+
+    def _account_sent_audio(self, pcm: bytes) -> None:
+        """v0.10.3: add one sent PCM chunk to the playback ledger.
+
+        The browser wire is 24 kHz PCM16 (2 bytes per sample, one channel),
+        so a chunk of ``len(pcm)`` bytes lasts ``len(pcm) / 48000`` seconds.
+        Called only from the reply speak path (previews do not reach the
+        user's speaker through this ledger).
+        """
+        if not pcm:
+            return
+        if self._first_audio_at is None:
+            self._first_audio_at = time.perf_counter()
+        self._audio_sent_s += len(pcm) / 48000.0
+
     async def _interrupt_turn(self) -> None:
         """User barged in: stop TTS, cancel the turn, notify the browser."""
         task = self._turn_task
@@ -2666,6 +2740,9 @@ class WebSession:
             except (asyncio.CancelledError, Exception):  # noqa: BLE001
                 pass
         self._turn_task = None
+        # v0.10.3: the browser stops playback at answer_interrupt — the
+        # tail is dead, forget it.
+        self._reset_playback_accounting()
         # v0.9.2 (PART 5): the interrupted answer ends the turn — open the
         # background gate after grace (if the user speaks again, the VAD
         # speech_start re-arms it immediately).
@@ -2681,6 +2758,17 @@ class WebSession:
     ) -> None:
         """New turn: supersede any in-flight one, then run the local pipeline."""
         await self._cancel_turn()
+        # v0.10.3 (upstream 7581656 "force"): a new turn that supersedes an
+        # answering one must stop the browser playback of everything already
+        # queued — otherwise the old reply's tail and the new reply interleave
+        # on the same speaker. Only fires when we were actually audible.
+        if self._speaking or self._playback_tail_active():
+            try:
+                self._c.tts.stop()
+            except Exception:  # noqa: BLE001
+                pass
+            self._reset_playback_accounting()
+            await self._send_json({"type": "answer_interrupt"})
         session = self._c.status.session
         if source == "text":
             # v0.4.4: a typed turn can start while the VSM is frozen mid-speech
@@ -2998,34 +3086,89 @@ class WebSession:
             chunk_chars=self._config.tts_chunk_chars,
         )
         speak_queue: asyncio.Queue = asyncio.Queue()
+        # v0.10.3: what the browser has actually RECEIVED this turn (the text
+        # of every chunk whose PCM was sent) — on an interrupt this is what
+        # the user has (mostly) heard, and it belongs in the history.
+        sent_text = ""
 
+        # v0.10.3 (upstream audit PORT, upstream 7f842a8 "two-level synth"):
+        # the OLD speak_worker synthesized chunks STRICTLY sequentially —
+        # chunk N+1 synthesis only started after chunk N's PCM was fully
+        # sent, so every segment boundary waited one full synthesis turn and
+        # the audible gap between segments was the synthesis time itself.
+        # New shape: a pump starts each chunk's synthesis the moment the LLM
+        # emits it (bounded by _TTS_MAX_PARALLEL_CHUNKS — the ONNX CPU engine
+        # gains nothing beyond a couple of workers), each filling its own
+        # queue; a single ordered sender drains those queues in sequence, so
+        # while the browser plays chunk N, chunk N+1 is already synthesizing.
         async def speak_worker() -> None:
-            nonlocal t_first_audio, tts_chunks
-            while True:
-                chunk = await speak_queue.get()
-                if chunk is None:
-                    return
-                if not tts_chunks:
-                    # v0.4.13 stage event: the FIRST TTS synthesis marks the
-                    # tts stage start (per-chunk lines would spam the trail).
-                    self._diag(f"tts start (chunk 1, {len(chunk)} chars)")
-                    self._spawn(self._stage_event("tts", "started", "speaking the reply"))
-                tts_chunks += 1
-                pcm = await self._synthesize_chunk(chunk, fused)
-                if pcm is not None:
+            nonlocal t_first_audio, tts_chunks, sent_text
+            synth_slots = asyncio.Semaphore(_TTS_MAX_PARALLEL_CHUNKS)
+            ordered: asyncio.Queue = asyncio.Queue()  # per-chunk pcm queues
+            synth_tasks: set = set()
+
+            async def synth_one(chunk: str) -> None:
+                q_local: asyncio.Queue = asyncio.Queue()
+                await ordered.put((chunk, q_local))
+                async with synth_slots:
+                    pcm = await self._synthesize_chunk(chunk, fused)
+                await q_local.put(pcm)
+
+            async def synth_pump() -> None:
+                while True:
+                    chunk = await speak_queue.get()
+                    if chunk is None:
+                        break
+                    if not tts_chunks:
+                        # v0.4.13 stage event: the FIRST TTS synthesis marks
+                        # the tts stage start (per-chunk lines would spam).
+                        self._diag(f"tts start (chunk 1, {len(chunk)} chars)")
+                        self._spawn(
+                            self._stage_event("tts", "started", "speaking the reply")
+                        )
+                    task = asyncio.create_task(synth_one(chunk))
+                    synth_tasks.add(task)
+                    task.add_done_callback(synth_tasks.discard)
+                await ordered.put(None)
+
+            pump = asyncio.create_task(synth_pump())
+            try:
+                while True:
+                    item = await ordered.get()
+                    if item is None:
+                        break
+                    chunk, q_local = item
+                    pcm = await q_local.get()
+                    if pcm is None:
+                        continue
+                    tts_chunks += 1
+                    sent_text = f"{sent_text} {chunk}".strip()
                     if t_first_audio is None:
                         t_first_audio = time.perf_counter()
                         self._diag(
                             "first TTS audio sent to the browser "
                             f"({(t_first_audio - t_turn0) * 1000.0:.0f} ms)"
                         )
+                    # v0.10.3: account every sent chunk on the playback
+                    # ledger (24 kHz PCM16 = 2 bytes/sample) so the barge-in
+                    # window covers what the browser still has queued.
+                    self._account_sent_audio(pcm)
                     await self._send_bytes(pcm)
+            finally:
+                pump.cancel()
+                for task in list(synth_tasks):
+                    task.cancel()
+                await asyncio.gather(
+                    pump, *synth_tasks, return_exceptions=True
+                )
 
         speaker = asyncio.create_task(speak_worker())
         reply = ""
         t_first_token: Optional[float] = None
         t_first_audio: Optional[float] = None
         tts_chunks = 0
+        # v0.10.3: a fresh answer starts a fresh playback ledger.
+        self._reset_playback_accounting()
         llm_error = ""
         st.components["llm"].begin()
         # v0.4.13 stage event: names the model + endpoint so an "llm start"
@@ -3096,6 +3239,25 @@ class WebSession:
             # AFTER answer_interrupt, history was appended and ingest fired.
             # Clean up and re-raise so the cancellation actually takes effect.
             self._speaking = False
+            # v0.10.3 (upstream audit PORT, upstream SessionBuffer
+            # "interrupted" semantics): an interrupted turn still belongs in
+            # the conversation history — the next reply must know what the
+            # user already heard. ``sent_text`` is exactly the text whose PCM
+            # left for the browser; generation runs ahead of playback, so the
+            # full generated ``reply`` can be longer than what was audible.
+            # With no audio sent yet the user entry alone is kept — the
+            # model may then answer it again, which is what the user wants
+            # when they cut an unheard reply.
+            if user_text:
+                heard = (sent_text or "").strip()
+                self._history.append({"role": "user", "content": user_text})
+                if heard:
+                    self._history.append(
+                        {
+                            "role": "assistant",
+                            "content": f"{heard} [interrupted]",
+                        }
+                    )
             raise
         self._speaking = False
         # v0.4.13 stage event: the TTS stage ends when the speak worker has
@@ -3164,6 +3326,14 @@ class WebSession:
         """
         c = self._c
         st = c.status
+        # v0.10.3 (upstream audit PART 10): unsupported Unicode characters
+        # (the field-reported „ U+201E) crash Supertonic synthesis. Normalize
+        # at this single choke point — letters/digits untouched, typographic
+        # punctuation mapped to ASCII, invisible code points dropped — so a
+        # sentence is never lost to a quote mark, and no retry loop is needed.
+        chunk = normalize_for_speech(chunk)
+        if not chunk:
+            return None
         language = detect_language(chunk) if chunk.strip() else LANG_HU
         length_scale = None
         if fused is not None and getattr(fused, "label", "") in ("frustrated", "sad"):

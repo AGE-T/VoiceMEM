@@ -284,6 +284,50 @@ def query_temporal_intent(query: str) -> str:
     return "current"
 
 
+#: [VM-LOCAL-018, v0.10.3 — adapted from upstream a507978 "Narrow recency
+#: weighting"] Recency-QUERY cues: only questions like these get the
+#: recency_boost in ranking. Upstream's measured failure with always-on
+#: recency weighting: the CORRECT answer to an attribute question
+#: ("where do I study" — stored half a year ago, similarity 0.810, best in
+#: the pool) was pushed to 6th place by a newer, less relevant 0.773 hit,
+#: because long-term attributes have no newer version — punishing old equal
+#: punishing right. "What have you been up to lately" is the kind of
+#: question that SHOULD prefer recent rows. Keep the list narrow: a false
+#: positive only re-ranks within the candidate pool (never drops), but a
+#: false negative loses the recency preference entirely — same trade-off
+#: shape as the intent cues above.
+_RECENCY_QUERY_CUES = (
+    # English
+    "recently", "lately", "recent", "these days", "nowadays",
+    "today", "yesterday", "just now", "right now", "currently",
+    "this week", "last week", "this month", "last month",
+    "what's new", "whats new", "what have you been",
+    # Hungarian ("ma"/"most" carry explicit boundary forms: _has_cue is a
+    # plain substring scan, so the bare tokens would match inside "magyar"
+    # or "legjobb"; the space/question-mark forms do not. Accent-free typing
+    # variants are listed alongside the diacritic forms.)
+    "mostan", "legutóbb", "legutobb", "most", "éppen", "eppen",
+    "ma ", "ma?", "tegnap", "tegnapelőtt", "tegnapelott", "nemrég",
+    "nemreg", "frissen", "újabban", "ujabban", "az utóbbi", "az utobbi",
+    "ezen a héten", "ezen a heten", "múlt héten", "mult heten",
+    "mit csináltál", "mit csinaltal", "mi újság", "mi ujsag",
+)
+
+
+def wants_recency(query: str) -> bool:
+    """Is this a recency-type question ("what's new lately")?
+
+    Complements ``query_temporal_intent``: the intent classifier orders ROW
+    STATUS tiers (past/future statements vs current), this gate decides
+    whether the *recency_boost* term participates in ranking at all.
+    Attribute questions ("where does he study") keep pure similarity.
+    """
+    low = (query or "").lower()
+    if not low.strip():
+        return False
+    return _has_cue(low, _RECENCY_QUERY_CUES)
+
+
 #: Ranking tiers per intent. Lower tier = preferred for that intent.
 #:
 #: Equivalence with v0.9.2 for legacy rows (proof): a legacy row has no

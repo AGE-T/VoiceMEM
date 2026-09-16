@@ -134,6 +134,63 @@
       ],
       "based_on_upstream": "none (new semantics; supersession marking mirrors VM-LOCAL-008)",
       "divergence": "upstream merges traits on cosine similarity alone — measured evidence shows semantic opposites embed inside the merge band, so a negation reinforces the trait it contradicts"
+    },
+    {
+      "id": "VM-LOCAL-016",
+      "summary": "v0.10.3 right-brain retrieval quotas (ported from upstream 333dbcb + fa537a9, both upstream commit evidence measured on their store): situation_pattern (heartnote) hits capped at 2 slots (VOICEMEM_RB_HEARTNOTE_MAX) — heartnote priority follows anchor freshness, so uncapped heartnotes crowd the right-brain column with echoes of the user's own recent questions instead of traits; response_experience prompt slots default 0 (VOICEMEM_RB_RESPONSE_MAX) — upstream's forensic finding: the response_experience line's next_time (the useful half) was write-only metadata with no readers, while assistant_did occupied a prompt slot without information content. Old rows remain in the store and displayable by setting the env back to 1.",
+      "files": [
+        "voicemem/rightbrain/brain.py (_SOURCE_QUOTA)"
+      ],
+      "based_on_upstream": "333cb46160054ed7a34adf7c4a943bfdb87f43 (Cap how many heartnotes can take right-brain slots) + fa537a98a70c495166b350f378ad1add7c6b2ef5 (Drop response_experience; keep only the user-side trait outlet) — quota semantics only, adapted to the pinned vendor's _apply_source_quota mechanism",
+      "divergence": "upstream's fa537a9 also restructured the attribution JSON schema (assistant_did/next_time fields dropped from the extraction prompt); we deliberately do NOT port that part this release (attribution prompt untouched, see VM-LOCAL-017 note)"
+    },
+    {
+      "id": "VM-LOCAL-017",
+      "summary": "v0.10.3 response_experience WRITE path gated off by default (VOICEMEM_RB_WRITE_EXPERIENCE=1 restores it): upstream fa537a9 measured 158 UPDATEs of which 34% were byte-identical no-op rewrites (re-embedding + slot-label churn), 11% lossy, plus ASR-noise contamination — the line had no readers for its useful half. The attribution LLM call itself is KEPT (the user-side trait outlet — the only outlet that survives upstream's own audit). Env-reversible, no data deleted; existing rows stay retrievable until archived (and are hidden from prompts by the VM-LOCAL-016 quota default).",
+      "files": [
+        "voicemem/rightbrain/brain.py (learn_from_reaction write gate)"
+      ],
+      "based_on_upstream": "fa537a98a70c495166b350f378ad1add7c6b2ef5 (end state) — gated rather than deleted for reversibility",
+      "divergence": "none in behavior defaults; ours adds the env escape hatch upstream does not have"
+    },
+    {
+      "id": "VM-LOCAL-018",
+      "summary": "v0.10.3 query-gated recency ranking (adapted from upstream a507978 'Narrow recency weighting'): the VM-LOCAL-011 recency_boost joins the left-brain sort key ONLY for recency-type questions (temporal.py wants_recency: EN cues recently/lately/today/this week/... + HU cues mostan/legutóbb/ma/tegnap/mi újság/... with accent-free variants). Attribute questions ('where do I study') keep pure similarity — upstream measured the failure we would have hit eventually: the correct half-year-old answer (0.810 best similarity) was pushed to 6th by a newer 0.773 hit when recency applied always, because long-term attributes have no newer version. Re-ranking stays inside the candidate pool; recall unchanged; supersession tiers untouched.",
+      "files": [
+        "voicemem/leftbrain/temporal.py (_RECENCY_QUERY_CUES + wants_recency)",
+        "voicemem/leftbrain/mem0_backend_store.py (search sort key)"
+      ],
+      "based_on_upstream": "a507978acc65b01fd2550cc314de367cf6e28f00 — mechanism ported; cue lists extended with Hungarian (upstream ships zh/en only)",
+      "divergence": "our recency term is the additive VM-LOCAL-011 bonus (weight 0.10, 30-day half-life) gated by the query, not upstream's multiplicative weight"
+    },
+    {
+      "id": "VM-LOCAL-019 (v0.10.2, ledger backfill)",
+      "summary": "v0.10.2 background-LLM cooperative cancellation transport (the upstream-audit OPEN ledger item, now enumerated): vendor/voicemem/voicemem/utils/common/llm_bg_gate.py (NEW) — BG_CANCEL thread event, check_cancel before every ingest-chain LLM leg, bg_chat_create streaming transport (client-disconnect frees the single llama-server slot, measured 3.2s vs 299.7s), BackgroundCancelledError as BaseException; extract_facts_openai.py routes both big legs (extraction + conflict resolution) through the transport and the resolve leg gains 60s timeout + max_retries=2 (previously SDK default 600s, none).",
+      "files": [
+        "voicemem/utils/common/llm_bg_gate.py (new)",
+        "voicemem/leftbrain/extract_facts_openai.py"
+      ],
+      "based_on_upstream": "none (new; our foreground-priority design)",
+      "divergence": "upstream has no background-priority mechanism — its queue_remember_turn (added upstream a48e90f-era web/run.py) only serializes writes, it cannot cancel in-flight work when the user speaks"
+    },
+    {
+      "id": "VM-LOCAL-020 (v0.10.2, ledger backfill)",
+      "summary": "v0.10.2 asr_language wiring into the production parakeet engine (auto/hu diagnostic mode, transcript-script verification with a loud cross-language warning; ParakeetForTDT has no language parameter — the hint is recorded, not passed), config validation + ASR_LANGUAGE env + yaml comment; production default stays auto.",
+      "files": [
+        "app/asr_parakeet.py",
+        "app/config.py"
+      ],
+      "based_on_upstream": "none (app-side; vendor untouched)",
+      "divergence": "n/a"
+    },
+    {
+      "id": "VM-LOCAL-021 (v0.10.2, ledger backfill)",
+      "summary": "v0.10.2 additive_extraction_prompt.txt content update shipped in v0.10.2 (the extraction prompt text used by the background chain; committed with the llm-priority release, byte-identical to the file the 6,118/6,265-token size contract measures).",
+      "files": [
+        "voicemem/leftbrain/data/additive_extraction_prompt.txt"
+      ],
+      "based_on_upstream": "none (our prompt; upstream's extraction prompt differs)",
+      "divergence": "n/a"
     }
   ],
   "ported_upstream_fixes": [

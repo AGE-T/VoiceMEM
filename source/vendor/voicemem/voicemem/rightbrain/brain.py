@@ -342,8 +342,19 @@ def _rb_trait_hits(store, user_id: str, query: str, top_k: int = 4) -> list["Rig
 #: profile 现在换成了判断表的语义检索（``_rb_trait_hits``），priority 就是相似度，
 #: 已经跟查询相关了，所以席位放宽到 3；response_experience 仍是查询无关的内部
 #: 笔记，维持 1 席。
+#:
+#: [VM-LOCAL-016, v0.10.3 — ported from upstream 333dbcb + fa537a9]
+#: · situation_pattern（heartnote）也要限席：它的 priority 跟**锚点新鲜度**走，
+#:   刚存下的最强——于是连着问三句，第三句的右脑栏里全是自己前两句问过的原话，
+#:   一条对这个人的判断都挤不进来。刚说过的话天然打得过沉淀下来的画像，必须限。
+#:   上游实测同样的挤占后加了 2 席上限，这里照搬（env 可调）。
+#: · response_experience 席位默认从 1 改为 0：上游 fa537a9 的取证结论——这条线
+#:   的 next_time（真正有用的那半）只写进 metadata、全仓库没有读取方，进 prompt 的
+#:   assistant_did 又给不出信息量，纯占席位。设 0 = 不进 prompt；老库里的旧行想
+#:   看的话设回 1（写路径的开关见 VM-LOCAL-017）。
 _SOURCE_QUOTA = {
-    "response_experience": max(0, int(os.environ.get("VOICEMEM_RB_RESPONSE_MAX", "1"))),
+    "response_experience": max(0, int(os.environ.get("VOICEMEM_RB_RESPONSE_MAX", "0"))),
+    "situation_pattern": max(0, int(os.environ.get("VOICEMEM_RB_HEARTNOTE_MAX", "2"))),
     "profile": max(0, int(os.environ.get("VOICEMEM_RB_PROFILE_MAX", "3"))),
 }
 
@@ -835,19 +846,29 @@ significant 不管真假，其余字段都要照填（调用方另有判定）�
             _obs = (str(observed_at)
                     if observed_at and re.match(r"^\d{4}-\d{2}-\d{2}", str(observed_at))
                     else None)
-            exp = self._rb_repo().write_response_experience(
-                self._user_id, what_i_did, anchors,
-                condition=condition,
-                failed=failed,
-                # 反应/原话留底当证据，不进 prompt——用户侧的结论在图层那边
-                metadata={"next_time_policy": next_time, "why": why, "reaction": reaction,
-                          "agent_reply": reply[:300], "user_reaction": text.strip()[:200],
-                          "emotion": emotion or ""},
-                evidence_memory_ids=[memory_id] if memory_id else [],
-                created_at=_obs,
-            )
-            print(f"[RBExperience] {'失败' if failed else '有效'}：{what_i_did}"
-                  f" | 下次：{next_time}", flush=True)
+            # [VM-LOCAL-017, v0.10.3 — ported from upstream fa537a9]
+            # response_experience 的写路径默认停用（上游取证：158 次 UPDATE 中
+            # 34% 纯空转重写、next_time 只进 metadata 全仓库无读取方、进
+            # prompt 的 assistant_did 没有信息量）。归因调用本身保留——
+            # 用户侧的 trait 出口（下面）不动。要恢复旧行为：
+            # VOICEMEM_RB_WRITE_EXPERIENCE=1。
+            if os.environ.get("VOICEMEM_RB_WRITE_EXPERIENCE", "0") == "1":
+                exp = self._rb_repo().write_response_experience(
+                    self._user_id, what_i_did, anchors,
+                    condition=condition,
+                    failed=failed,
+                    # 反应/原话留底当证据，不进 prompt——用户侧的结论在图层那边
+                    metadata={"next_time_policy": next_time, "why": why, "reaction": reaction,
+                              "agent_reply": reply[:300], "user_reaction": text.strip()[:200],
+                              "emotion": emotion or ""},
+                    evidence_memory_ids=[memory_id] if memory_id else [],
+                    created_at=_obs,
+                )
+                print(f"[RBExperience] {'失败' if failed else '有效'}：{what_i_did}"
+                      f" | 下次：{next_time}", flush=True)
+            else:
+                print(f"[RBReaction] {'失败' if failed else '有效'}："
+                      f"{_clip(attribution.get('user_reaction'))}", flush=True)
 
             # 用户侧的观察不留在这条经验里：「这人被直接给方案会关闭」是长期特征，
             # 该沉淀进图层 slot 由归因归纳成人格，否则只有这条经验被检中才看得见。

@@ -129,6 +129,94 @@ def detect_language(text: str) -> str:
 
 
 # --------------------------------------------------------------------------- #
+# Speech normalisation (TTS input)
+# --------------------------------------------------------------------------- #
+
+#: v0.10.3 (upstream audit PART 10): Supertonic 3 rejects unsupported Unicode
+#: characters — the field-reported case was the Hungarian opening quote „
+#: (U+201E) killing the whole synthesis. The map below replaces typographic
+#: and Unicode punctuation with ASCII equivalents that every TTS engine
+#: accepts, WITHOUT touching the spoken content: quotes become straight
+#: quotes (still punctuation, never spoken), dashes become hyphens, the
+#: ellipsis becomes three dots, invisible/formatting code points are
+#: dropped or turned into plain spaces.
+_SPEECH_CHAR_MAP = {
+    "\u201E": '"',   # „ LOW DOUBLE QUOTE (the reported failure)
+    "\u201C": '"',   # “ LEFT DOUBLE QUOTATION MARK
+    "\u201D": '"',   # ” RIGHT DOUBLE QUOTATION MARK
+    "\u2018": "'",   # ‘ LEFT SINGLE QUOTATION MARK
+    "\u2019": "'",   # ’ RIGHT SINGLE QUOTATION MARK
+    "\u201A": ",",   # ‚ LOW SINGLE QUOTE (Hungarian/German decimal comma use)
+    "\u00AB": '"',   # «
+    "\u00BB": '"',   # »
+    "\u2013": "-",   # – EN DASH
+    "\u2014": "-",   # — EM DASH
+    "\u2015": "-",   # ― HORIZONTAL BAR
+    "\u2212": "-",   # − MINUS SIGN
+    "\u2026": "...",  # … HORIZONTAL ELLIPSIS
+    "\u00A0": " ",   # NO-BREAK SPACE
+    "\u202F": " ",   # NARROW NO-BREAK SPACE
+    "\u2007": " ",   # FIGURE SPACE
+    "\u2009": " ",   # THIN SPACE
+    "\u200A": " ",   # HAIR SPACE
+    "\u200B": "",    # ZERO WIDTH SPACE (drop)
+    "\u200C": "",    # ZWNJ (drop)
+    "\u200D": "",    # ZWJ (drop)
+    "\uFEFF": "",    # BOM / zero-width no-break space (drop)
+    "\u3000": " ",   # IDEOGRAPHIC SPACE
+    "\u02DC": "~",   # ˜ SMALL TILDE
+    "\u00A1": "!",   # ¡
+    "\u00BF": "?",   # ¿
+    "\u2032": "'",   # ′ PRIME
+    "\u2033": '"',   # ″ DOUBLE PRIME
+    "\u2044": "/",   # ⁄ FRACTION SLASH
+}
+
+#: Characters dropped outright (invisible/unsupported, zero spoken content).
+_SPEECH_DROP_CHARS = "\u200B\u200C\u200D\uFEFF"
+
+
+def normalize_for_speech(text: str) -> str:
+    """Return *text* with unsupported/typographic characters made speakable.
+
+    v0.10.3: applied at the single TTS choke point before every synthesis
+    call. Guarantees:
+      * letters, digits and ASCII punctuation pass through untouched;
+      * the replacement NEVER changes spoken content (quotes stay quotes,
+        dashes stay dashes — only the code point changes);
+      * runs of introduced whitespace are collapsed so mapping does not
+        shift sentence rhythm;
+      * the result is never longer than a small constant factor of the
+        input (the ellipsis expands 1:3).
+    """
+    if not text:
+        return text
+    out = []
+    for ch in text:
+        mapped = _SPEECH_CHAR_MAP.get(ch)
+        if mapped is not None:
+            out.append(mapped)
+        elif ch in _SPEECH_DROP_CHARS:
+            continue
+        else:
+            out.append(ch)
+    joined = "".join(out)
+    # Collapse only whitespace we introduced/expanded around; keep single
+    # spaces exactly as the writer used them.
+    if "  " in joined:
+        collapsed: list[str] = []
+        prev_space = False
+        for ch in joined:
+            is_space = ch == " "
+            if is_space and prev_space:
+                continue
+            collapsed.append(ch)
+            prev_space = is_space
+        joined = "".join(collapsed)
+    return joined.strip()
+
+
+# --------------------------------------------------------------------------- #
 # Sentence splitting
 # --------------------------------------------------------------------------- #
 

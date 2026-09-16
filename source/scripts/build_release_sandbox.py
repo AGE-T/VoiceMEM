@@ -45,8 +45,8 @@ from pathlib import Path
 REPO = Path(__file__).resolve().parent.parent
 RELEASES = REPO / "releases"
 
-NEW_VERSION = "0.10.2"
-PREV_VERSION = "0.10.1"
+NEW_VERSION = "0.10.3"
+PREV_VERSION = "0.10.2"
 ZIP_NAME = f"VoiceMemAgent_v{NEW_VERSION}.zip"
 
 PLACEHOLDER_DIRS = [
@@ -75,51 +75,56 @@ ROOT_FILES = [
 ]
 
 NOTES = (
-    "v0.10.2 P0 LLM-PRIORITY + REPRODUCIBILITY KIADAS (operator order: ASR "
-    "REGRESSION + LLM PRIORITY + REPRODUCIBILITY FIX - a TTFT 40-60 s-re "
-    "degradalodott, a hatter-memoria munka foglalta az egyetlen llama-server "
-    "slotot). BIZONYITEK (valodi b10717 szerver, produkcios flag-ekkel, "
-    "sandbox stand-in modell; scripts/llm_slot_forensic.py, audit/"
-    "VoiceMEM_llmpriority_v0102): (1) FIFO-sor: a user chat TTFT-je a futt "
-    "hatter-kerees mögott 299.7 s (a mechanizma pontosan a mertett 40-60 s "
-    "produkcios jelenseg); (2) DISCONNECT-YIELD: a hatter-keres streaming "
-    "kliens-oldali megszakitasa utan a user TTFT 3.2 s (-98.9%) - a b10717 "
-    "SZABADITJA a slotot kliens-disconnectre (a megszakitas transzportja "
-    "hangolt); (3) LCP-cache: a /metrics szamlaloirol mert TENYLEGES "
-    "ujra-kiertekelt tokenek:same-prefix 20/2657 (99.2% reuse), disjoint "
-    "2647/2650; a user-chat prefix a kozbejovo extraction UTAN IS "
-    "tuleli (19 token reprocessed) - a cache nem a hibas tag; (4) JSON-mode "
-    "+ streaming osszeallitas ervenyes. IMPLEMENTALVA: (A) voicemem/utils/"
-    "common/llm_bg_gate.py - kooperativ megszakitas (BG_CANCEL thread-event; "
-    "check_cancel minden lableces elott; bg_chat_create: streaming kerelesek "
-    "chunk-kozotti cancel-poll + stream.close() = slot-felszabaditas; a "
-    "BackgroundCancelledError BaseException - az ingest-lanc 'except "
-    "Exception' fallback-jai NEM nyelhetik el); (B) app/background_memory.py "
-    "gate v2: arm() most a futt lancot IS megszakitja, a megszakadt pair "
-    "visszasorolodik (elo probalkozasok szamlalva, sosem dobodik el), "
-    "release() utani nyitas csak a VALODI idle-ablakban (beszed-keret + LLM-"
-    "delta + turn aktivitas-jel + VOICEMEM_BG_IDLE_S csendes ablak a "
-    "vak 2 s grace helyett); (C) a két nagy láb (extrakcio + conflict "
-    "resolution) a bg_chat_create transzporton fut + a resolve lab "
-    "60 s timeout-ot kapott (korabban NEM volt - az SDK defaultja 600 s!); "
-    "(D) asr_language vegigvezetese a PRODUKCIOS parakeet motorba (PART 3: "
-    "auto/hu diagnostikai mod - a ParakeetForTDT API-ban nincs nyelv-"
-    "parameter, a hint rögzitesre kerul + az atirat irasrendje ellenorizve); "
-    "(E) openai==3.14.0 EXAKT PIN (vendor pyproject + install_m1.ps1 16. "
-    "lepes OR-assert + requirements.lock.json machine-readable manifest "
-    "wheel-sha256-okkal) - a teljes memoria-lanc fuggosege korabban teljesen "
-    "unpinned volt; (F) release-meta invariáns teszt (VERSION=CHANGELOG-top="
-    "RELEASE_INDEX-legujabb=PAGE_VERSION, nincs ujabb bejegyzes a VERSIONnel, "
-    "gate_record nem ujabb); (G) VAD-diagnosztika hatar-eset teszt (pontosan "
-    "kuszob: beszed-indulas, sose 'never reached' - az operator PART 13 "
-    "harom esete: alatta/rajta/felette). Tesztek: +32 uj (gate v2: cancel/"
-    "requeue/stale-rejection/idle 7 + llm_bg_gate 9 + nyelv-mod 10 + VAD "
-    "hatar-eset 1 + release-invariant 1 + runtime-deps openai-dokumentacio "
-    "1 + ujabb sorrend-ellenorzesek), teljes regresszio 0. HATAROK "
-    "(oszinten): a valodi 35B TTFT-elony es a CUDA-lab merese a celgepen "
-    " tortenik (scripts/llm_slot_forensic.py - ugyanaz a minta, mint a "
-    "v0.10.1 ASR-forensic); a sandbox szamok a MECHANIZMUST bizonyitjak, "
-    "nem a produkcios kezeldet."
+    "v0.10.3 UPSTREAM DEEP-AUDIT SELECTIVE PORT + LATENCY/KORREKTHEG-"
+    "JAVITASOK (operator order: P0 DEEP UPSTREAM AUDIT + SELECTIVE PORT; a "
+    "teljes 52-commitos upstream tortenet (xzf-thu/VoiceMem @ 6cacb3c, pin "
+    "e8384e08 ota) commitonkent kiolvasva DIFF-szintuen - audit/"
+    "VoiceMEM_upstreamaudit_v0103/REPORT.md a teljes 24 pontos "
+    "jelentessel). ATVETT (6 port): (1) TTS SZOVEG-NORMALIZACIO (app/"
+    "text_utils.normalize_for_speech, a _synthesize_chunk egyetlen "
+    "fojtopontjan) - a jelzett „ (U+201E) Supertonic-crash FIXE: "
+    "tipografiai idozojelek/dash/ellipsis/NBSP/ZW* ASCII-megfelelore "
+    "mapeolve, betuk/szamok erintetlenek, a beszed-tartalom szo-szintre "
+    "azonos; (2) HEARING() LEJATSZASI-VARAKOZASI ABLAK (upstream 7581656 "
+    "mintaja): a barge-in ablak a KIKULDOTT audio becsult lejatszasi "
+    "idejeig marad nyitva (24 kHz PCM16 ledger + elso-audio-idobelyeg + "
+    "0.35 s slack) - korabban a turn-task veje = utolso kuldott bajt, a "
+    "bongeszo meg jatszott: ebben a holtaban a barge-in halott volt ES a "
+    "sajat TTS-visszhangja fantom-turnot indithatott (a v0.4.4 echo-leak "
+    "utja, VAD-valtozas nelkul zarva); a grace az ELSO AUDIOTOL szamit (a "
+    "TTS elso frame ~1 s, a regi grace hang elott lejart); (3) UJ TURN "
+    "MEGALLITJA A REGI LEJATSZAST (upstream 'force' minta): tippeles "
+    "while answering eseten answer_interrupt + ledger-nullazas - a ket "
+    "valasz nem fonodik ossze a hangszoroan; (4) PARHUSAMOS TTS-"
+    "SZEGMENSZINTEZIS (upstream 7f842a8 ket-szintu pipeline-a, 2 fokozatu "
+    "semaphore): a kovetkezo chunk szintezise a jelenlegi lejatszasa "
+    "kozben fut - a regi szekvencialis worker minden szegmenshataron egy "
+    "teljes szintezis-turnt varakoztatott (a hallhato szegmenskobok oka), "
+    "az elso chunk latenciaja VALTOZATLAN; (5) MEGSZAKITOTT TURN A "
+    "HISTORY-BAN (upstream SessionBuffer 'interrupted' szemantikaja): a "
+    "barge-in utan a kikuldott (hallott) valaszresz + '[interrupted]' "
+    "jelo a beszelgetes-tortenetbe kerul - korabban minden megszakitott "
+    "turn kiesett a kontextusbol es a modell ujrakoszontott; (6) VENDOR "
+    "RETRIEVAL-JAVITASOK: situation_pattern (heartnote) slot-cap 2 "
+    "(upstream 333dbcb) + response_experience slot 0 + irasi kapu ki "
+    "(upstream fa537a9; az atribucios hivas es a user-oldali trait-"
+    "kivezetes MEGMARAD) + QUERY-GATED RECENCY (upstream a507978 "
+    "adaptacioja, HU+EN cue-k): a VM-LOCAL-011 recency-bonus csak "
+    "'mostan mit csinalsz' tipusu kerdeseknel szall be - az attributum-"
+    "kerdesek tiszta hasonlosagi sorrendet tartanak (upstream merte "
+    "ugyanezt: a regy HELYES 0.810-es valasz 6.-ra esett egy ujabb 0.773 "
+    "moge). ELUTASITOTT/DEFERALT (indokkal, a REPORT-ban): spekulativ "
+    "retrieval (a pinelt parakeet streaming=False), AudioWorklet-lejatszo "
+    "+ AudioTimeline heard-text + reverzibilis barge-kandidatus + LCS-echo "
+    "(a hearing-ablak lefedi a fo hibat), memory-language-per-space. "
+    "KORNYEZET-VISSZAALLITAS (sandbox state-restore utan, NEM "
+    "termekvaltozas): openai/sentence-transformers/torch/transformers/"
+    "mem0ai ujratesztelese, az E5-modell pinned ujraletoltese, a Qwen-"
+    "tokenizer helyreallitasa - a prompt-size kontrakt a PRODUKCIOS "
+    "tokenizerrel ujramerve (6118->6265, a +146 a 3.6-vocab, a prompt-"
+    "fajl byte-azonos). VOICEMEM_PIN.json: a v0.10.2 nyitott ledger-tetel "
+    "zarva (VM-LOCAL-019..021 backfill) + uj VM-LOCAL-016..018 - 22 "
+    "bejegyzes. Tesztek: +23 uj (test_upstream_audit_ports.py)."
 )
 
 #: v0.6.0 markers: the modular ASR engine contract - asr_core (AudioBuffer,
@@ -844,6 +849,44 @@ V0102_MARKERS = {
     ],
     "tests/unit/test_asr_language_mode.py": [
         "EngineLanguageModeTests",
+    ],
+}
+
+#: v0.10.3 markers: the upstream-audit selective ports - the TTS speech
+#: normalisation (the reported U+201E crash), the playback-tail hearing
+#: window + first-audio grace + supersede force-stop, the two-level
+#: concurrent TTS synthesis pipeline, the interrupted-turn history entries,
+#: and the vendor retrieval-quality quotas (heartnote cap, response_experience
+#: off, query-gated recency).
+V0103_MARKERS = {
+    "app/text_utils.py": [
+        "def normalize_for_speech",
+        '"\\u201E": \'"\'',
+        "_SPEECH_CHAR_MAP",
+    ],
+    "app/web_server.py": [
+        "def _playback_tail_active",
+        "def _account_sent_audio",
+        "_PLAYBACK_TAIL_SLACK_S",
+        "_TTS_MAX_PARALLEL_CHUNKS",
+        "[interrupted]",
+        "normalize_for_speech(chunk)",
+    ],
+    "vendor/voicemem/voicemem/leftbrain/temporal.py": [
+        "def wants_recency",
+        "_RECENCY_QUERY_CUES",
+    ],
+    "vendor/voicemem/voicemem/leftbrain/mem0_backend_store.py": [
+        "q_wants_recency = wants_recency(q)",
+    ],
+    "vendor/voicemem/voicemem/rightbrain/brain.py": [
+        '"situation_pattern": max(0, int(os.environ.get("VOICEMEM_RB_HEARTNOTE_MAX", "2")))',
+        "VOICEMEM_RB_WRITE_EXPERIENCE",
+    ],
+    "tests/unit/test_upstream_audit_ports.py": [
+        "NormalizeForSpeechTests",
+        "PlaybackTailTests",
+        "SourceQuotaTests",
     ],
 }
 
@@ -2371,7 +2414,7 @@ def build() -> int:
                             f"self-check: {rel} lacks v0.4.11 marker {m!r}"
                         )
             # v0.4.12: stale-page detection + raw capture + send-as-turn
-            for rel, markers in {**V0412_MARKERS, **V0413_MARKERS, **V0414_MARKERS, **V0415_MARKERS, **V0416_MARKERS, **V0417_MARKERS, **V0418_MARKERS, **V0419_MARKERS, **V0420_MARKERS, **V0421_MARKERS, **V050_MARKERS, **V052_MARKERS, **V060_MARKERS, **V061_MARKERS, **V062_MARKERS, **V063_MARKERS, **V064_MARKERS, **V070_MARKERS, **V071_MARKERS, **V072_MARKERS, **V080_MARKERS, **V081_MARKERS, **V090_MARKERS, **V091_MARKERS, **V092_MARKERS, **V0100_MARKERS, **V0101_MARKERS, **V0102_MARKERS}.items():
+            for rel, markers in {**V0412_MARKERS, **V0413_MARKERS, **V0414_MARKERS, **V0415_MARKERS, **V0416_MARKERS, **V0417_MARKERS, **V0418_MARKERS, **V0419_MARKERS, **V0420_MARKERS, **V0421_MARKERS, **V050_MARKERS, **V052_MARKERS, **V060_MARKERS, **V061_MARKERS, **V062_MARKERS, **V063_MARKERS, **V064_MARKERS, **V070_MARKERS, **V071_MARKERS, **V072_MARKERS, **V080_MARKERS, **V081_MARKERS, **V090_MARKERS, **V091_MARKERS, **V092_MARKERS, **V0100_MARKERS, **V0101_MARKERS, **V0102_MARKERS, **V0103_MARKERS}.items():
                 src_text = zf.read(root_prefix + rel).decode("utf-8", errors="replace")
                 for m in markers:
                     if m not in src_text:
