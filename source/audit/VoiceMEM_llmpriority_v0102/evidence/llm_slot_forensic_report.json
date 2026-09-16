@@ -1,0 +1,246 @@
+{
+ "schema": "llm-slot-forensic/1",
+ "base_url": "http://127.0.0.1:8080",
+ "max_tokens_probe": 384,
+ "s1_server": {
+  "/health": {
+   "status": 200,
+   "body_head": "{\"status\":\"ok\"}"
+  },
+  "/props": {
+   "status": 200,
+   "body_head": "{\"default_generation_settings\":{\"params\":{\"seed\":4294967295,\"temperature\":0.699999988079071,\"dynatemp_range\":0.0,\"dynatemp_exponent\":1.0,\"top_k\":40,\"top_p\":0.949999988079071,\"min_p\":0.05000000074505806,\"top_n_sigma\":-1.0,\"xtc_probability\":0.0,\"xtc_threshold\":0.10000000149011612,\"typical_p\":1.0,\"repeat_last_n\":64,\"repeat_penalty\":1.0,\"presence_penalty\":0.0,\"frequency_penalty\":0.0,\"dry_multiplier\":0.0,\"dry_base\":1.75,\"dry_allowed_length\":2,\"dry_penalty_last_n\":64,\"mirostat\":0,\"mirostat_tau\":5.0,\"mirostat_eta\":0.10000000149011612,\"adaptive_target\":-1.0,\"adaptive_decay\":0.8999999761581421,\"max_tokens\":-1,\"n_predict\":-1,\"n_keep\":0,\"n_discard\":0,\"ignore_eos\":false,\"stream\":false,\"n_probs\":0,\"min_keep\":0,\"chat_format\":\"Content-only\",\"reasoning_format\":\"none\",\"reasoning_in_content\":false,\"generation_prompt\":\"\",\"samplers\":[\"penalties\",\"dry\",\"top_n_sigma\",\"top_k\",\"typ_p\",\"top_p\",\"min_p\",\"xtc\",\"temperature\"],\"speculative.types\":\"none\",\"timings_per_token\":false,\"post_sampling_probs\":false,\"backend_sampling\":false,\"lora\":[]},\"n_ctx\":32768},\"total_slots\":1,\"model_alias\":\"/tmp/llama/qwen3-0.6b-q8_0.gguf\",\"model_ftype\":\"Q8_0\",\"model_path\":\"/tmp/llama/qwen3-0.6b-q8_0.gguf\",\"modalities\":{\"vision\":false,\"video\":false,\"audio\":false},\"media_marker\":\"<__media_t4N5JS45Kr6fNxUcGXcPUdYjprK7RwcE__>\",\"endpoint_slots\":true,\"endpoint_props\":false,\"endpoint_metrics\":true,\"ui\":true,\"ui_settings\":{},\"chat_template\":\"{%- if tools %}\\n    {{- '<|im_start|>system\\\\n' }}\\n    {%- if messages[0].role == 'system' %}\\n        {{- messages[0].content + '\\\\n\\\\n' }}\\n    {%- endif %}\\n    {{- \\\"# Tools\\\\n\\\\nYou may call one or more functions to assist with the user query.\\\\n\\\\nYou are provided with function signatures within <tools></tools> XML tags:\\\\n<tools>\\\" }}\\n    {%- for tool in tools %}\\n        {{- \\\"\\\\n\\\" }}\\n        {{- tool | tojson }}\\n    {%- endfor %}\\n    {{- \\\"\\\\n</tools>\\\\n\\\\nFor each function call, return a json object with function name and arguments within <tool_call></tool_call> XML ta"
+  },
+  "/slots": {
+   "status": 200,
+   "body_head": "[{\"id\":0,\"n_ctx\":32768,\"speculative\":false,\"is_processing\":false}]"
+  },
+  "/metrics": {
+   "status": 200,
+   "body_head": "(2553 bytes)"
+  }
+ },
+ "generated": "2026-09-15T21:26:07",
+ "s2_baseline": {
+  "ttft_ms": 1268.9,
+  "total_ms": 19400.7,
+  "text_len": 61,
+  "finish_reason": "length"
+ },
+ "s3_fifo": {
+  "background": "non-streaming, max_tokens=384",
+  "user_chat": {
+   "ttft_ms": 299733.5,
+   "total_ms": 304191.1,
+   "text_len": 10,
+   "finish_reason": "stop"
+  },
+  "slots_before": [
+   {
+    "id": 0,
+    "n_ctx": 32768,
+    "speculative": false,
+    "is_processing": false,
+    "id_task": 2,
+    "n_prompt_tokens": 31,
+    "n_prompt_tokens_processed": 0,
+    "n_prompt_tokens_cache": 0,
+    "params": {
+     "seed": 4294967295,
+     "temperature": 0.10000000149011612,
+     "dynatemp_range": 0.0,
+     "dynatemp_exponent": 1.0,
+     "top_k": 40,
+     "top_p": 0.949999988079071,
+     "min_p": 0.05000000074505806,
+     "top_n_sigma": -1.0,
+     "xtc_probability": 0.0,
+     "xtc_threshold": 0.10000000149011612,
+     "typical_p": 1.0,
+     "repeat_last_n": 64,
+     "repeat_penalty": 1.0,
+     "presence_penalty": 0.0,
+     "frequency_penalty": 0.0,
+     "dry_multiplier": 0.0,
+     "dry_base": 1.75,
+     "dry_allowed_length": 2,
+     "dry_penalty_last_n": 64,
+     "mirostat": 0,
+     "mirostat_tau": 5.0,
+     "mirostat_eta": 0.10000000149011612,
+     "adaptive_target": -1.0,
+     "adaptive_decay": 0.8999999761581421,
+     "max_tokens": 16,
+     "n_predict": 16,
+     "n_keep": 0,
+     "n_discard": 0,
+     "ignore_eos": false,
+     "stream": true,
+     "n_probs": 0,
+     "min_keep": 0,
+     "chat_format": "peg-native",
+     "reasoning_format": "deepseek",
+     "reasoning_in_content": false,
+     "generation_prompt": "<|im_start|>assistant\n<think>\n\n</think>\n\n",
+     "samplers": [
+      "penalties",
+      "dry",
+      "top_n_sigma",
+      "top_k",
+      "typ_p",
+      "top_p",
+      "min_p",
+      "xtc",
+      "temperature"
+     ],
+     "speculative.types": "none",
+     "timings_per_token": false,
+     "post_sampling_probs": false,
+     "backend_sampling": false,
+     "lora": []
+    },
+    "next_token": [
+     {
+      "has_next_token": false,
+      "has_new_line": false,
+      "n_remain": -1,
+      "n_decoded": 0
+     }
+    ]
+   }
+  ]
+ },
+ "s3_disconnect_yield": {
+  "background": "streaming, disconnected at ~1.5 s",
+  "disconnect": {
+   "at_s": 2.58,
+   "sse_lines": 5
+  },
+  "user_chat": {
+   "ttft_ms": 3157.9,
+   "total_ms": 5629.5,
+   "text_len": 3,
+   "finish_reason": "stop"
+  },
+  "slots_after": [
+   {
+    "id": 0,
+    "n_ctx": 32768,
+    "speculative": false,
+    "is_processing": false,
+    "id_task": 263,
+    "n_prompt_tokens": 18,
+    "n_prompt_tokens_processed": 0,
+    "n_prompt_tokens_cache": 0,
+    "params": {
+     "seed": 4294967295,
+     "temperature": 0.10000000149011612,
+     "dynatemp_range": 0.0,
+     "dynatemp_exponent": 1.0,
+     "top_k": 40,
+     "top_p": 0.949999988079071,
+     "min_p": 0.05000000074505806,
+     "top_n_sigma": -1.0,
+     "xtc_probability": 0.0,
+     "xtc_threshold": 0.10000000149011612,
+     "typical_p": 1.0,
+     "repeat_last_n": 64,
+     "repeat_penalty": 1.0,
+     "presence_penalty": 0.0,
+     "frequency_penalty": 0.0,
+     "dry_multiplier": 0.0,
+     "dry_base": 1.75,
+     "dry_allowed_length": 2,
+     "dry_penalty_last_n": 64,
+     "mirostat": 0,
+     "mirostat_tau": 5.0,
+     "mirostat_eta": 0.10000000149011612,
+     "adaptive_target": -1.0,
+     "adaptive_decay": 0.8999999761581421,
+     "max_tokens": 16,
+     "n_predict": 16,
+     "n_keep": 0,
+     "n_discard": 0,
+     "ignore_eos": false,
+     "stream": true,
+     "n_probs": 0,
+     "min_keep": 0,
+     "chat_format": "peg-native",
+     "reasoning_format": "deepseek",
+     "reasoning_in_content": false,
+     "generation_prompt": "<|im_start|>assistant\n<think>\n\n</think>\n\n",
+     "samplers": [
+      "penalties",
+      "dry",
+      "top_n_sigma",
+      "top_k",
+      "typ_p",
+      "top_p",
+      "min_p",
+      "xtc",
+      "temperature"
+     ],
+     "speculative.types": "none",
+     "timings_per_token": false,
+     "post_sampling_probs": false,
+     "backend_sampling": false,
+     "lora": []
+    },
+    "next_token": [
+     {
+      "has_next_token": false,
+      "has_new_line": false,
+      "n_remain": -1,
+      "n_decoded": 0
+     }
+    ]
+   }
+  ],
+  "verdict_hint": "user_ttft_after_disconnect << user_ttft_behind_nonstreaming => the server FREES the slot on streaming client disconnect (the llm_bg_gate cancellation transport is sound)"
+ },
+ "s4_json_streaming": {
+  "assembles_to_json_object": true,
+  "text": "{\"ok\": true, \"n\": 3}",
+  "wall_ms": 13988.7
+ },
+ "s5_lcp_cache": {
+  "same_prefix_again": {
+   "usage_prompt_tokens": 2657,
+   "server_reprocessed_tokens": 20,
+   "wall_ms": 5854.8
+  },
+  "disjoint_prompt": {
+   "usage_prompt_tokens": 2650,
+   "server_reprocessed_tokens": 2647,
+   "wall_ms": 108677.1
+  },
+  "first_prompt": {
+   "usage_prompt_tokens": 2655,
+   "server_reprocessed_tokens": 2652,
+   "wall_ms": 99179.1
+  }
+ },
+ "s6_cache_after_cancel": {
+  "cancelled_generation_after_s": 30.05,
+  "resend_reprocessed_tokens": 2131,
+  "resend_usage_prompt_tokens": 2131,
+  "resend_wall_ms": 33735.6
+ },
+ "s7_production_interleave": [
+  {
+   "phase": "user-1",
+   "reprocessed": 727,
+   "wall_ms": 15192.8
+  },
+  {
+   "phase": "extraction",
+   "reprocessed": 2649,
+   "wall_ms": 120855.9
+  },
+  {
+   "phase": "user-2-after-extraction",
+   "reprocessed": 19,
+   "wall_ms": 3891.5
+  }
+ ]
+}

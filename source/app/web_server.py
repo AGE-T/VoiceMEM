@@ -2269,6 +2269,12 @@ class WebSession:
         # Live VAD level: the single most useful number when debugging
         # "I speak but nothing happens" (below threshold = VAD never fires).
         session["vad_level"] = round(float(prob), 3)
+        # v0.10.2 (PART 9 idle policy): every frame with speech energy is
+        # user activity — it refreshes the background gate's idle clock so a
+        # chain never starts on top of incoming speech (speech_start's arm()
+        # additionally cancels in-flight work).
+        if float(prob) >= self._config.vad_threshold:
+            self._memory_gate.note_activity("vad-frame")
         if st.components["vad"].state == _STATE_ERROR:
             st.components["vad"].set_ready(st.components["vad"].detail)
 
@@ -2279,6 +2285,10 @@ class WebSession:
         # the speech state machine at all — barge-in is the only listener.)
         if answering:
             session["vad_in_speech"] = False
+            # v0.10.2 (PART 9): speech energy while the answer is streaming
+            # counts as activity too (a barge-in is coming).
+            if float(prob) >= self._config.vad_threshold:
+                self._memory_gate.note_activity("barge-frame")
             # v0.4.14: barge-in reads the PRIMARY's own probability, never the
             # fused one — the energy fallback opens the speech GATE, but it
             # must not be able to interrupt the answer on line-level noise or
@@ -3035,6 +3045,10 @@ class WebSession:
                         f"llm first token ({(t_first_token - t_turn0) * 1000.0:.0f} ms)"
                     )
                 reply += delta
+                # v0.10.2 (PART 9): the user LLM is actively streaming —
+                # background memory starts must wait for the quiet window
+                # AFTER the reply, not race the tail of this stream.
+                self._memory_gate.note_activity("llm-delta")
                 await self._send_json({"type": "answer_delta", "text": delta})
                 for chunk in stream.add_delta(delta):
                     speak_queue.put_nowait(chunk)

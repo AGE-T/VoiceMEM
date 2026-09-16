@@ -191,6 +191,42 @@ class _MockHandler(BaseHTTPRequestHandler):
     def log_message(self, fmt, *args):  # noqa: A003
         pass
 
+    def _sse(self, body: dict, payload: dict) -> None:
+        """v0.10.2: SSE response for streaming requests (same payload)."""
+        content = json.dumps(payload, ensure_ascii=False)
+        deltas = [content[i:i + 64] for i in range(0, len(content), 64)] or [""]
+        chunks = []
+        for piece in deltas:
+            chunks.append({
+                "id": "chatcmpl-mock",
+                "object": "chat.completion.chunk",
+                "created": int(time.time()),
+                "model": body.get("model", "mock-llm"),
+                "choices": [{"index": 0,
+                             "delta": {"role": "assistant", "content": piece},
+                             "finish_reason": None}],
+            })
+        chunks.append({
+            "id": "chatcmpl-mock",
+            "object": "chat.completion.chunk",
+            "created": int(time.time()),
+            "model": body.get("model", "mock-llm"),
+            "choices": [{"index": 0, "delta": {},
+                         "finish_reason": "stop"}],
+            "usage": {"prompt_tokens": 1, "completion_tokens": 1,
+                      "total_tokens": 2},
+        })
+        out = b""
+        for chunk in chunks:
+            out += b"data: " + json.dumps(chunk, ensure_ascii=False).encode("utf-8") + b"\n\n"
+        out += b"data: [DONE]\n\n"
+        self.send_response(200)
+        self.send_header("Content-Type", "text/event-stream")
+        self.send_header("Cache-Control", "no-cache")
+        self.send_header("Content-Length", str(len(out)))
+        self.end_headers()
+        self.wfile.write(out)
+
     def do_POST(self):  # noqa: N802
         if self.path.split("?")[0] != "/v1/chat/completions":
             self._json(404, {"error": {"message": f"no route {self.path}"}})
@@ -198,6 +234,12 @@ class _MockHandler(BaseHTTPRequestHandler):
         length = int(self.headers.get("Content-Length", "0"))
         body = json.loads(self.rfile.read(length) or b"{}")
         payload = _route(body.get("messages") or [])
+        if body.get("stream"):
+            # v0.10.2: the vendor legs' cooperative-cancellation transport
+            # (llm_bg_gate.bg_chat_create) streams — serve SSE exactly the
+            # way llama-server does (deltas + finish_reason chunk + [DONE]).
+            self._sse(body, payload)
+            return
         self._json(200, {
             "id": f"chatcmpl-v10-{int(time.time() * 1000)}",
             "object": "chat.completion",

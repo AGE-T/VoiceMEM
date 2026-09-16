@@ -27,6 +27,17 @@ websockets>=13        # uvicorn WS support (bongeszo <-> backend /ws)
 
 # --- TARGET-ONLY (nehez, guardolt import a kodban) --------------------------
 # Ezeket a sandboxba NEM kell telepiteni (nincs GPU / nincs hang).
+openai==3.14.0          # v0.10.2 (PART 11): a hatter-memoria lanc LLM kliense.
+                       # A teljes vendor-lanc (extrakcio -> conflict resolution
+                       # -> scoring) + a user-priority megszakitas transzport
+                       # (voicemem/utils/common/llm_bg_gate.py: streaming +
+                       # disconnect) EZZEL az SDK-val fut. Korabban teljesen
+                       # unpinned volt (a vendor pyproject sima "openai"-jat
+                       # telepitesi-idopont szerint oldotta fel a pip - ugyanaz
+                       # a nem-reprodukalhatosagi osztaly, amit a v0.10.1
+                       # transformers-pin zarott). A telepites a vendor (12.
+                       # lepes) utan a 16. lepes OR-assert-jevel tortenik;
+                       # wheel sha256 a requirements.lock.json-ben.
 transformers==5.17.0  # NVIDIA Parakeet TDT 0.6B v3 (v0.6.0 production ASR)
                      # betoltese a ParakeetForTDT + AutoProcessor utvonalan
                      # (app/asr_parakeet.py, models/asr/parakeet-tdt-0.6b-v3,

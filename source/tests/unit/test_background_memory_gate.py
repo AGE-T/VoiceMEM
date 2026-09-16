@@ -16,10 +16,20 @@ Covers app/background_memory.py (BackgroundMemoryGate):
 from __future__ import annotations
 
 import asyncio
+import threading
 import os
 import unittest
 
 from app.background_memory import BackgroundMemoryGate
+
+try:  # the vendor cooperative-cancel surface (present in prod + sandbox)
+    from voicemem.utils.common import llm_bg_gate
+    from voicemem.utils.common.llm_bg_gate import BackgroundCancelledError
+    HAS_VENDOR_GATE = True
+except ImportError:  # degraded-mode install: the cancel tests degrade to no-ops
+    llm_bg_gate = None
+    BackgroundCancelledError = None
+    HAS_VENDOR_GATE = False
 
 
 class _Recorder:
@@ -41,8 +51,17 @@ def _run(coro):
 
 
 class GateTests(unittest.TestCase):
+    def setUp(self):
+        if HAS_VENDOR_GATE:
+            llm_bg_gate.BG_CANCEL.clear()
+
+    def tearDown(self):
+        if HAS_VENDOR_GATE:
+            llm_bg_gate.BG_CANCEL.clear()
+
     def _make(self, **kw):
         rec = _Recorder()
+        kw.setdefault("idle_s", 0.05)  # v0.10.2 idle policy: fast in tests
         gate = BackgroundMemoryGate(rec, grace_s=0.05, **kw)
         return gate, rec
 
@@ -120,7 +139,7 @@ class GateTests(unittest.TestCase):
                 if u == "u0":
                     raise RuntimeError("boom")
             gate = BackgroundMemoryGate(
-                bad_ingest, grace_s=0.05, on_fail=fails.append
+                bad_ingest, grace_s=0.05, idle_s=0.05, on_fail=fails.append
             )
             gate.arm("speech")
             await gate.submit("u0", "r0")
@@ -138,7 +157,7 @@ class GateTests(unittest.TestCase):
             events: list[str] = []
             gate = BackgroundMemoryGate(
                 lambda u, r: events.append("ingest"),
-                grace_s=0.05,
+                grace_s=0.05, idle_s=0.05,
                 on_begin=lambda: events.append("begin"),
                 on_end=lambda: events.append("end"),
             )
@@ -165,7 +184,7 @@ class GateTests(unittest.TestCase):
                 task = asyncio.get_running_loop().create_task(coro)
                 spawned.append(task)
                 return task
-            gate = BackgroundMemoryGate(lambda u, r: None, grace_s=0.05, spawn=spawn)
+            gate = BackgroundMemoryGate(lambda u, r: None, grace_s=0.05, idle_s=0.05, spawn=spawn)
             gate.arm("speech")
             await gate.submit("u", "r")
             gate.release()
@@ -195,6 +214,220 @@ class GateTests(unittest.TestCase):
             self.assertEqual(gate._grace_s, 2.0)
         finally:
             del os.environ["VOICEMEM_BG_GRACE_S"]
+
+
+
+
+@unittest.skipUnless(HAS_VENDOR_GATE, "vendored llm_bg_gate required")
+class UserPriorityCancellationTests(unittest.TestCase):
+    """v0.10.2 (operator PART 8): arm() cancels in-flight work + requeue."""
+
+    def setUp(self):
+        llm_bg_gate.BG_CANCEL.clear()
+
+    def tearDown(self):
+        llm_bg_gate.BG_CANCEL.clear()
+
+    def _cancelled_once_ingest(self, state, ready):
+        """A vendor-chain stand-in: blocks until released, then check_cancel.
+
+        Models the real legs (extract/resolve via bg_chat_create): while
+        running, a cancel event makes the next boundary raise
+        BackgroundCancelledError. `state["mode"]` switches it to a plain
+        success on the retry.
+        """
+        def ingest(user_text: str, reply: str) -> None:
+            ready.wait(timeout=5.0)
+            if state["mode"] == "cancel":
+                llm_bg_gate.check_cancel("test-leg")
+                raise AssertionError("unreachable when cancelled")
+            state["completed"].append(user_text)
+        return ingest
+
+    def test_arm_cancels_inflight_and_requeues(self):
+        state = {"mode": "cancel", "completed": []}
+        ready = threading.Event()
+
+        async def scene():
+            gate = BackgroundMemoryGate(
+                self._cancelled_once_ingest(state, ready),
+                grace_s=0.05, idle_s=0.05,
+            )
+            await gate.submit("hello", "hi")
+            await asyncio.sleep(0.1)       # the ingest is now blocked in the thread
+            self.assertTrue(gate.is_processing)
+            gate.arm("speech")              # the user needs the slot
+            self.assertTrue(llm_bg_gate.BG_CANCEL.is_set(),
+                            "arm() must set the vendor cancel event")
+            ready.set()                     # the blocked leg proceeds -> sees cancel
+            await asyncio.sleep(0.2)
+            self.assertFalse(gate.is_processing, "the chain must be gone")
+            self.assertEqual(state["completed"], [],
+                             "a cancelled ingest NEVER counts as done")
+            self.assertEqual(gate.stats.cancelled, 1)
+            self.assertEqual(gate.stats.requeued, 1)
+            self.assertEqual(gate.stats.finished, 0)
+            self.assertEqual(gate.pending, 1, "the turn pair is re-queued")
+            # memory store untainted: no partial write happened (state empty)
+            # now let the user finish + the conversation go idle: the retry runs
+            state["mode"] = "ok"
+            gate.release()
+            await asyncio.sleep(0.25)
+            self.assertEqual(state["completed"], ["hello"],
+                             "the requeued pair must be retried after idle")
+            self.assertEqual(gate.stats.finished, 1)
+        _run(scene())
+
+    def test_requeue_coalesces_identical_resubmit(self):
+        """A pair submitted again while its cancelled run is being requeued
+        must not duplicate in the queue (the v0.9.2 never-double contract)."""
+        state = {"mode": "cancel", "completed": []}
+        ready = threading.Event()
+
+        async def scene():
+            gate = BackgroundMemoryGate(
+                self._cancelled_once_ingest(state, ready),
+                grace_s=0.05, idle_s=0.05,
+            )
+            await gate.submit("dup", "reply")
+            await asyncio.sleep(0.1)
+            gate.arm("speech")
+            ready.set()
+            await asyncio.sleep(0.15)        # cancelled + requeued
+            await gate.submit("dup", "reply")  # exact duplicate arrives again
+            self.assertEqual(gate.pending, 1,
+                             "identical pair must coalesce, not duplicate")
+            self.assertEqual(gate.stats.coalesced, 1)
+        _run(scene())
+
+    def test_stale_result_never_reaches_store(self):
+        """The mid-request abort discards partial text INSIDE the leg: the
+        store only ever sees a completed leg's result (bg_chat_create
+        raises before returning anything). Modelled with the real vendor
+        helper over a fake streaming client whose SECOND chunk arrival
+        sets the cancel event (the user armed mid-generation)."""
+        from types import SimpleNamespace
+
+        from voicemem.utils.common.llm_bg_gate import bg_chat_create
+
+        class _Chunk:
+            def __init__(self, content=None, finish=None):
+                self.choices = [SimpleNamespace(
+                    delta=SimpleNamespace(content=content),
+                    finish_reason=finish)] if (content or finish) else []
+                self.usage = None
+
+        class _Stream:
+            """Iterates chunks; entering the SECOND element arms the cancel."""
+            def __init__(self, chunks):
+                self._it = iter(chunks)
+                self._seen = 0
+                self.closed = False
+            def close(self):
+                self.closed = True
+            def __iter__(self):
+                return self
+            def __next__(self):
+                item = next(self._it)
+                self._seen += 1
+                if self._seen >= 2:
+                    llm_bg_gate.BG_CANCEL.set()
+                return item
+
+        stream = _Stream([_Chunk("partial-"), _Chunk("answer")])
+        client = SimpleNamespace(chat=SimpleNamespace(completions=SimpleNamespace(
+            create=lambda **kw: stream)))
+        # the user arms the slot mid-generation: the SECOND chunk arrival
+        # sets the cancel event, so the helper must abort BEFORE assembling
+        # the full answer — nothing is returned, the stream is closed (the
+        # server slot is freed), and the store call site never runs.
+        with self.assertRaises(BackgroundCancelledError):
+            bg_chat_create(client, leg="stale-test",
+                           messages=[{"role": "user", "content": "x"}],
+                           model="m")
+        self.assertTrue(stream.closed, "the stream must be closed (slot freed)")
+
+    def test_arm_idempotent_cancel_and_activity_clock(self):
+        async def scene():
+            gate = BackgroundMemoryGate(lambda u, r: None,
+                                        grace_s=0.05, idle_s=0.05)
+            gate.arm("speech")
+            t_after_arm = gate._last_activity
+            self.assertGreater(t_after_arm, 0.0)
+            gate.arm("speech")   # second arm: no crash, clock refreshes
+            self.assertGreaterEqual(gate._last_activity, t_after_arm)
+        _run(scene())
+
+
+@unittest.skipUnless(HAS_VENDOR_GATE, "vendored llm_bg_gate required")
+class IdlePolicyTests(unittest.TestCase):
+    """v0.10.2 (operator PART 9): background starts only in a QUIET window."""
+
+    def setUp(self):
+        llm_bg_gate.BG_CANCEL.clear()
+
+    def tearDown(self):
+        llm_bg_gate.BG_CANCEL.clear()
+
+    def test_activity_notes_defer_start(self):
+        rec = _Recorder()
+
+        async def scene():
+            gate = BackgroundMemoryGate(rec, grace_s=0.05, idle_s=0.4)
+            gate.arm("turn")
+            await gate.submit("u1", "r1")
+            gate.release()                    # reply done at t0
+            for _ in range(6):                # user keeps making noise
+                await asyncio.sleep(0.1)
+                gate.note_activity("vad-frame")
+            await asyncio.sleep(0.02)
+            self.assertTrue(gate.is_armed,
+                             "continuous activity must keep the gate closed")
+            self.assertEqual(rec.calls, [], "nothing may start")
+            self.assertGreaterEqual(gate.stats.idle_waits, 1)
+            await asyncio.sleep(0.5)          # quiet for > idle_s now
+            self.assertFalse(gate.is_armed,
+                             "quiet window reached: the gate must open")
+            await asyncio.sleep(0.15)
+            self.assertEqual(rec.done(), ["u1"])
+        _run(scene())
+
+    def test_idle_window_measured_from_last_activity(self):
+        rec = _Recorder()
+
+        async def scene():
+            gate = BackgroundMemoryGate(rec, grace_s=0.05, idle_s=0.25)
+            gate.arm("turn")
+            await gate.submit("u1", "r1")
+            gate.release()
+            await asyncio.sleep(0.1)          # INSIDE the grace+idle window
+            gate.note_activity("llm-delta")   # a late delta resets the clock
+            await asyncio.sleep(0.1)
+            self.assertTrue(gate.is_armed, "the idle clock restarted")
+            await asyncio.sleep(0.35)         # now quiet long enough
+            self.assertFalse(gate.is_armed)
+            await asyncio.sleep(0.1)
+            self.assertEqual(rec.done(), ["u1"])
+        _run(scene())
+
+    def test_start_wait_measured_in_stats(self):
+        rec = _Recorder()
+
+        async def scene():
+            gate = BackgroundMemoryGate(rec, grace_s=0.05, idle_s=0.15)
+            gate.arm("turn")
+            await gate.submit("u1", "r1")
+            gate.release()
+            await asyncio.sleep(0.35)
+            self.assertEqual(rec.done(), ["u1"])
+            self.assertGreaterEqual(gate.stats.last_start_wait_s, 0.15,
+                                    "release->start delay must be measured")
+            d = gate.stats.as_dict()
+            self.assertIn("last_start_wait_s", d)
+            self.assertIn("cancelled", d)
+            self.assertIn("requeued", d)
+            self.assertIn("idle_waits", d)
+        _run(scene())
 
 
 class RealLayerContractTests(unittest.TestCase):

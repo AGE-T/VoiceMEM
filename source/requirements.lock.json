@@ -1,0 +1,65 @@
+{
+ "schema": "voicemem-critical-path-lock/1",
+ "generated": "2026-09-15T21:28:04",
+ "note": "v0.10.2 PART 11: exact, tested versions of every package on the ASR + LLM critical path. Sources: install_m1.ps1 steps (torch trio from the cu128 index), vendor pin + step-16 OR-assert (transformers), vendor pin + step-16 assert (openai). Wheel sha256 fields are the PyPI wheel hashes verified in the v0.10.2 sandbox gate. torch has no wheel hash here (2.6 GB cu128 wheel): its identity is pinned by exact version + the official cu128 index URL, and the installer's post-install pip freeze (INSTALL_MANIFEST.json) records the resolved set on every install.",
+ "packages": [
+  {
+   "package": "torch",
+   "exact_version": "2.7.0",
+   "source": "https://download.pytorch.org/whl/cu128 (official paired trio)",
+   "pin_site": "install_m1.ps1 step 10 (pip install torch==2.7.0 --index-url cu128)",
+   "sha256_wheel": null,
+   "sha256_note": "omitted: 2.6 GB cu128 wheel; version+index pinned; pip freeze recorded in INSTALL_MANIFEST.json"
+  },
+  {
+   "package": "torchaudio",
+   "exact_version": "2.7.0",
+   "source": "https://download.pytorch.org/whl/cu128",
+   "pin_site": "install_m1.ps1 step 10 (paired trio + trio-guard)",
+   "sha256_wheel": null,
+   "sha256_note": "same policy as torch"
+  },
+  {
+   "package": "transformers",
+   "exact_version": "5.17.0",
+   "source": "PyPI",
+   "pin_site": "vendor/voicemem/pyproject.toml override + install_m1.ps1 step 16 (install + tuple assert)",
+   "sha256_wheel": "78ec1ce21579b38dfb83950a0658cd119f87212a2fcfdff478096ce9d6c03801",
+   "wheel": "transformers-5.17.0-py3-none-any.whl",
+   "reason": "v0.10.1 ASR forensic: the floating '>=5.6' pin was the single non-reproducible ASR-stack variable (ParakeetForTDT landed in 5.9.0); 5.9-5.17 CPU-verified byte-identical on the full HU corpus"
+  },
+  {
+   "package": "openai",
+   "exact_version": "3.14.0",
+   "source": "PyPI",
+   "pin_site": "vendor/voicemem/pyproject.toml + install_m1.ps1 step 16 (install + assert)",
+   "sha256_wheel": "232a85a1c0ff6820534630fbfdb99313990ed80e66f39892a3abcff4130e2b16",
+   "wheel": "openai-3.14.0-py3-none-any.whl",
+   "reason": "v0.10.2 LLM priority: the whole background memory chain + the cooperative cancellation transport (llm_bg_gate streaming) run on this SDK; it was previously completely unpinned"
+  },
+  {
+   "package": "onnxruntime",
+   "exact_version": "1.23.0",
+   "source": "PyPI (CPU build)",
+   "pin_site": "install_m1.ps1 step 13 (separate install; Silero VAD ONNX)",
+   "sha256_wheel": null,
+   "sha256_note": "CPU-platform-specific wheel name; exact version pinned"
+  },
+  {
+   "package": "numpy",
+   "exact_version": "2.1.3",
+   "source": "PyPI",
+   "pin_site": "requirements.lock CORE",
+   "sha256_wheel": null,
+   "sha256_note": "platform wheels vary by Python minor; exact version pinned"
+  },
+  {
+   "package": "httpx",
+   "exact_version": "0.28.1",
+   "source": "PyPI",
+   "pin_site": "requirements.lock CORE (app/llm.py client + llm_slot_forensic)",
+   "sha256_wheel": null,
+   "sha256_note": "platform-independent wheel; version pinned (hash in INSTALL_MANIFEST)"
+  }
+ ]
+}

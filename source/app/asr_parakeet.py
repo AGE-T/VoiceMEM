@@ -54,6 +54,34 @@ from app.config import AgentConfig
 
 logger = logging.getLogger(__name__)
 
+#: Languages whose transcripts are expected to carry Cyrillic script — the
+#: language-hint guard only fires when the DECODED script contradicts the
+#: hint's expected script (a "hu" hint producing Cyrillic text is the
+#: v0.10.0 regression signature; a "ru" hint producing Cyrillic is fine).
+_CYRILLIC_HINT_LANGUAGES = frozenset(
+    {"ru", "uk", "bg", "sr", "mk", "be", "kk", "ky", "tg", "mn", "hy", "ka"}
+)
+
+
+def _has_cyrillic(text: str) -> bool:
+    """True when the text carries any Cyrillic codepoint (U+0400..U+04FF)."""
+    return any("\u0400" <= ch <= "\u04ff" for ch in (text or ""))
+
+
+def _resolve_language_mode(configured: str) -> tuple[str, str]:
+    """PURE: normalise the configured ASR language into (mode, hint).
+
+    "" / "auto" (any case) -> ("auto", "") — the engine's native
+    multilingual auto-detect, exactly the historical behaviour.
+    Anything else (e.g. "hu") -> ("hint", <normalised>) — a diagnostic
+    language hint (ParakeetForTDT has no inference-level language
+    parameter; see the engine docstring).
+    """
+    value = (configured or "").strip().lower()
+    if not value or value == "auto":
+        return "auto", ""
+    return "hint", value
+
 try:  # pragma: no cover — sandbox HAS torch; target machine too; CI may not
     import torch  # type: ignore[import-untyped]
 
@@ -203,6 +231,28 @@ class ParakeetEngine:
         self._load_error: Optional[str] = None
         self._last_inference_ms = 0.0
         self._probe_ok = False
+        # v0.10.2 (operator PART 3): the configured ASR language reaches the
+        # PRODUCTION engine now (previously only the legacy engines read it
+        # — the operator observed the setting "not clearly passed into the
+        # Parakeet inference call", which was true). ParakeetForTDT exposes
+        # NO language parameter (multilingual auto-detect only), so a
+        # configured hint is a DIAGNOSTIC: recorded here, surfaced in
+        # status(), and checked against the transcript script after the
+        # decode (a Hungarian hint with a Cyrillic transcript is the exact
+        # regression signature — logged loudly, the web layer dumps the
+        # waveform per v0.10.1).
+        self._language_mode, self._language_hint = _resolve_language_mode(
+            getattr(config, "asr_language", "")
+        )
+        if self._language_mode == "hint":
+            logger.info(
+                "ASR language hint '%s' recorded (diagnostic mode): the "
+                "transformers ParakeetForTDT path is multilingual auto-detect "
+                "only — no language parameter exists in its inference API, "
+                "so the hint cannot force the output language; transcript "
+                "script is verified instead",
+                self._language_hint,
+            )
 
     # ------------------------------------------------------------ lifecycle
 
@@ -257,6 +307,8 @@ class ParakeetEngine:
                 "language_detection": self.capabilities.language_detection,
                 "timestamps": self.capabilities.timestamps,
             },
+            "language_mode": self._language_mode,
+            "language_hint": self._language_hint,
             "last_inference_ms": round(self._last_inference_ms, 1),
             "last_error": self._load_error or "",
         }
@@ -358,6 +410,24 @@ class ParakeetEngine:
                 self.engine_id,
                 self.model_id,
             )
+        # v0.10.2 (PART 3): language-hint script verification — a hint
+        # whose expected script CONTRADICTS the decoded transcript is the
+        # exact cross-language regression signature; log it loudly (the
+        # web layer dumps the entering waveform per v0.10.1, and the
+        # forensic tool records the evidence).
+        if self._language_hint:
+            expect_cyrillic = self._language_hint in _CYRILLIC_HINT_LANGUAGES
+            got_cyrillic = _has_cyrillic(text)
+            if expect_cyrillic != got_cyrillic and text:
+                logger.warning(
+                    "ASR language-hint mismatch: hint '%s' expects %s script, "
+                    "transcript carries %s (first 80 chars: %r) — cross-"
+                    "language regression signature; waveform dump per v0.10.1",
+                    self._language_hint,
+                    "Cyrillic" if expect_cyrillic else "non-Cyrillic",
+                    "Cyrillic" if got_cyrillic else "non-Cyrillic",
+                    text[:80],
+                )
         return AsrResult(
             text=text,
             language="",

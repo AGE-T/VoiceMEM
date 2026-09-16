@@ -152,6 +152,98 @@ class ReleaseVersionFeatureTest(FeatureValidationTest):
             m.group(2), version, "config YAML project.version != VERSION file"
         )
 
+    def test_logic_release_metadata_invariants(self):
+        """v0.10.2 (operator PART 12): cross-artifact consistency.
+
+        A future release must never ship with STALE release metadata: the
+        version must agree across EVERY ledger that records it —
+        VERSION, pyproject, the yaml, the page literal, the TOP CHANGELOG
+        entry, the NEWEST RELEASE_INDEX entry (and no entry NEWER than
+        VERSION), and the gate record the tree was gated with. Each of
+        these going stale independently is exactly the "release metadata
+        inconsistency" class the operator ordered closed.
+        """
+        import json
+        import re
+
+        version = _read_text(REPO_ROOT / "VERSION").strip()
+        self.assertTrue(SEMVER.match(version))
+
+        # 1. pyproject + yaml (already covered by the sync test, restated
+        #    here as part of the invariant CHAIN).
+        pyproject = _read_text(REPO_ROOT / "pyproject.toml")
+        m = re.search(r'^version\s*=\s*"([0-9]+\.[0-9]+\.[0-9]+)"', pyproject, re.M)
+        self.assertIsNotNone(m, "pyproject version line missing")
+        self.assertEqual(m.group(1), version)
+
+        # 2. the TOP CHANGELOG entry is exactly VERSION (a bumped VERSION
+        #    without a changelog entry — or a changelog entry ahead of a
+        #    forgotten VERSION bump — both fail here).
+        changelog = _read_text(REPO_ROOT / "CHANGELOG.md")
+        headings = re.findall(r"^## \[([0-9]+\.[0-9]+\.[0-9]+)\]", changelog, re.M)
+        self.assertTrue(headings, "CHANGELOG has no version headings")
+        self.assertEqual(
+            headings[0], version,
+            f"the TOP CHANGELOG entry is {headings[0]}, VERSION is {version} "
+            "- stale release metadata",
+        )
+
+        # 3. the shipped page literal equals VERSION (a stale PAGE_VERSION
+        #    was a real v0.8.0 defect; the builder verifies it, the gate
+        #    verifies it, and now the release validation verifies it too).
+        html = (REPO_ROOT / "web" / "voicemem.html").read_text(encoding="utf-8")
+        m = re.search(r"const PAGE_VERSION='([^']+)';", html)
+        self.assertIsNotNone(m, "PAGE_VERSION literal missing from the page")
+        self.assertEqual(m.group(1), version)
+
+        # 4. RELEASE_INDEX lifecycle-tolerant invariants (a release is
+        #    gated BEFORE it is built, so the index legitimately lacks the
+        #    current version until the builder writes it):
+        #      a) no entry may be NEWER than VERSION (always checkable);
+        #      b) when the VERSION's zip EXISTS on disk (i.e. it was built
+        #         and staged), the index MUST carry its entry — a published
+        #         artifact missing from the index is exactly the stale-
+        #         metadata defect this test exists to catch.
+        index_path = REPO_ROOT / "releases" / "RELEASE_INDEX.json"
+        if index_path.is_file():
+            index = json.loads(_read_text(index_path))
+            entries = index.get("releases", [])
+            if entries:
+                versions = [tuple(int(p) for p in e["version"].split("."))
+                            for e in entries]
+                vt = tuple(int(p) for p in version.split("."))
+                self.assertLessEqual(
+                    max(versions), vt,
+                    "RELEASE_INDEX contains an entry NEWER than VERSION: "
+                    f"{max(versions)} > {vt} - stale forward metadata",
+                )
+                if (REPO_ROOT / "releases" /
+                        f"VoiceMemAgent_v{version}.zip").is_file():
+                    self.assertIn(
+                        vt, versions,
+                        f"the built zip for {version} is missing from "
+                        "RELEASE_INDEX.json - stale release metadata",
+                    )
+
+        # 5. the gate record (when present) may never be NEWER than VERSION
+        #    (a leftover future record is definitely stale). Equality at
+        #    build time is enforced by build_release_sandbox.py's
+        #    _verify_gate_record (it refuses to build with a record whose
+        #    version != the tree VERSION); during a release cycle the record
+        #    is legitimately from the PREVIOUS version until the new gate
+        #    finishes, so only the stale-forward direction fails here.
+        gate_path = REPO_ROOT / "releases" / "gate_record.json"
+        if gate_path.is_file():
+            record = json.loads(_read_text(gate_path))
+            rec_v = record.get("version") or ""
+            if SEMVER.match(rec_v):
+                self.assertLessEqual(
+                    tuple(int(p) for p in rec_v.split(".")),
+                    tuple(int(p) for p in version.split(".")),
+                    f"gate_record.json version {rec_v} is NEWER than VERSION "
+                    f"{version} - stale forward metadata",
+                )
+
     def test_logic_changelog_has_entry_for_current_version(self):
         version = _read_text(REPO_ROOT / "VERSION").strip()
         changelog = _read_text(REPO_ROOT / "CHANGELOG.md")

@@ -26,7 +26,15 @@ classifiers = [
 # ModuleNotFoundError: funasr —— 名字叫 slm，没人想得到 ASR 在里面。
 dependencies = [
     "numpy",
-    "openai",
+    # v0.10.2 (PART 11): EXACT PIN — the whole background memory chain
+    # (extraction / conflict resolution / scoring) runs on this SDK, and
+    # the new cooperative-cancellation transport (voicemem.utils.common.
+    # llm_bg_gate) uses its streaming interface. An unpinned "openai"
+    # resolved to whatever was newest at install time — the same
+    # non-reproducibility class the v0.10.1 transformers pin closed for
+    # ASR. 3.14.0 = the version the v0.10.2 sandbox gate verified
+    # (vendor battery + streaming transport + JSON-mode assembly).
+    "openai==3.14.0",
     "mem0ai",
     # ── 音频链路 ──
     "torch",

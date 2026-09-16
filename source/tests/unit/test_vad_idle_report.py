@@ -126,6 +126,29 @@ class IdleVadReportTests(_IdleReportBase):
         self.assertTrue(self._session._in_speech,
                         "the trigger frame must still START speech")
 
+    def test_exactly_threshold_frame_starts_speech_and_never_reports_below(self) -> None:
+        """v0.10.2 (operator PART 13): the EXACTLY-at-threshold window.
+
+        The VadStateMachine is threshold-INCLUSIVE (``p >= threshold``
+        starts speech, app/vad.py); the idle report fires only when the
+        peak is STRICTLY below (``peak < threshold``). A window of frames
+        at exactly 0.25 must therefore START speech on its first frame and
+        never produce a "never reached" line — the two comparison
+        operators stay consistent at the boundary (the diagnostic can
+        never contradict the decision path at the threshold itself).
+        """
+        self._run([0.25] * REPORT_FRAMES)
+        never = [ln for ln in self._info_lines()
+                 if "never reached the speech threshold" in ln]
+        self.assertEqual(
+            never, [],
+            f"at-threshold frames must not be reported below: {never}",
+        )
+        self.assertTrue(
+            self._session._in_speech,
+            "threshold-inclusive VSM: prob == threshold must start speech",
+        )
+
     def test_genuinely_idle_window_still_reports(self) -> None:
         """150 quiet frames below the threshold DO report (v0.4.7 pact)."""
         self._run([0.10] * REPORT_FRAMES)

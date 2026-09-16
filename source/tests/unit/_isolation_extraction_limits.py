@@ -37,6 +37,44 @@ class _Resp:
         self.choices = [_Choice(content, finish_reason)]
 
 
+class _Delta:
+    def __init__(self, content):
+        self.content = content
+
+
+class _ChunkChoice:
+    def __init__(self, content, finish_reason):
+        self.delta = _Delta(content)
+        self.finish_reason = finish_reason
+
+
+class _Chunk:
+    """One SSE chunk shape (the openai SDK yields these on stream=True)."""
+
+    def __init__(self, content, finish_reason, usage=None):
+        self.choices = [_ChunkChoice(content, finish_reason)]
+        self.usage = usage
+
+
+class _Stream:
+    """Iterable + closeable stream (v0.10.2: the vendor legs issue streaming
+    requests through llm_bg_gate.bg_chat_create — the cooperative
+    cancellation transport)."""
+
+    def __init__(self, chunks):
+        self._it = iter(chunks)
+        self.closed = False
+
+    def close(self):
+        self.closed = True
+
+    def __iter__(self):
+        return self
+
+    def __next__(self):
+        return next(self._it)
+
+
 class _Completions:
     def __init__(self, captured):
         self._captured = captured
@@ -45,11 +83,18 @@ class _Completions:
         self._captured.update(kw)
         if kw.get("max_tokens") is not None and kw["max_tokens"] <= 4:
             # emulate hard truncation: JSON cut mid-string
-            return _Resp('{"memory": [{"id": "0", "text": "User trunca', "length")
-        return _Resp(json.dumps({
-            "memory": [{"id": "0", "text": "User bought new running shoes",
-                        "attributed_to": "user"}],
-            "emotion": "", "traits": []}), "stop")
+            text, finish = '{"memory": [{"id": "0", "text": "User trunca', "length"
+        else:
+            text, finish = json.dumps({
+                "memory": [{"id": "0", "text": "User bought new running shoes",
+                            "attributed_to": "user"}],
+                "emotion": "", "traits": []}), "stop"
+        # v0.10.2: the legs always stream — serve SSE-shaped chunks the way
+        # llama-server does (deltas + a final finish_reason/usage chunk).
+        pieces = [text[i:i + 64] for i in range(0, len(text), 64)]
+        chunks = [_Chunk(p, None) for p in pieces]
+        chunks.append(_Chunk("", finish, usage={"prompt_tokens": 1}))
+        return _Stream(chunks)
 
 
 class _Chat:

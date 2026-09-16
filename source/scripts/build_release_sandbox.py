@@ -45,8 +45,8 @@ from pathlib import Path
 REPO = Path(__file__).resolve().parent.parent
 RELEASES = REPO / "releases"
 
-NEW_VERSION = "0.10.1"
-PREV_VERSION = "0.10.0"
+NEW_VERSION = "0.10.2"
+PREV_VERSION = "0.10.1"
 ZIP_NAME = f"VoiceMemAgent_v{NEW_VERSION}.zip"
 
 PLACEHOLDER_DIRS = [
@@ -68,50 +68,60 @@ PLACEHOLDER_DIRS = [
 ROOT_FILES = [
     "README.md", "CHANGELOG.md", "LICENSES.md", "CONTRACT.md", "VERSION",
     "INSTALL_MANIFEST.example.json", "requirements.txt", "requirements.lock",
-    "pyproject.toml", ".gitignore", "START.bat", "MODELS.lock.json",
+    "requirements.lock.json", "pyproject.toml", ".gitignore", "START.bat",
+    "MODELS.lock.json",
     # v0.5.0: the controlled VoiceMem ownership artifacts ship in the ZIP
     "VOICEMEM_PIN.json", "UPSTREAM_POLICY.md",
 ]
 
 NOTES = (
-    "v0.10.1 P0 ASR FORENZIKAI KIADAS (operator order: URGENT P0 - magyar "
-    "beszed orosz / osszefuggestelen angol atiratkent jelenik meg a "
-    "celgepen). A FORENZIKA ALLASA (sandbox, pinned modell + produkcios "
-    "utvonal, 2026-09-15): (1) a v0.9.2->v0.10.0 TERMEK-DELTA NEM erinti "
-    "a hangutat (teljes fa-diff: csak memoria-szemantika fajlok valtoztak; "
-    "ASR/VAD/audio/web kod byte-azonos); (2) transformers 5.9.0-5.17.0 "
-    "CPU-n a TELJES HU korpuszon (6 fajl: piper-HU + valodi Windows "
-    "capture) HELYES, byte-azonos kiadasokkal - tiszta "
-    "konyvtar-verzio-regresszio NINCS (5.6.x-5.8.x: a ParakeetForTDT class "
-    "hianyzik, hangos import-hiba); (3) a produkcios Silero VAD "
-    "szegmentacio helyes (pmax 1.0, sane hatarok); (4) a kiadott gate SOSEM "
-    "futtatott valodi Parakeet-inferenciat (csak contract-tesztek) - a "
-    "verifikacios RES, most zarva. JAVITVA: (A) web_server VAD idle-riport: "
-    "a 'peak 0.97 < 0.25' HALO log-dontes (a riportablokk a vsm.update "
-    "ELOTT futott - a speech-start trigger-keret beszamitott a csucsba, az "
-    "uzenet szovege feltetel nelkul allitotta a 'peak < kuszob'-ot; most "
-    "az update UTAN fut + explicit feltetel - a VAD dontesi ut VALTOZATLAN, "
-    "pure logging); (B) bizonyitk-megorzes: cirilles atirat eseten a "
-    "bemeno hullamforma MINDIG dumpolodik (logs/asr_wrong_language_<ts>.wav "
-    "- edig csak az URES atiratok mentodtek), opt-in asr_dump_utterances "
-    "konfig a teljes catch-all dumpra; (C) transformers EXAKT PIN 5.17.0 "
-    "(install_m1.ps1 16. lepes + egyenloseg-assert; a '>= 5.6' padlo TEVES "
-    "volt, a class az 5.9-ben landolt; a lebego pin a celgepen "
-    "telepitesi-idopont szerint MAS verziot oldhatott fel - az ASR stack "
-    "egyetlen nem-reprodukalhato komponense, most pin-elve); (D) UJ valodi "
-    "inferencios regresszio-tesztek (test_real_asr_hungarian.py: valodi "
-    "korpusz a produkcios uton, CER-budget 0.25 a mert 0.000-0.099 felett, "
-    "cirill-tiltas; env-neutral skip) + unit tesztek a log-fixre "
-    "(test_vad_idle_report.py); (E) scripts/asr_regression_forensic.py: a "
-    "celgepi matrix-cella (tenyleges env-dump + modell-SHA-ellenorzes a "
-    "pinned revizio ellen + korpusz-futtatas a konfiguralt es a cpu "
-    "eszkozon) - a CUDA lanc a sandboxbol hianyzo dimenzio, ez a szkript "
-    "zarja le. HATAROK (oszinten): a celgepi gyoker (CUDA-specifikus "
-    "konyvtar-viselkedes vagy elo mikrofon-lanc) tavoli diagnozissal NEM "
-    "bizonyithato - a v0.10.1 a BIZONYITHATO hibakat javitja es a teljes "
-    "diagnosztikai eszkoztart szallitja; a celgepi 10 perces "
-    "forensic-futtatas + a wrong-language WAV dumpok zarjak a maradekot."
+    "v0.10.2 P0 LLM-PRIORITY + REPRODUCIBILITY KIADAS (operator order: ASR "
+    "REGRESSION + LLM PRIORITY + REPRODUCIBILITY FIX - a TTFT 40-60 s-re "
+    "degradalodott, a hatter-memoria munka foglalta az egyetlen llama-server "
+    "slotot). BIZONYITEK (valodi b10717 szerver, produkcios flag-ekkel, "
+    "sandbox stand-in modell; scripts/llm_slot_forensic.py, audit/"
+    "VoiceMEM_llmpriority_v0102): (1) FIFO-sor: a user chat TTFT-je a futt "
+    "hatter-kerees mögott 299.7 s (a mechanizma pontosan a mertett 40-60 s "
+    "produkcios jelenseg); (2) DISCONNECT-YIELD: a hatter-keres streaming "
+    "kliens-oldali megszakitasa utan a user TTFT 3.2 s (-98.9%) - a b10717 "
+    "SZABADITJA a slotot kliens-disconnectre (a megszakitas transzportja "
+    "hangolt); (3) LCP-cache: a /metrics szamlaloirol mert TENYLEGES "
+    "ujra-kiertekelt tokenek:same-prefix 20/2657 (99.2% reuse), disjoint "
+    "2647/2650; a user-chat prefix a kozbejovo extraction UTAN IS "
+    "tuleli (19 token reprocessed) - a cache nem a hibas tag; (4) JSON-mode "
+    "+ streaming osszeallitas ervenyes. IMPLEMENTALVA: (A) voicemem/utils/"
+    "common/llm_bg_gate.py - kooperativ megszakitas (BG_CANCEL thread-event; "
+    "check_cancel minden lableces elott; bg_chat_create: streaming kerelesek "
+    "chunk-kozotti cancel-poll + stream.close() = slot-felszabaditas; a "
+    "BackgroundCancelledError BaseException - az ingest-lanc 'except "
+    "Exception' fallback-jai NEM nyelhetik el); (B) app/background_memory.py "
+    "gate v2: arm() most a futt lancot IS megszakitja, a megszakadt pair "
+    "visszasorolodik (elo probalkozasok szamlalva, sosem dobodik el), "
+    "release() utani nyitas csak a VALODI idle-ablakban (beszed-keret + LLM-"
+    "delta + turn aktivitas-jel + VOICEMEM_BG_IDLE_S csendes ablak a "
+    "vak 2 s grace helyett); (C) a két nagy láb (extrakcio + conflict "
+    "resolution) a bg_chat_create transzporton fut + a resolve lab "
+    "60 s timeout-ot kapott (korabban NEM volt - az SDK defaultja 600 s!); "
+    "(D) asr_language vegigvezetese a PRODUKCIOS parakeet motorba (PART 3: "
+    "auto/hu diagnostikai mod - a ParakeetForTDT API-ban nincs nyelv-"
+    "parameter, a hint rögzitesre kerul + az atirat irasrendje ellenorizve); "
+    "(E) openai==3.14.0 EXAKT PIN (vendor pyproject + install_m1.ps1 16. "
+    "lepes OR-assert + requirements.lock.json machine-readable manifest "
+    "wheel-sha256-okkal) - a teljes memoria-lanc fuggosege korabban teljesen "
+    "unpinned volt; (F) release-meta invariáns teszt (VERSION=CHANGELOG-top="
+    "RELEASE_INDEX-legujabb=PAGE_VERSION, nincs ujabb bejegyzes a VERSIONnel, "
+    "gate_record nem ujabb); (G) VAD-diagnosztika hatar-eset teszt (pontosan "
+    "kuszob: beszed-indulas, sose 'never reached' - az operator PART 13 "
+    "harom esete: alatta/rajta/felette). Tesztek: +32 uj (gate v2: cancel/"
+    "requeue/stale-rejection/idle 7 + llm_bg_gate 9 + nyelv-mod 10 + VAD "
+    "hatar-eset 1 + release-invariant 1 + runtime-deps openai-dokumentacio "
+    "1 + ujabb sorrend-ellenorzesek), teljes regresszio 0. HATAROK "
+    "(oszinten): a valodi 35B TTFT-elony es a CUDA-lab merese a celgepen "
+    " tortenik (scripts/llm_slot_forensic.py - ugyanaz a minta, mint a "
+    "v0.10.1 ASR-forensic); a sandbox szamok a MECHANIZMUST bizonyitjak, "
+    "nem a produkcios kezeldet."
 )
+
 #: v0.6.0 markers: the modular ASR engine contract - asr_core (AudioBuffer,
 #: AsrResult, AsrError, registry, select_engine), the two NVIDIA adapters,
 #: the official-context SileroVad feed, the engine-contract web-server leg,
@@ -782,6 +792,58 @@ V0101_MARKERS = {
     ],
     "tests/integration/test_real_asr_hungarian.py": [
         "RealParakeetHungarianTests",
+    ],
+}
+
+#: v0.10.2 markers: the user-priority release - the vendor cooperative
+#: cancellation gate, the BackgroundMemoryGate v2 (cancel-on-arm + requeue +
+#: idle policy), the resolve-leg timeout, the ASR language diagnostic mode,
+#: the openai exact pin, and the regression battery covering all of it.
+V0102_MARKERS = {
+    "vendor/voicemem/voicemem/utils/common/llm_bg_gate.py": [
+        "BG_CANCEL = threading.Event()",
+        "class BackgroundCancelledError(BaseException)",
+        "def bg_chat_create",
+    ],
+    "app/background_memory.py": [
+        "VOICEMEM_BG_IDLE_S",
+        "def note_activity",
+        "BackgroundCancelledError as exc:",
+    ],
+    "app/web_server.py": [
+        'self._memory_gate.note_activity("vad-frame")',
+        'self._memory_gate.note_activity("llm-delta")',
+    ],
+    "vendor/voicemem/voicemem/leftbrain/extract_facts_openai.py": [
+        'leg="memory-extraction"',
+        'leg="conflict-resolution"',
+        '"timeout": 60.0, "max_retries": 2',
+    ],
+    "app/asr_parakeet.py": [
+        "def _resolve_language_mode",
+        '"language_mode": self._language_mode',
+    ],
+    "requirements.txt": [
+        "openai==3.14.0",
+    ],
+    "scripts/install_m1.ps1": [
+        '$OpenAiPin = "3.14.0"',
+    ],
+    "requirements.lock.json": [
+        "voicemem-critical-path-lock/1",
+    ],
+    "scripts/llm_slot_forensic.py": [
+        "llm-slot-forensic/1",
+    ],
+    "tests/unit/test_llm_bg_gate.py": [
+        "BgChatCreateTests",
+    ],
+    "tests/unit/test_background_memory_gate.py": [
+        "UserPriorityCancellationTests",
+        "IdlePolicyTests",
+    ],
+    "tests/unit/test_asr_language_mode.py": [
+        "EngineLanguageModeTests",
     ],
 }
 
@@ -2090,6 +2152,20 @@ def build() -> int:
                     raise AssertionError(
                         f"self-check: v0.10.1 file missing from the ZIP: {must}"
                     )
+            # v0.10.2: the LLM-priority deliverables must ship in the ZIP.
+            for must in (
+                "vendor/voicemem/voicemem/utils/common/llm_bg_gate.py",
+                "app/background_memory.py",
+                "scripts/llm_slot_forensic.py",
+                "requirements.lock.json",
+                "tests/unit/test_llm_bg_gate.py",
+                "tests/unit/test_background_memory_gate.py",
+                "tests/unit/test_asr_language_mode.py",
+            ):
+                if root_prefix + must not in names:
+                    raise AssertionError(
+                        f"self-check: v0.10.2 file missing from the ZIP: {must}"
+                    )
             # cumulative markers (v0.3.5 web payload, v0.3.6 CRLF START.bat)
             for rel, markers in CUMULATIVE_MARKERS.items():
                 content = zf.read(root_prefix + rel)
@@ -2295,7 +2371,7 @@ def build() -> int:
                             f"self-check: {rel} lacks v0.4.11 marker {m!r}"
                         )
             # v0.4.12: stale-page detection + raw capture + send-as-turn
-            for rel, markers in {**V0412_MARKERS, **V0413_MARKERS, **V0414_MARKERS, **V0415_MARKERS, **V0416_MARKERS, **V0417_MARKERS, **V0418_MARKERS, **V0419_MARKERS, **V0420_MARKERS, **V0421_MARKERS, **V050_MARKERS, **V052_MARKERS, **V060_MARKERS, **V061_MARKERS, **V062_MARKERS, **V063_MARKERS, **V064_MARKERS, **V070_MARKERS, **V071_MARKERS, **V072_MARKERS, **V080_MARKERS, **V081_MARKERS, **V090_MARKERS, **V091_MARKERS, **V092_MARKERS, **V0100_MARKERS, **V0101_MARKERS}.items():
+            for rel, markers in {**V0412_MARKERS, **V0413_MARKERS, **V0414_MARKERS, **V0415_MARKERS, **V0416_MARKERS, **V0417_MARKERS, **V0418_MARKERS, **V0419_MARKERS, **V0420_MARKERS, **V0421_MARKERS, **V050_MARKERS, **V052_MARKERS, **V060_MARKERS, **V061_MARKERS, **V062_MARKERS, **V063_MARKERS, **V064_MARKERS, **V070_MARKERS, **V071_MARKERS, **V072_MARKERS, **V080_MARKERS, **V081_MARKERS, **V090_MARKERS, **V091_MARKERS, **V092_MARKERS, **V0100_MARKERS, **V0101_MARKERS, **V0102_MARKERS}.items():
                 src_text = zf.read(root_prefix + rel).decode("utf-8", errors="replace")
                 for m in markers:
                     if m not in src_text:

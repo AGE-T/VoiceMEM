@@ -928,6 +928,32 @@ if ($LASTEXITCODE -ne 0) {
 }
 Write-Host ("    transformers {0} rendben (== 5.17.0 pin: a ParakeetForTDT class betoltodik, a telepites reprodukalhato)." -f $TfVersion)
 
+# --- v0.10.2 (PART 11): openai EXAKT PIN (a hatter-memoria lanc es a kooperativ megszakitas transzport) ---
+# A teljes hatter-memoria lanc (extrakcio -> conflict resolution -> scoring)
+# es a v0.10.2 user-priority megszakitas transzport (llm_bg_gate: streaming +
+# disconnect) EZZEL az SDK-val fut. A vendor pyproject eddig sima "openai"-t
+# irt - telepitesi-idopont szerint mas verziot oldott fel (ugyanaz a nem-
+# reprodukalhatosagi osztaly, amit a v0.10.1 transformers-pin zarott le).
+# A 3.14.0 = a v0.10.2 sandbox gate altal tesztelt valtozat (vendor-bateria +
+# streaming-transzport + JSON-mode osszeallitas). Wheel sha256:
+# 232a85a1c0ff6820534630fbfdb99313990ed80e66f39892a3abcff4130e2b16
+# (requirements.lock.json).
+$OpenAiPin = "3.14.0"
+& $VenvPython -m pip install "openai==$OpenAiPin"
+if ($LASTEXITCODE -ne 0) {
+    Fail-Install "Az openai == $OpenAiPin telepitese nem sikerult (a hatter-memoria lanc + a megszakitas transzport EZZEL fut - nelkule a memoria-lanc nem reprodukalhato)." "Ujrafuttatas (idempotens), vagy inditsd ujra a START.bat-ot (repair)."
+}
+$OpenAiVersion = (& $VenvPython -c "import openai; print(openai.__version__)" 2>$null)
+if ($LASTEXITCODE -ne 0) {
+    Fail-Install "Az openai import nem sikerult az or-telepites utan." "Nezd a pip hibauzenetet fent; ujrafuttatas (idempotens)."
+}
+# Verzio-ASSERT (tuple-osszehasonlitas, kesz allapotban sosem bukik el):
+& $VenvPython -c "import sys, openai; v = tuple(int(x) for x in openai.__version__.split('+')[0].split('.')[:3]); sys.exit(0 if v == (3, 14, 0) else 1)"
+if ($LASTEXITCODE -ne 0) {
+    Fail-Install ("Az openai verzio a or utan sem == 3.14.0 ({0}) - a memoria-lanc fuggosege most EXAKT pinnel telepul." -f $OpenAiVersion) 'Valamelyik csomag (voicemem pin / mem0ai fuggoseg) visszabeszelte. Kezzel: .venv\Scripts\python.exe -m pip install 'openai==3.14.0' es ujrafuttatas.'
+}
+Write-Host ("    openai {0} rendben (== 3.14.0 pin: a hatter-memoria lanc + a user-priority megszakitas transzportja reprodukalhato)." -f $OpenAiVersion)
+
 # ===========================================================================
 # 17) Modellek letoltese (scripts\download_models.ps1, idempotens)
 # ===========================================================================

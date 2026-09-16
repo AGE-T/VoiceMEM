@@ -22,6 +22,11 @@ from voicemem.leftbrain.mem0_additive_prompt_build import (
 )
 
 from voicemem.utils.common.cost_log import log_usage as _log_usage
+from voicemem.utils.common.llm_bg_gate import (
+    BackgroundCancelledError as _BgCancelled,
+    bg_chat_create,
+    check_cancel as _bg_check_cancel,
+)
 
 
 def remove_code_blocks(content: str) -> str:
@@ -389,7 +394,9 @@ class OpenAIMem0V3AdditiveExtractor:
         else:
             _MERGED_UTTERANCE.pop("text", None)
 
-        resp = client.chat.completions.create(
+        resp = bg_chat_create(
+            client,
+            leg="memory-extraction",
             model=self._cfg.resolved_model(),
             messages=[
                 {"role": "system", "content": system},
@@ -611,7 +618,7 @@ class ConflictResolver:
         if not api_key:
             raise ValueError("缺少 OPENAI_API_KEY")
 
-        kw: dict[str, Any] = {"api_key": api_key}
+        kw: dict[str, Any] = {"api_key": api_key, "timeout": 60.0, "max_retries": 2}
         if self._cfg.base_url:
             kw["base_url"] = self._cfg.base_url
         client = OpenAI(**kw)
@@ -644,7 +651,9 @@ class ConflictResolver:
             '{"memory": []} is a normal and correct answer.'
           )
 
-        resp = client.chat.completions.create(
+        resp = bg_chat_create(
+            client,
+            leg="conflict-resolution",
             model=self._cfg.resolved_model(),
             messages=[{"role": "user", "content": user_content}],
             response_format={"type": "json_object"},

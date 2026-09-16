@@ -138,7 +138,12 @@ class AgentConfig:
     asr_engine: str = "parakeet"     # the selected production ASR engine
     asr_model_path: str = ""          # optional local dir override (offline loading)
     asr_device: str = "cuda"          # cuda | cpu — execution config only, NOT a fallback
-    asr_language: str = ""            # "" = engine default behaviour
+    # "" / "auto" = the engine's native multilingual auto-detect (the
+    # ParakeetForTDT path has no language parameter). A value like "hu"
+    # is a DIAGNOSTIC hint: recorded + transcript-script verified (see
+    # app/asr_parakeet.py, v0.10.2 PART 3) — it cannot force the output
+    # language of this engine.
+    asr_language: str = ""            # "" | "auto" | language hint (e.g. "hu")
     asr_max_new_tokens: int = 256     # generation cap per transcription call
     # v0.10.1 (P0 ASR forensic): when True, EVERY final transcript's utterance
     # is dumped to logs/asr_utterance_<ts>.wav (the exact waveform that
@@ -521,6 +526,12 @@ class AgentConfig:
         # fail loudly at engine construction with the valid id list).
         if v := os.environ.get("ASR_ENGINE", "").strip():
             self.asr_engine = v.lower()
+        # v0.10.2 (PART 3): ASR language diagnostic mode — "auto"/empty =
+        # the engine's native multilingual auto-detect; a tag like "hu" is
+        # a diagnostic hint (recorded + transcript-script verified; the
+        # ParakeetForTDT inference API has no language parameter).
+        if v := os.environ.get("ASR_LANGUAGE", "").strip():
+            self.asr_language = v
         if v := os.environ.get("OPENAI_BASE_URL"):
             self._apply_base_url(v)
         if v := os.environ.get("VOICEMEM_MEMORY_ROOT"):
@@ -660,6 +671,10 @@ class AgentConfig:
             errors.append("asr_max_new_tokens must be >= 16")
         if len(self.asr_language) > 32:
             errors.append("asr_language must be empty (auto) or a short language name")
+        if (self.asr_language or "").strip().lower() not in ("", "auto") and not (
+            self.asr_language.strip().isalnum()
+        ):
+            errors.append("asr_language must be 'auto', empty, or a simple language tag (e.g. 'hu')")
         return errors
 
     def check_runtime_assets(self) -> dict[str, bool]:

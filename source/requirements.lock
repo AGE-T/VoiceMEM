@@ -43,6 +43,19 @@ websockets==16.0        # uvicorn WS support - sandbox-igazolt
 #                              # 16. lepesi OR (pip install
 #                              # "transformers==5.17.0" + verzio-assert) a
 #                              # funasr/speechbrain UTAN viszaallitja.
+# openai==3.14.0                # v0.10.2 (PART 11): EXACT PIN - a teljes
+#                              # hatter-memoria lanc (extrakcio/conflict/
+#                              # scoring) + az uj kooperativ megszakitasi
+#                              # transzport (llm_bg_gate streaming) ezen az
+#                              # SDK-n fut. A lebego pin telepitesi-idopont
+#                              # szerint MAS verziot oldhatott fel (ugyanaz a
+#                              # nem-reprodukalhatosagi osztaly, amit a
+#                              # v0.10.1 transformers-pin zarott). 3.14.0 = a
+#                              # sandbox gate-verify-altallomany. Wheel
+#                              # sha256: 232a85a1c0ff6820534630fbfdb99313990
+#                              # ed80e66f39892a3abcff4130e2b16 (lock.json-ban
+#                              # is). Telepites: a vendor (12. lepes) utani
+#                              # 16. lepesben OR-assert tortenik.
 # onnxruntime==1.23.0          # Silero VAD ONNX (CPU build) - v0.3.4: a
 #                              # telepito a 13. lepesben KULON telepiti (a
 #                              # lock aktival sorai nem viszik a venv-be, es

@@ -1,0 +1,2445 @@
+diff --git a/tool-results/voicemem-src b/tool-results/voicemem-src
+--- a/tool-results/voicemem-src
++++ b/tool-results/voicemem-src
+@@ -1 +1 @@
+-Subproject commit e8384e087bd2f44eb05fc7ae1a3c525ea8244179
++Subproject commit e8384e087bd2f44eb05fc7ae1a3c525ea8244179-dirty
+diff --git a/voicemem-agent/CHANGELOG.md b/voicemem-agent/CHANGELOG.md
+index 3edea0e..bdae6ce 100755
+--- a/voicemem-agent/CHANGELOG.md
++++ b/voicemem-agent/CHANGELOG.md
+@@ -13,6 +13,12 @@ tartjuk. A kiadott ZIP-ek műszaki nyilvántartását a
+ naplóját a `releases\BUILD_HISTORY.json` tartja.
+ 
+ 
++## [0.10.2] - 2026-09-15
++### Kiadas (ZIP-build)
++- v0.10.2 P0 LLM-PRIORITY + REPRODUCIBILITY KIADAS (operator order: ASR REGRESSION + LLM PRIORITY + REPRODUCIBILITY FIX - a TTFT 40-60 s-re degradalodott, a hatter-memoria munka foglalta az egyetlen llama-server slotot). BIZONYITEK (valodi b10717 szerver, produkcios flag-ekkel, sandbox stand-in modell; scripts/llm_slot_forensic.py, audit/VoiceMEM_llmpriority_v0102): (1) FIFO-sor: a user chat TTFT-je a futt hatter-kerees mögott 299.7 s (a mechanizma pontosan a mertett 40-60 s produkcios jelenseg); (2) DISCONNECT-YIELD: a hatter-keres streaming kliens-oldali megszakitasa utan a user TTFT 3.2 s (-98.9%) - a b10717 SZABADITJA a slotot kliens-disconnectre (a megszakitas transzportja hangolt); (3) LCP-cache: a /metrics szamlaloirol mert TENYLEGES ujra-kiertekelt tokenek:same-prefix 20/2657 (99.2% reuse), disjoint 2647/2650; a user-chat prefix a kozbejovo extraction UTAN IS tuleli (19 token reprocessed) - a cache nem a hibas tag; (4) JSON-mode + streaming osszeallitas ervenyes. IMPLEMENTALVA: (A) voicemem/utils/common/llm_bg_gate.py - kooperativ megszakitas (BG_CANCEL thread-event; check_cancel minden lableces elott; bg_chat_create: streaming kerelesek chunk-kozotti cancel-poll + stream.close() = slot-felszabaditas; a BackgroundCancelledError BaseException - az ingest-lanc 'except Exception' fallback-jai NEM nyelhetik el); (B) app/background_memory.py gate v2: arm() most a futt lancot IS megszakitja, a megszakadt pair visszasorolodik (elo probalkozasok szamlalva, sosem dobodik el), release() utani nyitas csak a VALODI idle-ablakban (beszed-keret + LLM-delta + turn aktivitas-jel + VOICEMEM_BG_IDLE_S csendes ablak a vak 2 s grace helyett); (C) a két nagy láb (extrakcio + conflict resolution) a bg_chat_create transzporton fut + a resolve lab 60 s timeout-ot kapott (korabban NEM volt - az SDK defaultja 600 s!); (D) asr_language vegigvezetese a PRODUKCIOS parakeet motorba (PART 3: auto/hu diagnostikai mod - a ParakeetForTDT API-ban nincs nyelv-parameter, a hint rögzitesre kerul + az atirat irasrendje ellenorizve); (E) openai==3.14.0 EXAKT PIN (vendor pyproject + install_m1.ps1 16. lepes OR-assert + requirements.lock.json machine-readable manifest wheel-sha256-okkal) - a teljes memoria-lanc fuggosege korabban teljesen unpinned volt; (F) release-meta invariáns teszt (VERSION=CHANGELOG-top=RELEASE_INDEX-legujabb=PAGE_VERSION, nincs ujabb bejegyzes a VERSIONnel, gate_record nem ujabb); (G) VAD-diagnosztika hatar-eset teszt (pontosan kuszob: beszed-indulas, sose 'never reached' - az operator PART 13 harom esete: alatta/rajta/felette). Tesztek: +32 uj (gate v2: cancel/requeue/stale-rejection/idle 7 + llm_bg_gate 9 + nyelv-mod 10 + VAD hatar-eset 1 + release-invariant 1 + runtime-deps openai-dokumentacio 1 + ujabb sorrend-ellenorzesek), teljes regresszio 0. HATAROK (oszinten): a valodi 35B TTFT-elony es a CUDA-lab merese a celgepen  tortenik (scripts/llm_slot_forensic.py - ugyanaz a minta, mint a v0.10.1 ASR-forensic); a sandbox szamok a MECHANIZMUST bizonyitjak, nem a produkcios kezeldet.
++- Tesztkapu: PASS a VEGSO FAJAN (v0.8.1 kapu-sorrend: verzio/CHANGELOG/page-verzio FRISSITES UTAN futott a teljes gate; releases/gate_record.json fingerprint-kotott): teljes tesztkeszlet 1386 teszt (SKIP: 28 db; ismeretes sandbox kornyezeti hiba: 6 db — a pinned-bazisban dokumentalt, celgepen zold); deep validacio: embedding, memory, memory-semantics, release, runtime-deps; SKIP: 15 db)
++- Kiadas: ``releases/VoiceMemAgent_v0.10.2.zip`` + ``VoiceMemAgent_v0.10.2.zip.sha256`` (UTC: 2026-09-15T22:09:27Z).
++
+ ## [0.10.1] - 2026-09-15
+ ### Kiadas (ZIP-build)
+ - v0.10.1 P0 ASR FORENZIKAI KIADAS (operator order: URGENT P0 - magyar beszed orosz / osszefuggestelen angol atiratkent jelenik meg a celgepen). A FORENZIKA ALLASA (sandbox, pinned modell + produkcios utvonal, 2026-09-15): (1) a v0.9.2->v0.10.0 TERMEK-DELTA NEM erinti a hangutat (teljes fa-diff: csak memoria-szemantika fajlok valtoztak; ASR/VAD/audio/web kod byte-azonos); (2) transformers 5.9.0-5.17.0 CPU-n a TELJES HU korpuszon (6 fajl: piper-HU + valodi Windows capture) HELYES, byte-azonos kiadasokkal - tiszta konyvtar-verzio-regresszio NINCS (5.6.x-5.8.x: a ParakeetForTDT class hianyzik, hangos import-hiba); (3) a produkcios Silero VAD szegmentacio helyes (pmax 1.0, sane hatarok); (4) a kiadott gate SOSEM futtatott valodi Parakeet-inferenciat (csak contract-tesztek) - a verifikacios RES, most zarva. JAVITVA: (A) web_server VAD idle-riport: a 'peak 0.97 < 0.25' HALO log-dontes (a riportablokk a vsm.update ELOTT futott - a speech-start trigger-keret beszamitott a csucsba, az uzenet szovege feltetel nelkul allitotta a 'peak < kuszob'-ot; most az update UTAN fut + explicit feltetel - a VAD dontesi ut VALTOZATLAN, pure logging); (B) bizonyitk-megorzes: cirilles atirat eseten a bemeno hullamforma MINDIG dumpolodik (logs/asr_wrong_language_<ts>.wav - edig csak az URES atiratok mentodtek), opt-in asr_dump_utterances konfig a teljes catch-all dumpra; (C) transformers EXAKT PIN 5.17.0 (install_m1.ps1 16. lepes + egyenloseg-assert; a '>= 5.6' padlo TEVES volt, a class az 5.9-ben landolt; a lebego pin a celgepen telepitesi-idopont szerint MAS verziot oldhatott fel - az ASR stack egyetlen nem-reprodukalhato komponense, most pin-elve); (D) UJ valodi inferencios regresszio-tesztek (test_real_asr_hungarian.py: valodi korpusz a produkcios uton, CER-budget 0.25 a mert 0.000-0.099 felett, cirill-tiltas; env-neutral skip) + unit tesztek a log-fixre (test_vad_idle_report.py); (E) scripts/asr_regression_forensic.py: a celgepi matrix-cella (tenyleges env-dump + modell-SHA-ellenorzes a pinned revizio ellen + korpusz-futtatas a konfiguralt es a cpu eszkozon) - a CUDA lanc a sandboxbol hianyzo dimenzio, ez a szkript zarja le. HATAROK (oszinten): a celgepi gyoker (CUDA-specifikus konyvtar-viselkedes vagy elo mikrofon-lanc) tavoli diagnozissal NEM bizonyithato - a v0.10.1 a BIZONYITHATO hibakat javitja es a teljes diagnosztikai eszkoztart szallitja; a celgepi 10 perces forensic-futtatas + a wrong-language WAV dumpok zarjak a maradekot.
+diff --git a/voicemem-agent/VERSION b/voicemem-agent/VERSION
+index 5712157..5eef0f1 100755
+--- a/voicemem-agent/VERSION
++++ b/voicemem-agent/VERSION
+@@ -1 +1 @@
+-0.10.1
++0.10.2
+diff --git a/voicemem-agent/app/asr_parakeet.py b/voicemem-agent/app/asr_parakeet.py
+index 81add0b..b485d5c 100755
+--- a/voicemem-agent/app/asr_parakeet.py
++++ b/voicemem-agent/app/asr_parakeet.py
+@@ -54,6 +54,34 @@ from app.config import AgentConfig
+ 
+ logger = logging.getLogger(__name__)
+ 
++#: Languages whose transcripts are expected to carry Cyrillic script — the
++#: language-hint guard only fires when the DECODED script contradicts the
++#: hint's expected script (a "hu" hint producing Cyrillic text is the
++#: v0.10.0 regression signature; a "ru" hint producing Cyrillic is fine).
++_CYRILLIC_HINT_LANGUAGES = frozenset(
++    {"ru", "uk", "bg", "sr", "mk", "be", "kk", "ky", "tg", "mn", "hy", "ka"}
++)
++
++
++def _has_cyrillic(text: str) -> bool:
++    """True when the text carries any Cyrillic codepoint (U+0400..U+04FF)."""
++    return any("\u0400" <= ch <= "\u04ff" for ch in (text or ""))
++
++
++def _resolve_language_mode(configured: str) -> tuple[str, str]:
++    """PURE: normalise the configured ASR language into (mode, hint).
++
++    "" / "auto" (any case) -> ("auto", "") — the engine's native
++    multilingual auto-detect, exactly the historical behaviour.
++    Anything else (e.g. "hu") -> ("hint", <normalised>) — a diagnostic
++    language hint (ParakeetForTDT has no inference-level language
++    parameter; see the engine docstring).
++    """
++    value = (configured or "").strip().lower()
++    if not value or value == "auto":
++        return "auto", ""
++    return "hint", value
++
+ try:  # pragma: no cover — sandbox HAS torch; target machine too; CI may not
+     import torch  # type: ignore[import-untyped]
+ 
+@@ -203,6 +231,28 @@ class ParakeetEngine:
+         self._load_error: Optional[str] = None
+         self._last_inference_ms = 0.0
+         self._probe_ok = False
++        # v0.10.2 (operator PART 3): the configured ASR language reaches the
++        # PRODUCTION engine now (previously only the legacy engines read it
++        # — the operator observed the setting "not clearly passed into the
++        # Parakeet inference call", which was true). ParakeetForTDT exposes
++        # NO language parameter (multilingual auto-detect only), so a
++        # configured hint is a DIAGNOSTIC: recorded here, surfaced in
++        # status(), and checked against the transcript script after the
++        # decode (a Hungarian hint with a Cyrillic transcript is the exact
++        # regression signature — logged loudly, the web layer dumps the
++        # waveform per v0.10.1).
++        self._language_mode, self._language_hint = _resolve_language_mode(
++            getattr(config, "asr_language", "")
++        )
++        if self._language_mode == "hint":
++            logger.info(
++                "ASR language hint '%s' recorded (diagnostic mode): the "
++                "transformers ParakeetForTDT path is multilingual auto-detect "
++                "only — no language parameter exists in its inference API, "
++                "so the hint cannot force the output language; transcript "
++                "script is verified instead",
++                self._language_hint,
++            )
+ 
+     # ------------------------------------------------------------ lifecycle
+ 
+@@ -257,6 +307,8 @@ class ParakeetEngine:
+                 "language_detection": self.capabilities.language_detection,
+                 "timestamps": self.capabilities.timestamps,
+             },
++            "language_mode": self._language_mode,
++            "language_hint": self._language_hint,
+             "last_inference_ms": round(self._last_inference_ms, 1),
+             "last_error": self._load_error or "",
+         }
+@@ -358,6 +410,24 @@ class ParakeetEngine:
+                 self.engine_id,
+                 self.model_id,
+             )
++        # v0.10.2 (PART 3): language-hint script verification — a hint
++        # whose expected script CONTRADICTS the decoded transcript is the
++        # exact cross-language regression signature; log it loudly (the
++        # web layer dumps the entering waveform per v0.10.1, and the
++        # forensic tool records the evidence).
++        if self._language_hint:
++            expect_cyrillic = self._language_hint in _CYRILLIC_HINT_LANGUAGES
++            got_cyrillic = _has_cyrillic(text)
++            if expect_cyrillic != got_cyrillic and text:
++                logger.warning(
++                    "ASR language-hint mismatch: hint '%s' expects %s script, "
++                    "transcript carries %s (first 80 chars: %r) — cross-"
++                    "language regression signature; waveform dump per v0.10.1",
++                    self._language_hint,
++                    "Cyrillic" if expect_cyrillic else "non-Cyrillic",
++                    "Cyrillic" if got_cyrillic else "non-Cyrillic",
++                    text[:80],
++                )
+         return AsrResult(
+             text=text,
+             language="",
+diff --git a/voicemem-agent/app/background_memory.py b/voicemem-agent/app/background_memory.py
+index 4dc0dd3..3e5ea58 100755
+--- a/voicemem-agent/app/background_memory.py
++++ b/voicemem-agent/app/background_memory.py
+@@ -1,36 +1,66 @@
+-"""Conversation-first scheduling for background memory work (v0.9.2, PART 5).
+-
+-WHY THIS EXISTS (measured evidence, VoiceMEM v0.9.1 runtime audit):
+-  A voice turn's reply is followed ~50-100 ms later by the VoiceMem pair-ingest
+-  extraction — a ~10.4K-token prompt on the SAME llama-server (parallel=1,
+-  single slot). The measured contention: chat TTFT alone ~1.76 s; chat arriving
+-  ~2 s after an extraction launch ~163 s (FIFO-queued behind the prefill).
+-  The accepted 30-50 s tail latency matches this mechanism.
+-
+-POLICY (operator contract, v0.9.2 PART 5):
+-  * USER CONVERSATION HAS ABSOLUTE PRIORITY over the single llama-server slot.
+-  * Background ingests wait while a turn is active — armed from the FIRST VAD
+-    speech frame (the earliest signal a chat request is coming) or turn start,
+-    released after the streamed reply ends (plus a small grace).
+-  * Queued (user_text, reply) pairs are NEVER dropped (memory updates must not
+-    be lost) except exact duplicates, which are coalesced.
+-  * The gate defers the START of background work. An in-flight extraction is
+-    NOT aborted (a mid-request abort would lose that turn's memory update);
+-    its duration is bounded instead by the extraction max_tokens limit
+-    (v0.9.2 PART 6) and the reduced prompt (PART 7).
+-  * Ingest runs with the vendor's async_facts=False inside the gate's worker
+-    so the whole background LLM chain (extraction -> conflict -> scoring) is
+-    serialized and VISIBLE — with async_facts=True the vendor hides it on a
+-    daemon thread no scheduler can see or bound.
++"""Conversation-first scheduling for background memory work.
++
++v0.9.2 (PART 5): defer background STARTS behind the conversation.
++v0.10.2 (operator PART 8/9): real USER PRIORITY — an in-flight background
++chain is CANCELLED (cooperatively, at LLM leg boundaries / between stream
++chunks) the moment the user needs the single llama-server slot, and the
++turn pair is re-queued for the next idle window.
++
++WHY THIS EXISTS (measured evidence, VoiceMEM v0.9.1 runtime audit + the
++v0.10.0 field report):
++  A voice turn's reply is followed by the VoiceMem pair-ingest extraction
++  — a ~10.4K-token prompt on the SAME llama-server (parallel=1, single
++  slot, FIFO queue). The measured contention: chat TTFT alone ~1.76 s; chat
++  arriving while background work runs queues behind it (the v0.9.1 audit
++  measured ~163 s for a chat landing ~2 s after an extraction launch; the
++  v0.10.0 field report: 40-60 s chat TTFT whenever the user speaks during
++  the post-reply background window). v0.9.2's gate only deferred STARTS —
++  an in-flight chain kept the slot for up to ~111 s (v0.9.2 E4: one full
++  warm chain on the production model).
++
++POLICY (operator contract, v0.10.2 PART 8):
++  * USER CONVERSATION HAS ABSOLUTE PRIORITY over the single llama-server
++    slot. ``arm()`` — fired from the FIRST VAD speech frame (the earliest
++    signal a chat request is coming) or a turn start — now ALSO requests
++    cancellation of the in-flight background chain: the vendor legs abort
++    before issuing their next request or between stream chunks (the HTTP
++    stream is closed, which frees the server slot; see
++    voicemem/utils/common/llm_bg_gate.py).
++  * A cancelled ingest NEVER counts as done: the turn pair is re-queued
++    (front of queue, exact duplicates still coalesced) and retried in a
++    later idle window — memory updates are not lost, and a partially
++    generated LLM answer is discarded by the cancellation itself (the
++    vendor writes each leg's results only after the leg completes).
++  * Background work may START only when the conversation is truly idle
++    (PART 9): no active speech, no active user LLM work, no queued user
++    turn, and a sufficient quiet interval (``VOICEMEM_BG_IDLE_S``) since
++    the last speech/LLM/turn activity — on top of the v0.9.2 post-reply
++    grace (``VOICEMEM_BG_GRACE_S``). This replaces the blind
++    "2 s after reply" policy: the gate tracks real activity signals fed
++    by the web session (``note_activity`` on every VAD frame and every
++    user LLM delta).
++  * Queued (user_text, reply) pairs are NEVER dropped (memory updates
++    must not be lost) except exact duplicates, which are coalesced. A
++    re-queued pair retries without limit (a very talkative user simply
++    defers their memory consolidation — observable via
++    ``stats.pending``/``requeued``).
+ 
+ DESIGN BOUND (documented, deliberate):
+-  One background chain at a time, run to completion. No worker framework, no
+-  thread pool — a single asyncio task with an idle-wait loop.
++  One background chain at a time, run to completion. No worker framework,
++  no thread pool — a single asyncio task with an idle-wait loop. The
++  in-flight chain runs in ``asyncio.to_thread`` (the vendor chain is
++  synchronous, async_facts=False), so task cancellation cannot stop the
++  thread — that is exactly what the cooperative vendor cancel event is
++  for.
+ 
+ Run-time knobs:
+-  VOICEMEM_BG_GRACE_S  (default 2.0) idle seconds after a reply before
+-                       background work may start; a new speech frame re-arms
+-                       the gate instantly and cancels the grace timer.
++  VOICEMEM_BG_GRACE_S  (default 2.0) minimum idle seconds after a reply
++                       before background work may start (v0.9.2 floor,
++                       kept).
++  VOICEMEM_BG_IDLE_S   (default 6.0) required quiet seconds — no speech
++                       frame, no user LLM delta, no turn — before a
++                       background chain may start (v0.10.2 idle policy).
++                       A speech frame inside the window re-arms instantly.
+ """
+ 
+ from __future__ import annotations
+@@ -38,22 +68,59 @@ from __future__ import annotations
+ import asyncio
+ import logging
+ import os
++import time
+ from collections import deque
+-from dataclasses import dataclass, field
++from dataclasses import dataclass
+ from typing import Any, Callable, Optional
+ 
+ logger = logging.getLogger(__name__)
+ 
+ 
+-def _grace_s() -> float:
+-    raw = os.environ.get("VOICEMEM_BG_GRACE_S", "").strip()
++def _env_float(name: str, default: float, minimum: float = 0.0) -> float:
++    raw = os.environ.get(name, "").strip()
+     if not raw:
+-        return 2.0
++        return default
+     try:
+         v = float(raw)
+     except ValueError:
+-        return 2.0
+-    return v if v >= 0.0 else 2.0
++        return default
++    return v if v >= minimum else default
++
++
++def _grace_s() -> float:
++    return _env_float("VOICEMEM_BG_GRACE_S", 2.0)
++
++
++def _idle_s() -> float:
++    return _env_float("VOICEMEM_BG_IDLE_S", 6.0)
++
++
++# -- vendor cooperative-cancel plumbing (guarded: degraded mode without it) -- #
++
++try:  # pragma: no cover - import path depends on the vendored package
++    from voicemem.utils.common import llm_bg_gate as _vendor_bg_gate
++    from voicemem.utils.common.llm_bg_gate import BackgroundCancelledError
++except ImportError:  # degraded mode: no vendor -> nothing to cancel
++    _vendor_bg_gate = None  # type: ignore[assignment]
++
++    class BackgroundCancelledError(BaseException):  # type: ignore[no-redef]
++        """Degraded-mode stub — never raised (no vendor legs to cancel)."""
++
++
++def _vendor_set_cancel(leg: str) -> None:
++    if _vendor_bg_gate is not None:
++        try:
++            _vendor_bg_gate.set_cancel(leg)
++        except Exception:  # noqa: BLE001 - never break arm() on vendor issues
++            logger.exception("vendor bg cancel set failed")
++
++
++def _vendor_clear_cancel(leg: str) -> None:
++    if _vendor_bg_gate is not None:
++        try:
++            _vendor_bg_gate.clear_cancel(leg)
++        except Exception:  # noqa: BLE001
++            logger.exception("vendor bg cancel clear failed")
+ 
+ 
+ @dataclass
+@@ -64,6 +131,7 @@ class _TurnRecord:
+     reply: str
+     turn_no: int = 0
+     coalesce_key: str = ""
++    attempts: int = 0
+ 
+ 
+ @dataclass
+@@ -77,10 +145,18 @@ class GateStats:
+     failed: int = 0
+     arm_count: int = 0
+     waits: int = 0
++    cancelled: int = 0
++    requeued: int = 0
+     current: Optional[str] = None
++    # v0.10.2 PART 9: measure the real delay before a background chain
++    # starts (release -> first item started), so the idle policy is
++    # tunable with evidence instead of guesses.
++    last_release_ts: float = 0.0
++    last_start_wait_s: float = 0.0
++    idle_waits: int = 0
+ 
+     def as_dict(self) -> dict[str, Any]:
+-        return {
++        out = {
+             "submitted": self.submitted,
+             "coalesced": self.coalesced,
+             "started": self.started,
+@@ -88,8 +164,14 @@ class GateStats:
+             "failed": self.failed,
+             "arm_count": self.arm_count,
+             "waits_on_busy": self.waits,
+-            "pending": None if self.current is None else self.current[:60],
++            "cancelled": self.cancelled,
++            "requeued": self.requeued,
++            "idle_waits": self.idle_waits,
+         }
++        if self.last_start_wait_s:
++            out["last_start_wait_s"] = round(self.last_start_wait_s, 2)
++        out["pending"] = None if self.current is None else self.current[:60]
++        return out
+ 
+ 
+ class BackgroundMemoryGate:
+@@ -98,6 +180,15 @@ class BackgroundMemoryGate:
+     The gate lives on the web session. All public methods are coroutines or
+     plain sync setters safe to call from the session's event loop; the ingest
+     itself runs in a worker thread via ``asyncio.to_thread``.
++
++    v0.10.2 surface additions over v0.9.2:
++      * ``arm()`` cancels in-flight background LLM work (vendor event);
++      * ``note_activity(kind)`` feeds the idle policy (speech frames,
++        user LLM deltas, turn events — anything that means "the user is
++        about to need / is using the slot");
++      * a cancelled ingest is re-queued, never counted done;
++      * ``release()`` opens only after the quiet window (grace floor +
++        idle interval), not a blind timer.
+     """
+ 
+     def __init__(
+@@ -108,6 +199,7 @@ class BackgroundMemoryGate:
+         on_end: Optional[Callable[[], None]] = None,
+         on_fail: Optional[Callable[[str], None]] = None,
+         grace_s: Optional[float] = None,
++        idle_s: Optional[float] = None,
+         spawn: Optional[Callable[[Any], Any]] = None,
+     ) -> None:
+         """``ingest(user_text, reply)`` runs the FULL vendor chain
+@@ -120,6 +212,7 @@ class BackgroundMemoryGate:
+         self._on_end = on_end
+         self._on_fail = on_fail
+         self._grace_s = grace_s if grace_s is not None else _grace_s()
++        self._idle_s = idle_s if idle_s is not None else _idle_s()
+         self._spawn = spawn  # None -> resolve lazily from the running loop
+ 
+         self._queue: deque[_TurnRecord] = deque()
+@@ -127,30 +220,70 @@ class BackgroundMemoryGate:
+         # is active yet — nothing can even be queued before the first reply).
+         self._gate_open = asyncio.Event()
+         self._gate_open.set()
++        # v0.10.2: distinguish ARMED (a turn needs the slot — never open)
++        # from RELEASED-AWAITING-IDLE (the reply ended — open once the
++        # quiet window holds). Both states have the event cleared; only
++        # the latter may be flipped by _try_open.
++        self._awaiting_idle = False
+         self._grace_handle: Optional[asyncio.TimerHandle] = None
+         self._worker_task: Optional[asyncio.Task] = None
+         self._running = False               # an ingest is executing right now
++        # v0.10.2 idle policy: loop-time of the last user-visible activity
++        # (speech frame / LLM delta / turn event). 0.0 = "no activity yet"
++        # (a fresh session — background starts are only possible after a
++        # first turn anyway, which itself arms the gate).
++        self._last_activity = 0.0
+         self.stats = GateStats()
+         self._turn_seq = 0
+ 
+     # -- turn lifecycle (called by the web session) ------------------------- #
+ 
+     def arm(self, reason: str = "speech") -> None:
+-        """A conversation turn needs (or will soon need) the LLM slot."""
++        """A conversation turn needs (or will soon need) the LLM slot.
++
++        v0.10.2: this now ALSO cancels the in-flight background chain —
++        the vendor legs abort before their next request or between stream
++        chunks (the HTTP stream closes, freeing the llama-server slot).
++        Idempotent; always refreshes the activity clock.
++        """
+         if self._gate_open.is_set():
+             self.stats.arm_count += 1
+         self._cancel_grace()
+         self._gate_open.clear()
++        self._awaiting_idle = False
++        self._last_activity = time.monotonic()
++        if self._running:
++            logger.info(
++                "background memory CANCELLED (user needs the slot: %s)",
++                reason,
++            )
++            _vendor_set_cancel(reason)
+ 
+     def release(self) -> None:
+-        """The streamed reply ended: open the gate after the grace period.
++        """The streamed reply ended: open the gate once the conversation
++        is truly idle (PART 9: quiet window, not a blind timer).
+ 
+         Safe to call from any turn-exit path (success, error, interrupt);
+-        a speech frame arriving inside the grace window re-arms instantly.
++        a speech frame arriving inside the window re-arms instantly.
+         """
+         self._cancel_grace()
++        self.stats.last_release_ts = time.monotonic()
++        self._last_activity = max(self._last_activity, time.monotonic())
++        self._awaiting_idle = True
+         loop = asyncio.get_running_loop()
+-        self._grace_handle = loop.call_later(self._grace_s, self._open_after_grace)
++        # first attempt after the grace floor; _try_open re-schedules
++        # itself until the idle interval is satisfied.
++        self._grace_handle = loop.call_later(self._grace_s, self._try_open)
++
++    def note_activity(self, kind: str = "activity") -> None:
++        """Feed the idle policy: the user is speaking / the LLM is streaming.
++
++        Called by the web session on every VAD frame with speech energy and
++        on every user chat delta — anything that means the slot is (about
++        to be) in conversational use. Does NOT cancel in-flight work by
++        itself (that is arm()'s job); it only defers background STARTS.
++        """
++        self._last_activity = time.monotonic()
+ 
+     # -- submission ---------------------------------------------------------- #
+ 
+@@ -176,9 +309,27 @@ class BackgroundMemoryGate:
+ 
+     # -- internals ----------------------------------------------------------- #
+ 
+-    def _open_after_grace(self) -> None:
++    def _try_open(self) -> None:
++        """Timer callback: open the gate only when the quiet window holds."""
+         self._grace_handle = None
+-        self._gate_open.set()
++        if not self._awaiting_idle:
++            # release() was superseded by arm() (speech / a new turn):
++            # the conversation wins, the gate stays closed.
++            return
++        elapsed_idle = time.monotonic() - self._last_activity
++        if elapsed_idle >= self._idle_s:
++            # Idle confirmed: background may use the slot again (clear the
++            # vendor cancel FIRST so the legs do not abort on issue).
++            self._awaiting_idle = False
++            _vendor_clear_cancel("idle")
++            self._gate_open.set()
++            return
++        # still busy recently: re-check after the remaining interval
++        self.stats.idle_waits += 1
++        loop = asyncio.get_running_loop()
++        self._grace_handle = loop.call_later(
++            max(0.05, self._idle_s - elapsed_idle), self._try_open
++        )
+ 
+     def _cancel_grace(self) -> None:
+         if self._grace_handle is not None:
+@@ -196,6 +347,24 @@ class BackgroundMemoryGate:
+             # submit() from a live loop will spawn it.
+             self._worker_task = None
+ 
++    def _requeue(self, item: _TurnRecord) -> None:
++        """A cancelled ingest goes back to the FRONT (oldest pair first).
++
++        Coalescing still applies: if an identical pair was submitted again
++        while this one was running, the queue already holds it — then this
++        requeue is a no-op (stats still count the requeue event).
++        """
++        if not any(rec.coalesce_key == item.coalesce_key for rec in self._queue):
++            item.attempts += 1
++            self._queue.appendleft(item)
++            if item.attempts > 1 and item.attempts % 5 == 0:
++                logger.warning(
++                    "background memory pair re-queued %d times (user keeps "
++                    "needing the slot; %d pairs pending)",
++                    item.attempts, len(self._queue),
++                )
++        self.stats.requeued += 1
++
+     async def _worker(self) -> None:
+         """One item at a time, only while the gate is open."""
+         while self._queue:
+@@ -212,6 +381,12 @@ class BackgroundMemoryGate:
+             item = self._queue.popleft()
+             self._running = True
+             self.stats.started += 1
++            # v0.10.2 PART 9: the measured release->start delay (evidence
++            # for tuning VOICEMEM_BG_IDLE_S on the target machine).
++            if self.stats.last_release_ts:
++                self.stats.last_start_wait_s = (
++                    time.monotonic() - self.stats.last_release_ts
++                )
+             self.stats.current = item.user_text
+             if self._on_begin is not None:
+                 try:
+@@ -231,7 +406,23 @@ class BackgroundMemoryGate:
+             except asyncio.CancelledError:
+                 # session teardown: let the queue die with the task (same
+                 # contract as the old single _bg_store_task cancellation).
++                # v0.10.2 hygiene: ALSO request the vendor cancel so the
++                # still-running ingest thread aborts at its next leg
++                # boundary instead of holding the server slot.
++                _vendor_set_cancel("session-teardown")
+                 raise
++            except BackgroundCancelledError as exc:
++                # v0.10.2 PART 8: the user needed the slot mid-chain —
++                # the vendor legs aborted (partial text discarded inside
++                # the legs; completed legs wrote only complete results).
++                # This turn is NOT done: re-queue for the next idle window.
++                self.stats.cancelled += 1
++                logger.info(
++                    "background memory cancelled mid-chain, re-queued "
++                    "(%d queued): %s",
++                    len(self._queue), exc,
++                )
++                self._requeue(item)
+             except Exception as exc:  # noqa: BLE001 - never kill the worker
+                 self.stats.failed += 1
+                 logger.warning("background memory ingest failed: %s", exc, exc_info=True)
+diff --git a/voicemem-agent/app/config.py b/voicemem-agent/app/config.py
+index b995634..14de748 100755
+--- a/voicemem-agent/app/config.py
++++ b/voicemem-agent/app/config.py
+@@ -138,7 +138,12 @@ class AgentConfig:
+     asr_engine: str = "parakeet"     # the selected production ASR engine
+     asr_model_path: str = ""          # optional local dir override (offline loading)
+     asr_device: str = "cuda"          # cuda | cpu — execution config only, NOT a fallback
+-    asr_language: str = ""            # "" = engine default behaviour
++    # "" / "auto" = the engine's native multilingual auto-detect (the
++    # ParakeetForTDT path has no language parameter). A value like "hu"
++    # is a DIAGNOSTIC hint: recorded + transcript-script verified (see
++    # app/asr_parakeet.py, v0.10.2 PART 3) — it cannot force the output
++    # language of this engine.
++    asr_language: str = ""            # "" | "auto" | language hint (e.g. "hu")
+     asr_max_new_tokens: int = 256     # generation cap per transcription call
+     # v0.10.1 (P0 ASR forensic): when True, EVERY final transcript's utterance
+     # is dumped to logs/asr_utterance_<ts>.wav (the exact waveform that
+@@ -521,6 +526,12 @@ class AgentConfig:
+         # fail loudly at engine construction with the valid id list).
+         if v := os.environ.get("ASR_ENGINE", "").strip():
+             self.asr_engine = v.lower()
++        # v0.10.2 (PART 3): ASR language diagnostic mode — "auto"/empty =
++        # the engine's native multilingual auto-detect; a tag like "hu" is
++        # a diagnostic hint (recorded + transcript-script verified; the
++        # ParakeetForTDT inference API has no language parameter).
++        if v := os.environ.get("ASR_LANGUAGE", "").strip():
++            self.asr_language = v
+         if v := os.environ.get("OPENAI_BASE_URL"):
+             self._apply_base_url(v)
+         if v := os.environ.get("VOICEMEM_MEMORY_ROOT"):
+@@ -660,6 +671,10 @@ class AgentConfig:
+             errors.append("asr_max_new_tokens must be >= 16")
+         if len(self.asr_language) > 32:
+             errors.append("asr_language must be empty (auto) or a short language name")
++        if (self.asr_language or "").strip().lower() not in ("", "auto") and not (
++            self.asr_language.strip().isalnum()
++        ):
++            errors.append("asr_language must be 'auto', empty, or a simple language tag (e.g. 'hu')")
+         return errors
+ 
+     def check_runtime_assets(self) -> dict[str, bool]:
+diff --git a/voicemem-agent/app/web_server.py b/voicemem-agent/app/web_server.py
+index 440554f..b9cf531 100755
+--- a/voicemem-agent/app/web_server.py
++++ b/voicemem-agent/app/web_server.py
+@@ -2269,6 +2269,12 @@ class WebSession:
+         # Live VAD level: the single most useful number when debugging
+         # "I speak but nothing happens" (below threshold = VAD never fires).
+         session["vad_level"] = round(float(prob), 3)
++        # v0.10.2 (PART 9 idle policy): every frame with speech energy is
++        # user activity — it refreshes the background gate's idle clock so a
++        # chain never starts on top of incoming speech (speech_start's arm()
++        # additionally cancels in-flight work).
++        if float(prob) >= self._config.vad_threshold:
++            self._memory_gate.note_activity("vad-frame")
+         if st.components["vad"].state == _STATE_ERROR:
+             st.components["vad"].set_ready(st.components["vad"].detail)
+ 
+@@ -2279,6 +2285,10 @@ class WebSession:
+         # the speech state machine at all — barge-in is the only listener.)
+         if answering:
+             session["vad_in_speech"] = False
++            # v0.10.2 (PART 9): speech energy while the answer is streaming
++            # counts as activity too (a barge-in is coming).
++            if float(prob) >= self._config.vad_threshold:
++                self._memory_gate.note_activity("barge-frame")
+             # v0.4.14: barge-in reads the PRIMARY's own probability, never the
+             # fused one — the energy fallback opens the speech GATE, but it
+             # must not be able to interrupt the answer on line-level noise or
+@@ -3035,6 +3045,10 @@ class WebSession:
+                         f"llm first token ({(t_first_token - t_turn0) * 1000.0:.0f} ms)"
+                     )
+                 reply += delta
++                # v0.10.2 (PART 9): the user LLM is actively streaming —
++                # background memory starts must wait for the quiet window
++                # AFTER the reply, not race the tail of this stream.
++                self._memory_gate.note_activity("llm-delta")
+                 await self._send_json({"type": "answer_delta", "text": delta})
+                 for chunk in stream.add_delta(delta):
+                     speak_queue.put_nowait(chunk)
+diff --git a/voicemem-agent/config/voicemem_config.yaml b/voicemem-agent/config/voicemem_config.yaml
+index 4141ffe..7999475 100755
+--- a/voicemem-agent/config/voicemem_config.yaml
++++ b/voicemem-agent/config/voicemem_config.yaml
+@@ -56,7 +56,7 @@
+ 
+ project:
+   name: "voicemem-agent"
+-  version: "0.10.1"        # a VERSION fájl az egyetlen forrás — ezt kézzel szinkronban tartani
++  version: "0.10.2"        # a VERSION fájl az egyetlen forrás — ezt kézzel szinkronban tartani
+   offline: true           # runtime offline mód (telepítés után)
+ 
+ paths:
+@@ -106,7 +106,12 @@ app:
+   # NINCS automatikus motor-váltás. Érvényes id-k: parakeet, nemotron (app.asr_core).
+   asr_engine: "parakeet"        # a kiválasztott termelési ASR motor
+   asr_device: "cuda"            # cuda | cpu — futtatási konfiguráció, NEM fallback
+-  asr_language: ""              # "" = motor alapértelmezés
++  # v0.10.2 (PART 3): "" | "auto" = a motor natív többnyelvű automatikus
++  # felismerése (a ParakeetForTDT inference API-ban NINCS nyelv-paraméter);
++  # egy címke (pl. "hu") DIAGNOSZTIKAI hint: rögzítésre kerül, és az áirat
++  # írásrendjét ellenőrzi a motor (cirill "hu" hint mellett = regresszió-
++  # szignatúra, hangos naplózás + hullóforma-dump a v0.10.1 szerint).
++  asr_language: ""              # "" | "auto" | nyelv-hint (pl. "hu")
+   asr_max_new_tokens: 256       # generálási plafon lehívásonként
+   # v0.10.1 (P0 ASR forensic): True = MINDEN végleges átirat bemenő hullóformája
+   # elmentve logs/asr_utterance_<ts>.wav néven (pontosan az, ami az ASR motorba
+diff --git a/voicemem-agent/data/emotion_demo_log.jsonl b/voicemem-agent/data/emotion_demo_log.jsonl
+index c0a9160..eb63d24 100755
+--- a/voicemem-agent/data/emotion_demo_log.jsonl
++++ b/voicemem-agent/data/emotion_demo_log.jsonl
+@@ -238,3 +238,12 @@
+ {"ts": "2026-09-15T19:38:54+00:00", "transcript": "Why is I have went wrong? I do not understand this at all!", "stored_as_fact": true, "raw_label": "angry", "label": "frustrated", "valence": -0.68, "arousal": 0.64, "confidence": 0.9, "fused": true, "latency_ms": 0.0}
+ {"ts": "2026-09-15T19:38:55+00:00", "transcript": "\u00c9s magyarul hogy mondan\u00e1d ezt?", "stored_as_fact": false, "raw_label": "neutral", "label": "neutral", "valence": 0.0, "arousal": 0.0, "confidence": 0.9, "fused": true, "latency_ms": 0.0}
+ {"ts": "2026-09-15T19:38:56+00:00", "transcript": "Got it, k\u00f6sz\u00f6n\u00f6m, now I understand the rule!", "stored_as_fact": true, "raw_label": "happy", "label": "happy", "valence": 0.72, "arousal": 0.42, "confidence": 0.9, "fused": true, "latency_ms": 0.0}
++{"ts": "2026-09-15T21:52:38+00:00", "transcript": "Why is I have went wrong? I do not understand this at all!", "stored_as_fact": true, "raw_label": "angry", "label": "frustrated", "valence": -0.68, "arousal": 0.64, "confidence": 0.9, "fused": true, "latency_ms": 0.0}
++{"ts": "2026-09-15T21:52:39+00:00", "transcript": "\u00c9s magyarul hogy mondan\u00e1d ezt?", "stored_as_fact": false, "raw_label": "neutral", "label": "neutral", "valence": 0.0, "arousal": 0.0, "confidence": 0.9, "fused": true, "latency_ms": 0.0}
++{"ts": "2026-09-15T21:52:39+00:00", "transcript": "Got it, k\u00f6sz\u00f6n\u00f6m, now I understand the rule!", "stored_as_fact": true, "raw_label": "happy", "label": "happy", "valence": 0.72, "arousal": 0.42, "confidence": 0.9, "fused": true, "latency_ms": 0.0}
++{"ts": "2026-09-15T22:00:37+00:00", "transcript": "Why is I have went wrong? I do not understand this at all!", "stored_as_fact": true, "raw_label": "angry", "label": "frustrated", "valence": -0.68, "arousal": 0.64, "confidence": 0.9, "fused": true, "latency_ms": 0.0}
++{"ts": "2026-09-15T22:00:38+00:00", "transcript": "\u00c9s magyarul hogy mondan\u00e1d ezt?", "stored_as_fact": false, "raw_label": "neutral", "label": "neutral", "valence": 0.0, "arousal": 0.0, "confidence": 0.9, "fused": true, "latency_ms": 0.0}
++{"ts": "2026-09-15T22:00:38+00:00", "transcript": "Got it, k\u00f6sz\u00f6n\u00f6m, now I understand the rule!", "stored_as_fact": true, "raw_label": "happy", "label": "happy", "valence": 0.72, "arousal": 0.42, "confidence": 0.9, "fused": true, "latency_ms": 0.0}
++{"ts": "2026-09-15T22:07:11+00:00", "transcript": "Why is I have went wrong? I do not understand this at all!", "stored_as_fact": true, "raw_label": "angry", "label": "frustrated", "valence": -0.68, "arousal": 0.64, "confidence": 0.9, "fused": true, "latency_ms": 0.0}
++{"ts": "2026-09-15T22:07:11+00:00", "transcript": "\u00c9s magyarul hogy mondan\u00e1d ezt?", "stored_as_fact": false, "raw_label": "neutral", "label": "neutral", "valence": 0.0, "arousal": 0.0, "confidence": 0.9, "fused": true, "latency_ms": 0.0}
++{"ts": "2026-09-15T22:07:12+00:00", "transcript": "Got it, k\u00f6sz\u00f6n\u00f6m, now I understand the rule!", "stored_as_fact": true, "raw_label": "happy", "label": "happy", "valence": 0.72, "arousal": 0.42, "confidence": 0.9, "fused": true, "latency_ms": 0.0}
+diff --git a/voicemem-agent/logs/web-server.log b/voicemem-agent/logs/web-server.log
+index b3848c0..3f9eaae 100755
+--- a/voicemem-agent/logs/web-server.log
++++ b/voicemem-agent/logs/web-server.log
+@@ -8397,3 +8397,657 @@
+ 2026-09-15 19:38:17,433 INFO app.web_server: [chain] stage asr completed: transcript ready (0 ms engine time)
+ 2026-09-15 19:38:17,433 INFO app.web_server: [chain] ASR EMPTY after 512 ms of speech: 
+ 2026-09-15 19:38:17,433 INFO app.web_server: utterance dumped: /tmp/vm_vadtrig_test_4s7xnfzm/logs/last_empty_utterance.wav (512 ms, reason=empty transcript)
++2026-09-15 21:51:12,163 INFO app.llm_config: LLM config env override: OPENAI_MODEL -> llm.model
++2026-09-15 21:51:12,514 INFO app.llm_config: LLM config env override: OPENAI_MODEL -> llm.model
++2026-09-15 21:51:12,552 INFO app.web_server: [chain] turn received (source=text, 5 chars: 'teszt')
++2026-09-15 21:51:12,552 INFO app.web_server: [chain] stage voicemem started: memory search
++2026-09-15 21:51:12,552 INFO app.web_server: [chain] stage e5 started: embedding query
++2026-09-15 21:51:12,552 INFO app.web_server: [chain] memory start
++2026-09-15 21:51:12,552 INFO app.web_server: [chain] emotion start (init)
++2026-09-15 21:51:12,753 INFO app.web_server: [chain] emotion done (init timed out after 0.2 s — continuing without emotion)
++2026-09-15 21:51:12,754 WARNING app.web_server: emotion analyzer init timed out after 0.2 s (funasr/torch import?) — turn continues without prosody emotion
++2026-09-15 21:51:12,754 INFO app.web_server: [chain] memory done (8 hits)
++2026-09-15 21:51:12,754 INFO app.web_server: [chain] stage voicemem completed: memory search done (8 hits)
++2026-09-15 21:51:12,754 INFO app.web_server: [chain] stage e5 completed: embedding query done
++2026-09-15 21:51:12,754 INFO app.web_server: [chain] stage llm started: qwen3.6-35b-a3b streaming
++2026-09-15 21:51:12,754 INFO app.web_server: [chain] llm start (qwen3.6-35b-a3b @ http://127.0.0.1:8080/v1)
++2026-09-15 21:51:12,767 INFO app.web_server: [chain] llm first token (215 ms)
++2026-09-15 21:51:12,816 INFO app.web_server: [chain] tts start (chunk 1, 20 chars)
++2026-09-15 21:51:12,816 INFO app.web_server: [chain] TTS voice: F1 · Nyugodt női (English, mode auto)
++2026-09-15 21:51:12,816 INFO app.web_server: [chain] stage tts started: speaking the reply
++2026-09-15 21:51:12,817 INFO app.web_server: [chain] first TTS audio sent to the browser (266 ms)
++2026-09-15 21:51:12,962 INFO app.web_server: [chain] TTS voice: F1 · Nyugodt női (English, mode auto)
++2026-09-15 21:51:13,133 INFO app.web_server: [chain] TTS voice: F1 · Nyugodt női (English, mode auto)
++2026-09-15 21:51:13,194 INFO app.web_server: [chain] llm done (197 chars, 440 ms)
++2026-09-15 21:51:13,195 INFO app.web_server: [chain] stage llm completed: 197 chars generated
++2026-09-15 21:51:13,195 INFO app.web_server: [chain] TTS voice: F1 · Nyugodt női (English, mode auto)
++2026-09-15 21:51:13,196 INFO app.web_server: [chain] tts done (4 chunks, 644 ms)
++2026-09-15 21:51:13,196 INFO app.web_server: [chain] stage tts completed: 4 chunks played
++2026-09-15 21:51:13,196 INFO app.web_server: [chain] answer done: 197 chars, total 645 ms
++2026-09-15 21:51:13,196 INFO app.background_memory: background memory deferred (conversation active; 1 queued)
++2026-09-15 21:51:42,556 INFO app.web_server: [chain] turn received (source=text, 13 chars: 'Hello, mivan?')
++2026-09-15 21:51:42,557 INFO app.web_server: [chain] stage voicemem started: memory search
++2026-09-15 21:51:42,557 INFO app.web_server: [chain] stage e5 started: embedding query
++2026-09-15 21:51:42,557 INFO app.web_server: [chain] memory start
++2026-09-15 21:51:42,557 INFO app.web_server: [chain] emotion start (init)
++2026-09-15 21:51:42,858 INFO app.web_server: [chain] emotion done (init timed out after 0.3 s — continuing without emotion)
++2026-09-15 21:51:42,858 WARNING app.web_server: emotion analyzer init timed out after 0.3 s (funasr/torch import?) — turn continues without prosody emotion
++2026-09-15 21:51:42,859 INFO app.web_server: [chain] memory done (8 hits)
++2026-09-15 21:51:42,859 INFO app.web_server: [chain] stage voicemem completed: memory search done (8 hits)
++2026-09-15 21:51:42,859 INFO app.web_server: [chain] stage e5 completed: embedding query done
++2026-09-15 21:51:42,859 INFO app.web_server: [chain] stage llm started: qwen3.6-35b-a3b streaming
++2026-09-15 21:51:42,859 INFO app.web_server: [chain] llm start (qwen3.6-35b-a3b @ http://127.0.0.1:8080/v1)
++2026-09-15 21:51:42,871 INFO app.web_server: [chain] llm first token (315 ms)
++2026-09-15 21:51:42,920 INFO app.web_server: [chain] tts start (chunk 1, 20 chars)
++2026-09-15 21:51:42,921 INFO app.web_server: [chain] TTS voice: F1 · Nyugodt női (English, mode auto)
++2026-09-15 21:51:42,921 INFO app.web_server: [chain] stage tts started: speaking the reply
++2026-09-15 21:51:42,922 INFO app.web_server: [chain] first TTS audio sent to the browser (366 ms)
++2026-09-15 21:51:43,079 INFO app.web_server: [chain] TTS voice: F1 · Nyugodt női (English, mode auto)
++2026-09-15 21:51:43,082 INFO app.web_server: [chain] TTS voice: F1 · Nyugodt női (English, mode auto)
++2026-09-15 21:51:43,251 INFO app.web_server: [chain] TTS voice: F1 · Nyugodt női (English, mode auto)
++2026-09-15 21:51:43,312 INFO app.web_server: [chain] llm done (205 chars, 453 ms)
++2026-09-15 21:51:43,313 INFO app.web_server: [chain] stage llm completed: 205 chars generated
++2026-09-15 21:51:43,313 INFO app.web_server: [chain] TTS voice: F1 · Nyugodt női (English, mode auto)
++2026-09-15 21:51:43,314 INFO app.web_server: [chain] tts done (5 chunks, 758 ms)
++2026-09-15 21:51:43,314 INFO app.web_server: [chain] stage tts completed: 5 chunks played
++2026-09-15 21:51:43,314 INFO app.web_server: [chain] answer done: 205 chars, total 758 ms
++2026-09-15 21:51:43,314 INFO app.background_memory: background memory deferred (conversation active; 1 queued)
++2026-09-15 21:51:50,561 INFO app.web_server: [chain] turn received (source=text, 13 chars: 'Hello, mivan?')
++2026-09-15 21:51:50,561 INFO app.web_server: [chain] stage voicemem started: memory search
++2026-09-15 21:51:50,561 INFO app.web_server: [chain] stage e5 started: embedding query
++2026-09-15 21:51:50,561 INFO app.web_server: [chain] memory start
++2026-09-15 21:51:50,561 INFO app.web_server: [chain] emotion start (init)
++2026-09-15 21:51:50,863 INFO app.web_server: [chain] emotion done (init timed out after 0.3 s — continuing without emotion)
++2026-09-15 21:51:50,863 WARNING app.web_server: emotion analyzer init timed out after 0.3 s (funasr/torch import?) — turn continues without prosody emotion
++2026-09-15 21:51:50,863 INFO app.web_server: [chain] memory done (8 hits)
++2026-09-15 21:51:50,863 INFO app.web_server: [chain] stage voicemem completed: memory search done (8 hits)
++2026-09-15 21:51:50,863 INFO app.web_server: [chain] stage e5 completed: embedding query done
++2026-09-15 21:51:50,863 INFO app.web_server: [chain] stage llm started: qwen3.6-35b-a3b streaming
++2026-09-15 21:51:50,863 INFO app.web_server: [chain] llm start (qwen3.6-35b-a3b @ http://127.0.0.1:8080/v1)
++2026-09-15 21:51:50,876 INFO app.web_server: [chain] llm first token (315 ms)
++2026-09-15 21:51:50,925 INFO app.web_server: [chain] tts start (chunk 1, 20 chars)
++2026-09-15 21:51:50,925 INFO app.web_server: [chain] TTS voice: F1 · Nyugodt női (English, mode auto)
++2026-09-15 21:51:50,926 INFO app.web_server: [chain] stage tts started: speaking the reply
++2026-09-15 21:51:50,926 INFO app.web_server: [chain] first TTS audio sent to the browser (366 ms)
++2026-09-15 21:51:51,084 INFO app.web_server: [chain] TTS voice: F1 · Nyugodt női (English, mode auto)
++2026-09-15 21:51:51,086 INFO app.web_server: [chain] TTS voice: F1 · Nyugodt női (English, mode auto)
++2026-09-15 21:51:51,255 INFO app.web_server: [chain] TTS voice: F1 · Nyugodt női (English, mode auto)
++2026-09-15 21:51:51,317 INFO app.web_server: [chain] llm done (205 chars, 453 ms)
++2026-09-15 21:51:51,317 INFO app.web_server: [chain] stage llm completed: 205 chars generated
++2026-09-15 21:51:51,317 INFO app.web_server: [chain] TTS voice: F1 · Nyugodt női (English, mode auto)
++2026-09-15 21:51:51,318 INFO app.web_server: [chain] tts done (5 chunks, 758 ms)
++2026-09-15 21:51:51,318 INFO app.web_server: [chain] stage tts completed: 5 chunks played
++2026-09-15 21:51:51,319 INFO app.web_server: [chain] answer done: 205 chars, total 758 ms
++2026-09-15 21:51:51,319 INFO app.background_memory: background memory deferred (conversation active; 1 queued)
++2026-09-15 21:51:58,566 INFO app.web_server: [chain] turn received (source=text, 13 chars: 'Hello, mivan?')
++2026-09-15 21:51:58,566 INFO app.web_server: [chain] stage voicemem started: memory search
++2026-09-15 21:51:58,566 INFO app.web_server: [chain] stage e5 started: embedding query
++2026-09-15 21:51:58,566 INFO app.web_server: [chain] memory start
++2026-09-15 21:51:58,566 INFO app.web_server: [chain] emotion start (init)
++2026-09-15 21:51:58,567 INFO app.web_server: [chain] emotion done (init failed — continuing without emotion: funasr import exploded)
++2026-09-15 21:51:58,567 WARNING app.web_server: emotion analyzer init failed: funasr import exploded — turn continues
++2026-09-15 21:51:58,567 INFO app.web_server: [chain] memory done (8 hits)
++2026-09-15 21:51:58,567 INFO app.web_server: [chain] stage voicemem completed: memory search done (8 hits)
++2026-09-15 21:51:58,567 INFO app.web_server: [chain] stage e5 completed: embedding query done
++2026-09-15 21:51:58,568 INFO app.web_server: [chain] stage llm started: qwen3.6-35b-a3b streaming
++2026-09-15 21:51:58,568 INFO app.web_server: [chain] llm start (qwen3.6-35b-a3b @ http://127.0.0.1:8080/v1)
++2026-09-15 21:51:58,580 INFO app.web_server: [chain] llm first token (14 ms)
++2026-09-15 21:51:58,629 INFO app.web_server: [chain] tts start (chunk 1, 20 chars)
++2026-09-15 21:51:58,629 INFO app.web_server: [chain] TTS voice: F1 · Nyugodt női (English, mode auto)
++2026-09-15 21:51:58,629 INFO app.web_server: [chain] stage tts started: speaking the reply
++2026-09-15 21:51:58,630 INFO app.web_server: [chain] first TTS audio sent to the browser (64 ms)
++2026-09-15 21:51:58,787 INFO app.web_server: [chain] TTS voice: F1 · Nyugodt női (English, mode auto)
++2026-09-15 21:51:58,790 INFO app.web_server: [chain] TTS voice: F1 · Nyugodt női (English, mode auto)
++2026-09-15 21:51:58,959 INFO app.web_server: [chain] TTS voice: F1 · Nyugodt női (English, mode auto)
++2026-09-15 21:51:59,020 INFO app.web_server: [chain] llm done (205 chars, 452 ms)
++2026-09-15 21:51:59,020 INFO app.web_server: [chain] stage llm completed: 205 chars generated
++2026-09-15 21:51:59,020 INFO app.web_server: [chain] TTS voice: F1 · Nyugodt női (English, mode auto)
++2026-09-15 21:51:59,022 INFO app.web_server: [chain] tts done (5 chunks, 456 ms)
++2026-09-15 21:51:59,022 INFO app.web_server: [chain] stage tts completed: 5 chunks played
++2026-09-15 21:51:59,022 INFO app.web_server: [chain] answer done: 205 chars, total 456 ms
++2026-09-15 21:51:59,022 INFO app.background_memory: background memory deferred (conversation active; 1 queued)
++2026-09-15 21:51:59,224 WARNING app.emotion: Emotion analyzer unavailable (M1 pipeline continues without emotion): boom
++2026-09-15 21:51:59,228 INFO app.web_server: [chain] turn received (source=asr, 22 chars: 'Ez egy mikrofon teszt.')
++2026-09-15 21:51:59,228 INFO app.web_server: [chain] stage voicemem started: memory search
++2026-09-15 21:51:59,228 INFO app.web_server: [chain] stage e5 started: embedding query
++2026-09-15 21:51:59,228 INFO app.web_server: [chain] memory start
++2026-09-15 21:51:59,228 INFO app.web_server: [chain] emotion start (init)
++2026-09-15 21:51:59,228 INFO app.web_server: [chain] emotion done (analyzer unavailable — semantic-only)
++2026-09-15 21:51:59,229 INFO app.web_server: [chain] memory done (8 hits)
++2026-09-15 21:51:59,229 INFO app.web_server: [chain] stage voicemem completed: memory search done (8 hits)
++2026-09-15 21:51:59,229 INFO app.web_server: [chain] stage e5 completed: embedding query done
++2026-09-15 21:51:59,229 INFO app.web_server: [chain] stage llm started: qwen3.6-35b-a3b streaming
++2026-09-15 21:51:59,229 INFO app.web_server: [chain] llm start (qwen3.6-35b-a3b @ http://127.0.0.1:8080/v1)
++2026-09-15 21:51:59,242 INFO app.web_server: [chain] llm first token (14 ms)
++2026-09-15 21:51:59,279 INFO app.web_server: [chain] tts start (chunk 1, 28 chars)
++2026-09-15 21:51:59,279 INFO app.web_server: [chain] TTS voice: F1 · Nyugodt női (Hungarian, mode auto)
++2026-09-15 21:51:59,279 INFO app.web_server: [chain] stage tts started: speaking the reply
++2026-09-15 21:51:59,281 INFO app.web_server: [chain] first TTS audio sent to the browser (53 ms)
++2026-09-15 21:51:59,426 INFO app.web_server: [chain] TTS voice: F1 · Nyugodt női (Hungarian, mode auto)
++2026-09-15 21:51:59,439 INFO app.web_server: [chain] TTS voice: F1 · Nyugodt női (English, mode auto)
++2026-09-15 21:51:59,598 INFO app.web_server: [chain] TTS voice: F1 · Nyugodt női (Hungarian, mode auto)
++2026-09-15 21:51:59,647 INFO app.web_server: [chain] llm done (227 chars, 417 ms)
++2026-09-15 21:51:59,647 INFO app.web_server: [chain] stage llm completed: 227 chars generated
++2026-09-15 21:51:59,647 INFO app.web_server: [chain] TTS voice: F1 · Nyugodt női (Hungarian, mode auto)
++2026-09-15 21:51:59,649 INFO app.web_server: [chain] tts done (5 chunks, 421 ms)
++2026-09-15 21:51:59,649 INFO app.web_server: [chain] stage tts completed: 5 chunks played
++2026-09-15 21:51:59,649 INFO app.web_server: [chain] answer done: 227 chars, total 421 ms
++2026-09-15 21:51:59,649 INFO app.background_memory: background memory deferred (conversation active; 1 queued)
++2026-09-15 21:51:59,653 INFO app.web_server: [chain] turn received (source=text, 9 chars: 'teszt log')
++2026-09-15 21:51:59,653 INFO app.web_server: [chain] stage voicemem started: memory search
++2026-09-15 21:51:59,653 INFO app.web_server: [chain] stage e5 started: embedding query
++2026-09-15 21:51:59,654 INFO app.web_server: [chain] memory start
++2026-09-15 21:51:59,654 INFO app.web_server: [chain] emotion start (init)
++2026-09-15 21:51:59,654 INFO app.web_server: [chain] emotion done (analyzer unavailable — semantic-only)
++2026-09-15 21:51:59,655 INFO app.web_server: [chain] memory done (8 hits)
++2026-09-15 21:51:59,655 INFO app.web_server: [chain] stage voicemem completed: memory search done (8 hits)
++2026-09-15 21:51:59,655 INFO app.web_server: [chain] stage e5 completed: embedding query done
++2026-09-15 21:51:59,655 INFO app.web_server: [chain] stage llm started: qwen3.6-35b-a3b streaming
++2026-09-15 21:51:59,655 INFO app.web_server: [chain] llm start (qwen3.6-35b-a3b @ http://127.0.0.1:8080/v1)
++2026-09-15 21:51:59,667 INFO app.web_server: [chain] llm first token (14 ms)
++2026-09-15 21:51:59,716 INFO app.web_server: [chain] tts start (chunk 1, 20 chars)
++2026-09-15 21:51:59,716 INFO app.web_server: [chain] TTS voice: F1 · Nyugodt női (English, mode auto)
++2026-09-15 21:51:59,716 INFO app.web_server: [chain] stage tts started: speaking the reply
++2026-09-15 21:51:59,718 INFO app.web_server: [chain] first TTS audio sent to the browser (64 ms)
++2026-09-15 21:51:59,875 INFO app.web_server: [chain] TTS voice: F1 · Nyugodt női (English, mode auto)
++2026-09-15 21:52:00,046 INFO app.web_server: [chain] TTS voice: F1 · Nyugodt női (English, mode auto)
++2026-09-15 21:52:00,107 INFO app.web_server: [chain] llm done (201 chars, 452 ms)
++2026-09-15 21:52:00,108 INFO app.web_server: [chain] stage llm completed: 201 chars generated
++2026-09-15 21:52:00,108 INFO app.web_server: [chain] TTS voice: F1 · Nyugodt női (English, mode auto)
++2026-09-15 21:52:00,109 INFO app.web_server: [chain] tts done (4 chunks, 456 ms)
++2026-09-15 21:52:00,109 INFO app.web_server: [chain] stage tts completed: 4 chunks played
++2026-09-15 21:52:00,109 INFO app.web_server: [chain] answer done: 201 chars, total 456 ms
++2026-09-15 21:52:00,110 INFO app.background_memory: background memory deferred (conversation active; 1 queued)
++2026-09-15 21:52:00,115 INFO app.web_server: [chain] turn received (source=text, 19 chars: 'Szia, hogy vagy ma?')
++2026-09-15 21:52:00,115 INFO app.web_server: [chain] stage voicemem started: memory search
++2026-09-15 21:52:00,115 INFO app.web_server: [chain] stage e5 started: embedding query
++2026-09-15 21:52:00,115 INFO app.web_server: [chain] memory start
++2026-09-15 21:52:00,115 INFO app.web_server: [chain] emotion start (init)
++2026-09-15 21:52:00,116 INFO app.web_server: [chain] emotion done (analyzer unavailable — semantic-only)
++2026-09-15 21:52:00,117 INFO app.web_server: [chain] memory done (8 hits)
++2026-09-15 21:52:00,117 INFO app.web_server: [chain] stage voicemem completed: memory search done (8 hits)
++2026-09-15 21:52:00,117 INFO app.web_server: [chain] stage e5 completed: embedding query done
++2026-09-15 21:52:00,117 INFO app.web_server: [chain] stage llm started: qwen3.6-35b-a3b streaming
++2026-09-15 21:52:00,117 INFO app.web_server: [chain] llm start (qwen3.6-35b-a3b @ http://127.0.0.1:8080/v1)
++2026-09-15 21:52:00,129 INFO app.web_server: [chain] llm first token (14 ms)
++2026-09-15 21:52:00,166 INFO app.web_server: [chain] tts start (chunk 1, 28 chars)
++2026-09-15 21:52:00,166 INFO app.web_server: [chain] TTS voice: F1 · Nyugodt női (Hungarian, mode auto)
++2026-09-15 21:52:00,166 INFO app.web_server: [chain] stage tts started: speaking the reply
++2026-09-15 21:52:00,167 INFO app.web_server: [chain] first TTS audio sent to the browser (52 ms)
++2026-09-15 21:52:00,300 INFO app.web_server: [chain] TTS voice: F1 · Nyugodt női (Hungarian, mode auto)
++2026-09-15 21:52:00,326 INFO app.web_server: [chain] TTS voice: F1 · Nyugodt női (Hungarian, mode auto)
++2026-09-15 21:52:00,327 INFO app.web_server: [chain] TTS voice: F1 · Nyugodt női (English, mode auto)
++2026-09-15 21:52:00,485 INFO app.web_server: [chain] TTS voice: F1 · Nyugodt női (Hungarian, mode auto)
++2026-09-15 21:52:00,535 INFO app.web_server: [chain] llm done (224 chars, 418 ms)
++2026-09-15 21:52:00,535 INFO app.web_server: [chain] stage llm completed: 224 chars generated
++2026-09-15 21:52:00,536 INFO app.web_server: [chain] TTS voice: F1 · Nyugodt női (Hungarian, mode auto)
++2026-09-15 21:52:00,538 INFO app.web_server: [chain] tts done (6 chunks, 423 ms)
++2026-09-15 21:52:00,538 INFO app.web_server: [chain] stage tts completed: 6 chunks played
++2026-09-15 21:52:00,539 INFO app.web_server: [chain] answer done: 224 chars, total 424 ms
++2026-09-15 21:52:00,539 INFO app.background_memory: background memory deferred (conversation active; 1 queued)
++2026-09-15 21:52:00,542 WARNING app.web_server: serving page version 0.10.2 (web/voicemem.html literal const PAGE_VERSION='0.0.0'; is stale — run scripts/sync_page_version.py)
++2026-09-15 21:52:00,571 WARNING app.web_server: serving page version 0.10.2 (web/voicemem.html literal const PAGE_VERSION='0.0.0-0.10.2'; is stale — run scripts/sync_page_version.py)
++2026-09-15 21:52:00,586 INFO app.web_server: web UI page version 0.4.12 (backend 0.10.2) — STALE PAGE, reload needed
++2026-09-15 21:52:00,590 INFO app.web_server: [chain] speech start (level 0.60)
++2026-09-15 21:52:00,590 INFO app.web_server: [chain] stage vad completed: speech start (level 0.60)
++2026-09-15 21:52:00,591 INFO app.web_server: [chain] speech end (512 ms of speech)
++2026-09-15 21:52:00,591 INFO app.web_server: [chain] stage vad completed: speech end (512 ms)
++2026-09-15 21:52:00,591 INFO app.web_server: [chain] stage asr started: transcribing utterance
++2026-09-15 21:52:00,592 INFO app.web_server: [chain] ASR flush done (0 ms, engine mock)
++2026-09-15 21:52:00,592 INFO app.web_server: [chain] stage asr completed: transcript ready (0 ms engine time)
++2026-09-15 21:52:00,592 INFO app.web_server: [chain] ASR EMPTY after 512 ms of speech: 
++2026-09-15 21:52:00,592 INFO app.web_server: utterance dumped: /tmp/vm_vadtrig_test_y148guzp/logs/last_empty_utterance.wav (512 ms, reason=empty transcript)
++2026-09-15 21:52:00,594 INFO app.web_server: [chain] speech start (level 0.60)
++2026-09-15 21:52:00,595 INFO app.web_server: [chain] stage vad completed: speech start (level 0.60)
++2026-09-15 21:52:00,596 INFO app.web_server: [chain] speech end (512 ms of speech)
++2026-09-15 21:52:00,596 INFO app.web_server: [chain] stage vad completed: speech end (512 ms)
++2026-09-15 21:52:00,596 INFO app.web_server: [chain] stage asr started: transcribing utterance
++2026-09-15 21:52:00,596 INFO app.web_server: [chain] ASR flush done (0 ms, engine mock)
++2026-09-15 21:52:00,596 INFO app.web_server: [chain] stage asr completed: transcript ready (0 ms engine time)
++2026-09-15 21:52:00,596 INFO app.web_server: [chain] ASR EMPTY after 512 ms of speech: 
++2026-09-15 21:52:00,596 INFO app.web_server: utterance dumped: /tmp/vm_vadtrig_test_8t_ozxmd/logs/last_empty_utterance.wav (512 ms, reason=empty transcript)
++2026-09-15 21:52:00,599 INFO app.web_server: [chain] speech start (level 0.60)
++2026-09-15 21:52:00,599 INFO app.web_server: [chain] stage vad completed: speech start (level 0.60)
++2026-09-15 21:52:00,600 INFO app.web_server: [chain] speech end (512 ms of speech)
++2026-09-15 21:52:00,600 INFO app.web_server: [chain] stage vad completed: speech end (512 ms)
++2026-09-15 21:52:00,600 INFO app.web_server: [chain] stage asr started: transcribing utterance
++2026-09-15 21:52:00,600 INFO app.web_server: [chain] ASR flush done (0 ms, engine mock)
++2026-09-15 21:52:00,600 INFO app.web_server: [chain] stage asr completed: transcript ready (0 ms engine time)
++2026-09-15 21:52:00,600 INFO app.web_server: [chain] ASR EMPTY after 512 ms of speech: 
++2026-09-15 21:52:00,601 INFO app.web_server: utterance dumped: /tmp/vm_vadtrig_test_8h44qqo2/logs/last_empty_utterance.wav (512 ms, reason=empty transcript)
++2026-09-15 21:59:12,022 INFO app.llm_config: LLM config env override: OPENAI_MODEL -> llm.model
++2026-09-15 21:59:12,372 INFO app.llm_config: LLM config env override: OPENAI_MODEL -> llm.model
++2026-09-15 21:59:12,414 INFO app.web_server: [chain] turn received (source=text, 5 chars: 'teszt')
++2026-09-15 21:59:12,414 INFO app.web_server: [chain] stage voicemem started: memory search
++2026-09-15 21:59:12,414 INFO app.web_server: [chain] stage e5 started: embedding query
++2026-09-15 21:59:12,414 INFO app.web_server: [chain] memory start
++2026-09-15 21:59:12,414 INFO app.web_server: [chain] emotion start (init)
++2026-09-15 21:59:12,616 INFO app.web_server: [chain] emotion done (init timed out after 0.2 s — continuing without emotion)
++2026-09-15 21:59:12,616 WARNING app.web_server: emotion analyzer init timed out after 0.2 s (funasr/torch import?) — turn continues without prosody emotion
++2026-09-15 21:59:12,616 INFO app.web_server: [chain] memory done (8 hits)
++2026-09-15 21:59:12,616 INFO app.web_server: [chain] stage voicemem completed: memory search done (8 hits)
++2026-09-15 21:59:12,616 INFO app.web_server: [chain] stage e5 completed: embedding query done
++2026-09-15 21:59:12,617 INFO app.web_server: [chain] stage llm started: qwen3.6-35b-a3b streaming
++2026-09-15 21:59:12,617 INFO app.web_server: [chain] llm start (qwen3.6-35b-a3b @ http://127.0.0.1:8080/v1)
++2026-09-15 21:59:12,629 INFO app.web_server: [chain] llm first token (215 ms)
++2026-09-15 21:59:12,678 INFO app.web_server: [chain] tts start (chunk 1, 20 chars)
++2026-09-15 21:59:12,678 INFO app.web_server: [chain] TTS voice: F1 · Nyugodt női (English, mode auto)
++2026-09-15 21:59:12,678 INFO app.web_server: [chain] stage tts started: speaking the reply
++2026-09-15 21:59:12,679 INFO app.web_server: [chain] first TTS audio sent to the browser (266 ms)
++2026-09-15 21:59:12,825 INFO app.web_server: [chain] TTS voice: F1 · Nyugodt női (English, mode auto)
++2026-09-15 21:59:12,996 INFO app.web_server: [chain] TTS voice: F1 · Nyugodt női (English, mode auto)
++2026-09-15 21:59:13,057 INFO app.web_server: [chain] llm done (197 chars, 440 ms)
++2026-09-15 21:59:13,057 INFO app.web_server: [chain] stage llm completed: 197 chars generated
++2026-09-15 21:59:13,057 INFO app.web_server: [chain] TTS voice: F1 · Nyugodt női (English, mode auto)
++2026-09-15 21:59:13,059 INFO app.web_server: [chain] tts done (4 chunks, 645 ms)
++2026-09-15 21:59:13,059 INFO app.web_server: [chain] stage tts completed: 4 chunks played
++2026-09-15 21:59:13,059 INFO app.web_server: [chain] answer done: 197 chars, total 645 ms
++2026-09-15 21:59:13,059 INFO app.background_memory: background memory deferred (conversation active; 1 queued)
++2026-09-15 21:59:42,419 INFO app.web_server: [chain] turn received (source=text, 13 chars: 'Hello, mivan?')
++2026-09-15 21:59:42,419 INFO app.web_server: [chain] stage voicemem started: memory search
++2026-09-15 21:59:42,419 INFO app.web_server: [chain] stage e5 started: embedding query
++2026-09-15 21:59:42,419 INFO app.web_server: [chain] memory start
++2026-09-15 21:59:42,419 INFO app.web_server: [chain] emotion start (init)
++2026-09-15 21:59:42,721 INFO app.web_server: [chain] emotion done (init timed out after 0.3 s — continuing without emotion)
++2026-09-15 21:59:42,721 WARNING app.web_server: emotion analyzer init timed out after 0.3 s (funasr/torch import?) — turn continues without prosody emotion
++2026-09-15 21:59:42,721 INFO app.web_server: [chain] memory done (8 hits)
++2026-09-15 21:59:42,721 INFO app.web_server: [chain] stage voicemem completed: memory search done (8 hits)
++2026-09-15 21:59:42,721 INFO app.web_server: [chain] stage e5 completed: embedding query done
++2026-09-15 21:59:42,721 INFO app.web_server: [chain] stage llm started: qwen3.6-35b-a3b streaming
++2026-09-15 21:59:42,721 INFO app.web_server: [chain] llm start (qwen3.6-35b-a3b @ http://127.0.0.1:8080/v1)
++2026-09-15 21:59:42,734 INFO app.web_server: [chain] llm first token (315 ms)
++2026-09-15 21:59:42,783 INFO app.web_server: [chain] tts start (chunk 1, 20 chars)
++2026-09-15 21:59:42,783 INFO app.web_server: [chain] TTS voice: F1 · Nyugodt női (English, mode auto)
++2026-09-15 21:59:42,783 INFO app.web_server: [chain] stage tts started: speaking the reply
++2026-09-15 21:59:42,785 INFO app.web_server: [chain] first TTS audio sent to the browser (366 ms)
++2026-09-15 21:59:42,941 INFO app.web_server: [chain] TTS voice: F1 · Nyugodt női (English, mode auto)
++2026-09-15 21:59:42,944 INFO app.web_server: [chain] TTS voice: F1 · Nyugodt női (English, mode auto)
++2026-09-15 21:59:43,116 INFO app.web_server: [chain] TTS voice: F1 · Nyugodt női (English, mode auto)
++2026-09-15 21:59:43,179 INFO app.web_server: [chain] llm done (205 chars, 457 ms)
++2026-09-15 21:59:43,179 INFO app.web_server: [chain] stage llm completed: 205 chars generated
++2026-09-15 21:59:43,179 INFO app.web_server: [chain] TTS voice: F1 · Nyugodt női (English, mode auto)
++2026-09-15 21:59:43,181 INFO app.web_server: [chain] tts done (5 chunks, 762 ms)
++2026-09-15 21:59:43,181 INFO app.web_server: [chain] stage tts completed: 5 chunks played
++2026-09-15 21:59:43,181 INFO app.web_server: [chain] answer done: 205 chars, total 762 ms
++2026-09-15 21:59:43,181 INFO app.background_memory: background memory deferred (conversation active; 1 queued)
++2026-09-15 21:59:50,423 INFO app.web_server: [chain] turn received (source=text, 13 chars: 'Hello, mivan?')
++2026-09-15 21:59:50,423 INFO app.web_server: [chain] stage voicemem started: memory search
++2026-09-15 21:59:50,423 INFO app.web_server: [chain] stage e5 started: embedding query
++2026-09-15 21:59:50,423 INFO app.web_server: [chain] memory start
++2026-09-15 21:59:50,423 INFO app.web_server: [chain] emotion start (init)
++2026-09-15 21:59:50,725 INFO app.web_server: [chain] emotion done (init timed out after 0.3 s — continuing without emotion)
++2026-09-15 21:59:50,725 WARNING app.web_server: emotion analyzer init timed out after 0.3 s (funasr/torch import?) — turn continues without prosody emotion
++2026-09-15 21:59:50,726 INFO app.web_server: [chain] memory done (8 hits)
++2026-09-15 21:59:50,726 INFO app.web_server: [chain] stage voicemem completed: memory search done (8 hits)
++2026-09-15 21:59:50,726 INFO app.web_server: [chain] stage e5 completed: embedding query done
++2026-09-15 21:59:50,726 INFO app.web_server: [chain] stage llm started: qwen3.6-35b-a3b streaming
++2026-09-15 21:59:50,726 INFO app.web_server: [chain] llm start (qwen3.6-35b-a3b @ http://127.0.0.1:8080/v1)
++2026-09-15 21:59:50,738 INFO app.web_server: [chain] llm first token (316 ms)
++2026-09-15 21:59:50,787 INFO app.web_server: [chain] tts start (chunk 1, 20 chars)
++2026-09-15 21:59:50,788 INFO app.web_server: [chain] TTS voice: F1 · Nyugodt női (English, mode auto)
++2026-09-15 21:59:50,788 INFO app.web_server: [chain] stage tts started: speaking the reply
++2026-09-15 21:59:50,789 INFO app.web_server: [chain] first TTS audio sent to the browser (366 ms)
++2026-09-15 21:59:50,946 INFO app.web_server: [chain] TTS voice: F1 · Nyugodt női (English, mode auto)
++2026-09-15 21:59:50,948 INFO app.web_server: [chain] TTS voice: F1 · Nyugodt női (English, mode auto)
++2026-09-15 21:59:51,117 INFO app.web_server: [chain] TTS voice: F1 · Nyugodt női (English, mode auto)
++2026-09-15 21:59:51,178 INFO app.web_server: [chain] llm done (205 chars, 452 ms)
++2026-09-15 21:59:51,178 INFO app.web_server: [chain] stage llm completed: 205 chars generated
++2026-09-15 21:59:51,179 INFO app.web_server: [chain] TTS voice: F1 · Nyugodt női (English, mode auto)
++2026-09-15 21:59:51,180 INFO app.web_server: [chain] tts done (5 chunks, 757 ms)
++2026-09-15 21:59:51,180 INFO app.web_server: [chain] stage tts completed: 5 chunks played
++2026-09-15 21:59:51,180 INFO app.web_server: [chain] answer done: 205 chars, total 757 ms
++2026-09-15 21:59:51,180 INFO app.background_memory: background memory deferred (conversation active; 1 queued)
++2026-09-15 21:59:58,428 INFO app.web_server: [chain] turn received (source=text, 13 chars: 'Hello, mivan?')
++2026-09-15 21:59:58,428 INFO app.web_server: [chain] stage voicemem started: memory search
++2026-09-15 21:59:58,428 INFO app.web_server: [chain] stage e5 started: embedding query
++2026-09-15 21:59:58,428 INFO app.web_server: [chain] memory start
++2026-09-15 21:59:58,428 INFO app.web_server: [chain] emotion start (init)
++2026-09-15 21:59:58,429 INFO app.web_server: [chain] emotion done (init failed — continuing without emotion: funasr import exploded)
++2026-09-15 21:59:58,429 WARNING app.web_server: emotion analyzer init failed: funasr import exploded — turn continues
++2026-09-15 21:59:58,429 INFO app.web_server: [chain] memory done (8 hits)
++2026-09-15 21:59:58,430 INFO app.web_server: [chain] stage voicemem completed: memory search done (8 hits)
++2026-09-15 21:59:58,430 INFO app.web_server: [chain] stage e5 completed: embedding query done
++2026-09-15 21:59:58,430 INFO app.web_server: [chain] stage llm started: qwen3.6-35b-a3b streaming
++2026-09-15 21:59:58,430 INFO app.web_server: [chain] llm start (qwen3.6-35b-a3b @ http://127.0.0.1:8080/v1)
++2026-09-15 21:59:58,442 INFO app.web_server: [chain] llm first token (14 ms)
++2026-09-15 21:59:58,491 INFO app.web_server: [chain] tts start (chunk 1, 20 chars)
++2026-09-15 21:59:58,491 INFO app.web_server: [chain] TTS voice: F1 · Nyugodt női (English, mode auto)
++2026-09-15 21:59:58,491 INFO app.web_server: [chain] stage tts started: speaking the reply
++2026-09-15 21:59:58,492 INFO app.web_server: [chain] first TTS audio sent to the browser (64 ms)
++2026-09-15 21:59:58,649 INFO app.web_server: [chain] TTS voice: F1 · Nyugodt női (English, mode auto)
++2026-09-15 21:59:58,652 INFO app.web_server: [chain] TTS voice: F1 · Nyugodt női (English, mode auto)
++2026-09-15 21:59:58,821 INFO app.web_server: [chain] TTS voice: F1 · Nyugodt női (English, mode auto)
++2026-09-15 21:59:58,882 INFO app.web_server: [chain] llm done (205 chars, 452 ms)
++2026-09-15 21:59:58,882 INFO app.web_server: [chain] stage llm completed: 205 chars generated
++2026-09-15 21:59:58,882 INFO app.web_server: [chain] TTS voice: F1 · Nyugodt női (English, mode auto)
++2026-09-15 21:59:58,883 INFO app.web_server: [chain] tts done (5 chunks, 455 ms)
++2026-09-15 21:59:58,883 INFO app.web_server: [chain] stage tts completed: 5 chunks played
++2026-09-15 21:59:58,884 INFO app.web_server: [chain] answer done: 205 chars, total 456 ms
++2026-09-15 21:59:58,884 INFO app.background_memory: background memory deferred (conversation active; 1 queued)
++2026-09-15 21:59:59,085 WARNING app.emotion: Emotion analyzer unavailable (M1 pipeline continues without emotion): boom
++2026-09-15 21:59:59,088 INFO app.web_server: [chain] turn received (source=asr, 22 chars: 'Ez egy mikrofon teszt.')
++2026-09-15 21:59:59,088 INFO app.web_server: [chain] stage voicemem started: memory search
++2026-09-15 21:59:59,089 INFO app.web_server: [chain] stage e5 started: embedding query
++2026-09-15 21:59:59,089 INFO app.web_server: [chain] memory start
++2026-09-15 21:59:59,089 INFO app.web_server: [chain] emotion start (init)
++2026-09-15 21:59:59,089 INFO app.web_server: [chain] emotion done (analyzer unavailable — semantic-only)
++2026-09-15 21:59:59,090 INFO app.web_server: [chain] memory done (8 hits)
++2026-09-15 21:59:59,090 INFO app.web_server: [chain] stage voicemem completed: memory search done (8 hits)
++2026-09-15 21:59:59,090 INFO app.web_server: [chain] stage e5 completed: embedding query done
++2026-09-15 21:59:59,090 INFO app.web_server: [chain] stage llm started: qwen3.6-35b-a3b streaming
++2026-09-15 21:59:59,090 INFO app.web_server: [chain] llm start (qwen3.6-35b-a3b @ http://127.0.0.1:8080/v1)
++2026-09-15 21:59:59,103 INFO app.web_server: [chain] llm first token (14 ms)
++2026-09-15 21:59:59,139 INFO app.web_server: [chain] tts start (chunk 1, 28 chars)
++2026-09-15 21:59:59,139 INFO app.web_server: [chain] TTS voice: F1 · Nyugodt női (Hungarian, mode auto)
++2026-09-15 21:59:59,140 INFO app.web_server: [chain] stage tts started: speaking the reply
++2026-09-15 21:59:59,141 INFO app.web_server: [chain] first TTS audio sent to the browser (53 ms)
++2026-09-15 21:59:59,286 INFO app.web_server: [chain] TTS voice: F1 · Nyugodt női (Hungarian, mode auto)
++2026-09-15 21:59:59,299 INFO app.web_server: [chain] TTS voice: F1 · Nyugodt női (English, mode auto)
++2026-09-15 21:59:59,457 INFO app.web_server: [chain] TTS voice: F1 · Nyugodt női (Hungarian, mode auto)
++2026-09-15 21:59:59,506 INFO app.web_server: [chain] llm done (227 chars, 416 ms)
++2026-09-15 21:59:59,506 INFO app.web_server: [chain] stage llm completed: 227 chars generated
++2026-09-15 21:59:59,507 INFO app.web_server: [chain] TTS voice: F1 · Nyugodt női (Hungarian, mode auto)
++2026-09-15 21:59:59,508 INFO app.web_server: [chain] tts done (5 chunks, 420 ms)
++2026-09-15 21:59:59,508 INFO app.web_server: [chain] stage tts completed: 5 chunks played
++2026-09-15 21:59:59,508 INFO app.web_server: [chain] answer done: 227 chars, total 420 ms
++2026-09-15 21:59:59,508 INFO app.background_memory: background memory deferred (conversation active; 1 queued)
++2026-09-15 21:59:59,512 INFO app.web_server: [chain] turn received (source=text, 9 chars: 'teszt log')
++2026-09-15 21:59:59,512 INFO app.web_server: [chain] stage voicemem started: memory search
++2026-09-15 21:59:59,512 INFO app.web_server: [chain] stage e5 started: embedding query
++2026-09-15 21:59:59,512 INFO app.web_server: [chain] memory start
++2026-09-15 21:59:59,512 INFO app.web_server: [chain] emotion start (init)
++2026-09-15 21:59:59,513 INFO app.web_server: [chain] emotion done (analyzer unavailable — semantic-only)
++2026-09-15 21:59:59,513 INFO app.web_server: [chain] memory done (8 hits)
++2026-09-15 21:59:59,513 INFO app.web_server: [chain] stage voicemem completed: memory search done (8 hits)
++2026-09-15 21:59:59,513 INFO app.web_server: [chain] stage e5 completed: embedding query done
++2026-09-15 21:59:59,514 INFO app.web_server: [chain] stage llm started: qwen3.6-35b-a3b streaming
++2026-09-15 21:59:59,514 INFO app.web_server: [chain] llm start (qwen3.6-35b-a3b @ http://127.0.0.1:8080/v1)
++2026-09-15 21:59:59,526 INFO app.web_server: [chain] llm first token (14 ms)
++2026-09-15 21:59:59,575 INFO app.web_server: [chain] tts start (chunk 1, 20 chars)
++2026-09-15 21:59:59,575 INFO app.web_server: [chain] TTS voice: F1 · Nyugodt női (English, mode auto)
++2026-09-15 21:59:59,575 INFO app.web_server: [chain] stage tts started: speaking the reply
++2026-09-15 21:59:59,576 INFO app.web_server: [chain] first TTS audio sent to the browser (64 ms)
++2026-09-15 21:59:59,736 INFO app.web_server: [chain] TTS voice: F1 · Nyugodt női (English, mode auto)
++2026-09-15 21:59:59,907 INFO app.web_server: [chain] TTS voice: F1 · Nyugodt női (English, mode auto)
++2026-09-15 21:59:59,969 INFO app.web_server: [chain] llm done (201 chars, 455 ms)
++2026-09-15 21:59:59,969 INFO app.web_server: [chain] stage llm completed: 201 chars generated
++2026-09-15 21:59:59,969 INFO app.web_server: [chain] TTS voice: F1 · Nyugodt női (English, mode auto)
++2026-09-15 21:59:59,970 INFO app.web_server: [chain] tts done (4 chunks, 458 ms)
++2026-09-15 21:59:59,971 INFO app.web_server: [chain] stage tts completed: 4 chunks played
++2026-09-15 21:59:59,971 INFO app.web_server: [chain] answer done: 201 chars, total 459 ms
++2026-09-15 21:59:59,971 INFO app.background_memory: background memory deferred (conversation active; 1 queued)
++2026-09-15 21:59:59,976 INFO app.web_server: [chain] turn received (source=text, 19 chars: 'Szia, hogy vagy ma?')
++2026-09-15 21:59:59,976 INFO app.web_server: [chain] stage voicemem started: memory search
++2026-09-15 21:59:59,977 INFO app.web_server: [chain] stage e5 started: embedding query
++2026-09-15 21:59:59,977 INFO app.web_server: [chain] memory start
++2026-09-15 21:59:59,977 INFO app.web_server: [chain] emotion start (init)
++2026-09-15 21:59:59,977 INFO app.web_server: [chain] emotion done (analyzer unavailable — semantic-only)
++2026-09-15 21:59:59,978 INFO app.web_server: [chain] memory done (8 hits)
++2026-09-15 21:59:59,978 INFO app.web_server: [chain] stage voicemem completed: memory search done (8 hits)
++2026-09-15 21:59:59,978 INFO app.web_server: [chain] stage e5 completed: embedding query done
++2026-09-15 21:59:59,978 INFO app.web_server: [chain] stage llm started: qwen3.6-35b-a3b streaming
++2026-09-15 21:59:59,979 INFO app.web_server: [chain] llm start (qwen3.6-35b-a3b @ http://127.0.0.1:8080/v1)
++2026-09-15 21:59:59,991 INFO app.web_server: [chain] llm first token (14 ms)
++2026-09-15 22:00:00,028 INFO app.web_server: [chain] tts start (chunk 1, 28 chars)
++2026-09-15 22:00:00,028 INFO app.web_server: [chain] TTS voice: F1 · Nyugodt női (Hungarian, mode auto)
++2026-09-15 22:00:00,028 INFO app.web_server: [chain] stage tts started: speaking the reply
++2026-09-15 22:00:00,029 INFO app.web_server: [chain] first TTS audio sent to the browser (53 ms)
++2026-09-15 22:00:00,163 INFO app.web_server: [chain] TTS voice: F1 · Nyugodt női (Hungarian, mode auto)
++2026-09-15 22:00:00,188 INFO app.web_server: [chain] TTS voice: F1 · Nyugodt női (Hungarian, mode auto)
++2026-09-15 22:00:00,189 INFO app.web_server: [chain] TTS voice: F1 · Nyugodt női (English, mode auto)
++2026-09-15 22:00:00,346 INFO app.web_server: [chain] TTS voice: F1 · Nyugodt női (Hungarian, mode auto)
++2026-09-15 22:00:00,395 INFO app.web_server: [chain] llm done (224 chars, 417 ms)
++2026-09-15 22:00:00,396 INFO app.web_server: [chain] stage llm completed: 224 chars generated
++2026-09-15 22:00:00,396 INFO app.web_server: [chain] TTS voice: F1 · Nyugodt női (Hungarian, mode auto)
++2026-09-15 22:00:00,397 INFO app.web_server: [chain] tts done (6 chunks, 421 ms)
++2026-09-15 22:00:00,397 INFO app.web_server: [chain] stage tts completed: 6 chunks played
++2026-09-15 22:00:00,397 INFO app.web_server: [chain] answer done: 224 chars, total 421 ms
++2026-09-15 22:00:00,397 INFO app.background_memory: background memory deferred (conversation active; 1 queued)
++2026-09-15 22:00:00,400 WARNING app.web_server: serving page version 0.10.2 (web/voicemem.html literal const PAGE_VERSION='0.0.0'; is stale — run scripts/sync_page_version.py)
++2026-09-15 22:00:00,428 WARNING app.web_server: serving page version 0.10.2 (web/voicemem.html literal const PAGE_VERSION='0.0.0-0.10.2'; is stale — run scripts/sync_page_version.py)
++2026-09-15 22:00:00,444 INFO app.web_server: web UI page version 0.4.12 (backend 0.10.2) — STALE PAGE, reload needed
++2026-09-15 22:00:00,447 INFO app.web_server: [chain] speech start (level 0.60)
++2026-09-15 22:00:00,447 INFO app.web_server: [chain] stage vad completed: speech start (level 0.60)
++2026-09-15 22:00:00,448 INFO app.web_server: [chain] speech end (512 ms of speech)
++2026-09-15 22:00:00,448 INFO app.web_server: [chain] stage vad completed: speech end (512 ms)
++2026-09-15 22:00:00,448 INFO app.web_server: [chain] stage asr started: transcribing utterance
++2026-09-15 22:00:00,449 INFO app.web_server: [chain] ASR flush done (0 ms, engine mock)
++2026-09-15 22:00:00,449 INFO app.web_server: [chain] stage asr completed: transcript ready (0 ms engine time)
++2026-09-15 22:00:00,449 INFO app.web_server: [chain] ASR EMPTY after 512 ms of speech: 
++2026-09-15 22:00:00,449 INFO app.web_server: utterance dumped: /tmp/vm_vadtrig_test_3gjqra39/logs/last_empty_utterance.wav (512 ms, reason=empty transcript)
++2026-09-15 22:00:00,452 INFO app.web_server: [chain] speech start (level 0.60)
++2026-09-15 22:00:00,452 INFO app.web_server: [chain] stage vad completed: speech start (level 0.60)
++2026-09-15 22:00:00,453 INFO app.web_server: [chain] speech end (512 ms of speech)
++2026-09-15 22:00:00,453 INFO app.web_server: [chain] stage vad completed: speech end (512 ms)
++2026-09-15 22:00:00,453 INFO app.web_server: [chain] stage asr started: transcribing utterance
++2026-09-15 22:00:00,453 INFO app.web_server: [chain] ASR flush done (0 ms, engine mock)
++2026-09-15 22:00:00,453 INFO app.web_server: [chain] stage asr completed: transcript ready (0 ms engine time)
++2026-09-15 22:00:00,453 INFO app.web_server: [chain] ASR EMPTY after 512 ms of speech: 
++2026-09-15 22:00:00,453 INFO app.web_server: utterance dumped: /tmp/vm_vadtrig_test_tjsw79xz/logs/last_empty_utterance.wav (512 ms, reason=empty transcript)
++2026-09-15 22:00:00,456 INFO app.web_server: [chain] speech start (level 0.60)
++2026-09-15 22:00:00,456 INFO app.web_server: [chain] stage vad completed: speech start (level 0.60)
++2026-09-15 22:00:00,457 INFO app.web_server: [chain] speech end (512 ms of speech)
++2026-09-15 22:00:00,457 INFO app.web_server: [chain] stage vad completed: speech end (512 ms)
++2026-09-15 22:00:00,457 INFO app.web_server: [chain] stage asr started: transcribing utterance
++2026-09-15 22:00:00,457 INFO app.web_server: [chain] ASR flush done (0 ms, engine mock)
++2026-09-15 22:00:00,457 INFO app.web_server: [chain] stage asr completed: transcript ready (0 ms engine time)
++2026-09-15 22:00:00,457 INFO app.web_server: [chain] ASR EMPTY after 512 ms of speech: 
++2026-09-15 22:00:00,457 INFO app.web_server: utterance dumped: /tmp/vm_vadtrig_test_djqn6mfo/logs/last_empty_utterance.wav (512 ms, reason=empty transcript)
++2026-09-15 22:05:46,393 INFO app.llm_config: LLM config env override: OPENAI_MODEL -> llm.model
++2026-09-15 22:05:46,743 INFO app.llm_config: LLM config env override: OPENAI_MODEL -> llm.model
++2026-09-15 22:05:46,790 INFO app.web_server: [chain] turn received (source=text, 5 chars: 'teszt')
++2026-09-15 22:05:46,790 INFO app.web_server: [chain] stage voicemem started: memory search
++2026-09-15 22:05:46,790 INFO app.web_server: [chain] stage e5 started: embedding query
++2026-09-15 22:05:46,790 INFO app.web_server: [chain] memory start
++2026-09-15 22:05:46,790 INFO app.web_server: [chain] emotion start (init)
++2026-09-15 22:05:46,991 INFO app.web_server: [chain] emotion done (init timed out after 0.2 s — continuing without emotion)
++2026-09-15 22:05:46,991 WARNING app.web_server: emotion analyzer init timed out after 0.2 s (funasr/torch import?) — turn continues without prosody emotion
++2026-09-15 22:05:46,992 INFO app.web_server: [chain] memory done (8 hits)
++2026-09-15 22:05:46,992 INFO app.web_server: [chain] stage voicemem completed: memory search done (8 hits)
++2026-09-15 22:05:46,992 INFO app.web_server: [chain] stage e5 completed: embedding query done
++2026-09-15 22:05:46,993 INFO app.web_server: [chain] stage llm started: qwen3.6-35b-a3b streaming
++2026-09-15 22:05:46,993 INFO app.web_server: [chain] llm start (qwen3.6-35b-a3b @ http://127.0.0.1:8080/v1)
++2026-09-15 22:05:47,005 INFO app.web_server: [chain] llm first token (215 ms)
++2026-09-15 22:05:47,054 INFO app.web_server: [chain] tts start (chunk 1, 20 chars)
++2026-09-15 22:05:47,054 INFO app.web_server: [chain] TTS voice: F1 · Nyugodt női (English, mode auto)
++2026-09-15 22:05:47,054 INFO app.web_server: [chain] stage tts started: speaking the reply
++2026-09-15 22:05:47,055 INFO app.web_server: [chain] first TTS audio sent to the browser (265 ms)
++2026-09-15 22:05:47,206 INFO app.web_server: [chain] TTS voice: F1 · Nyugodt női (English, mode auto)
++2026-09-15 22:05:47,377 INFO app.web_server: [chain] TTS voice: F1 · Nyugodt női (English, mode auto)
++2026-09-15 22:05:47,440 INFO app.web_server: [chain] llm done (197 chars, 447 ms)
++2026-09-15 22:05:47,440 INFO app.web_server: [chain] stage llm completed: 197 chars generated
++2026-09-15 22:05:47,440 INFO app.web_server: [chain] TTS voice: F1 · Nyugodt női (English, mode auto)
++2026-09-15 22:05:47,441 INFO app.web_server: [chain] tts done (4 chunks, 651 ms)
++2026-09-15 22:05:47,442 INFO app.web_server: [chain] stage tts completed: 4 chunks played
++2026-09-15 22:05:47,442 INFO app.web_server: [chain] answer done: 197 chars, total 652 ms
++2026-09-15 22:05:47,442 INFO app.background_memory: background memory deferred (conversation active; 1 queued)
++2026-09-15 22:06:16,795 INFO app.web_server: [chain] turn received (source=text, 13 chars: 'Hello, mivan?')
++2026-09-15 22:06:16,795 INFO app.web_server: [chain] stage voicemem started: memory search
++2026-09-15 22:06:16,795 INFO app.web_server: [chain] stage e5 started: embedding query
++2026-09-15 22:06:16,795 INFO app.web_server: [chain] memory start
++2026-09-15 22:06:16,795 INFO app.web_server: [chain] emotion start (init)
++2026-09-15 22:06:17,097 INFO app.web_server: [chain] emotion done (init timed out after 0.3 s — continuing without emotion)
++2026-09-15 22:06:17,097 WARNING app.web_server: emotion analyzer init timed out after 0.3 s (funasr/torch import?) — turn continues without prosody emotion
++2026-09-15 22:06:17,097 INFO app.web_server: [chain] memory done (8 hits)
++2026-09-15 22:06:17,097 INFO app.web_server: [chain] stage voicemem completed: memory search done (8 hits)
++2026-09-15 22:06:17,097 INFO app.web_server: [chain] stage e5 completed: embedding query done
++2026-09-15 22:06:17,097 INFO app.web_server: [chain] stage llm started: qwen3.6-35b-a3b streaming
++2026-09-15 22:06:17,097 INFO app.web_server: [chain] llm start (qwen3.6-35b-a3b @ http://127.0.0.1:8080/v1)
++2026-09-15 22:06:17,110 INFO app.web_server: [chain] llm first token (315 ms)
++2026-09-15 22:06:17,159 INFO app.web_server: [chain] tts start (chunk 1, 20 chars)
++2026-09-15 22:06:17,159 INFO app.web_server: [chain] TTS voice: F1 · Nyugodt női (English, mode auto)
++2026-09-15 22:06:17,159 INFO app.web_server: [chain] stage tts started: speaking the reply
++2026-09-15 22:06:17,161 INFO app.web_server: [chain] first TTS audio sent to the browser (366 ms)
++2026-09-15 22:06:17,318 INFO app.web_server: [chain] TTS voice: F1 · Nyugodt női (English, mode auto)
++2026-09-15 22:06:17,320 INFO app.web_server: [chain] TTS voice: F1 · Nyugodt női (English, mode auto)
++2026-09-15 22:06:17,490 INFO app.web_server: [chain] TTS voice: F1 · Nyugodt női (English, mode auto)
++2026-09-15 22:06:17,551 INFO app.web_server: [chain] llm done (205 chars, 453 ms)
++2026-09-15 22:06:17,551 INFO app.web_server: [chain] stage llm completed: 205 chars generated
++2026-09-15 22:06:17,551 INFO app.web_server: [chain] TTS voice: F1 · Nyugodt női (English, mode auto)
++2026-09-15 22:06:17,552 INFO app.web_server: [chain] tts done (5 chunks, 758 ms)
++2026-09-15 22:06:17,552 INFO app.web_server: [chain] stage tts completed: 5 chunks played
++2026-09-15 22:06:17,552 INFO app.web_server: [chain] answer done: 205 chars, total 758 ms
++2026-09-15 22:06:17,553 INFO app.background_memory: background memory deferred (conversation active; 1 queued)
++2026-09-15 22:06:24,799 INFO app.web_server: [chain] turn received (source=text, 13 chars: 'Hello, mivan?')
++2026-09-15 22:06:24,800 INFO app.web_server: [chain] stage voicemem started: memory search
++2026-09-15 22:06:24,800 INFO app.web_server: [chain] stage e5 started: embedding query
++2026-09-15 22:06:24,800 INFO app.web_server: [chain] memory start
++2026-09-15 22:06:24,800 INFO app.web_server: [chain] emotion start (init)
++2026-09-15 22:06:25,100 INFO app.web_server: [chain] emotion done (init timed out after 0.3 s — continuing without emotion)
++2026-09-15 22:06:25,100 WARNING app.web_server: emotion analyzer init timed out after 0.3 s (funasr/torch import?) — turn continues without prosody emotion
++2026-09-15 22:06:25,101 INFO app.web_server: [chain] memory done (8 hits)
++2026-09-15 22:06:25,101 INFO app.web_server: [chain] stage voicemem completed: memory search done (8 hits)
++2026-09-15 22:06:25,101 INFO app.web_server: [chain] stage e5 completed: embedding query done
++2026-09-15 22:06:25,101 INFO app.web_server: [chain] stage llm started: qwen3.6-35b-a3b streaming
++2026-09-15 22:06:25,101 INFO app.web_server: [chain] llm start (qwen3.6-35b-a3b @ http://127.0.0.1:8080/v1)
++2026-09-15 22:06:25,113 INFO app.web_server: [chain] llm first token (314 ms)
++2026-09-15 22:06:25,162 INFO app.web_server: [chain] tts start (chunk 1, 20 chars)
++2026-09-15 22:06:25,162 INFO app.web_server: [chain] TTS voice: F1 · Nyugodt női (English, mode auto)
++2026-09-15 22:06:25,163 INFO app.web_server: [chain] stage tts started: speaking the reply
++2026-09-15 22:06:25,164 INFO app.web_server: [chain] first TTS audio sent to the browser (364 ms)
++2026-09-15 22:06:25,322 INFO app.web_server: [chain] TTS voice: F1 · Nyugodt női (English, mode auto)
++2026-09-15 22:06:25,325 INFO app.web_server: [chain] TTS voice: F1 · Nyugodt női (English, mode auto)
++2026-09-15 22:06:25,494 INFO app.web_server: [chain] TTS voice: F1 · Nyugodt női (English, mode auto)
++2026-09-15 22:06:25,555 INFO app.web_server: [chain] llm done (205 chars, 454 ms)
++2026-09-15 22:06:25,556 INFO app.web_server: [chain] stage llm completed: 205 chars generated
++2026-09-15 22:06:25,556 INFO app.web_server: [chain] TTS voice: F1 · Nyugodt női (English, mode auto)
++2026-09-15 22:06:25,557 INFO app.web_server: [chain] tts done (5 chunks, 758 ms)
++2026-09-15 22:06:25,557 INFO app.web_server: [chain] stage tts completed: 5 chunks played
++2026-09-15 22:06:25,557 INFO app.web_server: [chain] answer done: 205 chars, total 758 ms
++2026-09-15 22:06:25,558 INFO app.background_memory: background memory deferred (conversation active; 1 queued)
++2026-09-15 22:06:32,804 INFO app.web_server: [chain] turn received (source=text, 13 chars: 'Hello, mivan?')
++2026-09-15 22:06:32,805 INFO app.web_server: [chain] stage voicemem started: memory search
++2026-09-15 22:06:32,805 INFO app.web_server: [chain] stage e5 started: embedding query
++2026-09-15 22:06:32,805 INFO app.web_server: [chain] memory start
++2026-09-15 22:06:32,805 INFO app.web_server: [chain] emotion start (init)
++2026-09-15 22:06:32,805 INFO app.web_server: [chain] emotion done (init failed — continuing without emotion: funasr import exploded)
++2026-09-15 22:06:32,806 WARNING app.web_server: emotion analyzer init failed: funasr import exploded — turn continues
++2026-09-15 22:06:32,806 INFO app.web_server: [chain] memory done (8 hits)
++2026-09-15 22:06:32,806 INFO app.web_server: [chain] stage voicemem completed: memory search done (8 hits)
++2026-09-15 22:06:32,806 INFO app.web_server: [chain] stage e5 completed: embedding query done
++2026-09-15 22:06:32,806 INFO app.web_server: [chain] stage llm started: qwen3.6-35b-a3b streaming
++2026-09-15 22:06:32,807 INFO app.web_server: [chain] llm start (qwen3.6-35b-a3b @ http://127.0.0.1:8080/v1)
++2026-09-15 22:06:32,819 INFO app.web_server: [chain] llm first token (14 ms)
++2026-09-15 22:06:32,868 INFO app.web_server: [chain] tts start (chunk 1, 20 chars)
++2026-09-15 22:06:32,868 INFO app.web_server: [chain] TTS voice: F1 · Nyugodt női (English, mode auto)
++2026-09-15 22:06:32,869 INFO app.web_server: [chain] stage tts started: speaking the reply
++2026-09-15 22:06:32,870 INFO app.web_server: [chain] first TTS audio sent to the browser (65 ms)
++2026-09-15 22:06:33,027 INFO app.web_server: [chain] TTS voice: F1 · Nyugodt női (English, mode auto)
++2026-09-15 22:06:33,030 INFO app.web_server: [chain] TTS voice: F1 · Nyugodt női (English, mode auto)
++2026-09-15 22:06:33,198 INFO app.web_server: [chain] TTS voice: F1 · Nyugodt női (English, mode auto)
++2026-09-15 22:06:33,260 INFO app.web_server: [chain] llm done (205 chars, 454 ms)
++2026-09-15 22:06:33,260 INFO app.web_server: [chain] stage llm completed: 205 chars generated
++2026-09-15 22:06:33,261 INFO app.web_server: [chain] TTS voice: F1 · Nyugodt női (English, mode auto)
++2026-09-15 22:06:33,262 INFO app.web_server: [chain] tts done (5 chunks, 458 ms)
++2026-09-15 22:06:33,262 INFO app.web_server: [chain] stage tts completed: 5 chunks played
++2026-09-15 22:06:33,262 INFO app.web_server: [chain] answer done: 205 chars, total 458 ms
++2026-09-15 22:06:33,263 INFO app.background_memory: background memory deferred (conversation active; 1 queued)
++2026-09-15 22:06:33,464 WARNING app.emotion: Emotion analyzer unavailable (M1 pipeline continues without emotion): boom
++2026-09-15 22:06:33,468 INFO app.web_server: [chain] turn received (source=asr, 22 chars: 'Ez egy mikrofon teszt.')
++2026-09-15 22:06:33,468 INFO app.web_server: [chain] stage voicemem started: memory search
++2026-09-15 22:06:33,468 INFO app.web_server: [chain] stage e5 started: embedding query
++2026-09-15 22:06:33,468 INFO app.web_server: [chain] memory start
++2026-09-15 22:06:33,468 INFO app.web_server: [chain] emotion start (init)
++2026-09-15 22:06:33,469 INFO app.web_server: [chain] emotion done (analyzer unavailable — semantic-only)
++2026-09-15 22:06:33,470 INFO app.web_server: [chain] memory done (8 hits)
++2026-09-15 22:06:33,470 INFO app.web_server: [chain] stage voicemem completed: memory search done (8 hits)
++2026-09-15 22:06:33,470 INFO app.web_server: [chain] stage e5 completed: embedding query done
++2026-09-15 22:06:33,470 INFO app.web_server: [chain] stage llm started: qwen3.6-35b-a3b streaming
++2026-09-15 22:06:33,470 INFO app.web_server: [chain] llm start (qwen3.6-35b-a3b @ http://127.0.0.1:8080/v1)
++2026-09-15 22:06:33,482 INFO app.web_server: [chain] llm first token (15 ms)
++2026-09-15 22:06:33,519 INFO app.web_server: [chain] tts start (chunk 1, 28 chars)
++2026-09-15 22:06:33,519 INFO app.web_server: [chain] TTS voice: F1 · Nyugodt női (Hungarian, mode auto)
++2026-09-15 22:06:33,520 INFO app.web_server: [chain] stage tts started: speaking the reply
++2026-09-15 22:06:33,521 INFO app.web_server: [chain] first TTS audio sent to the browser (53 ms)
++2026-09-15 22:06:33,666 INFO app.web_server: [chain] TTS voice: F1 · Nyugodt női (Hungarian, mode auto)
++2026-09-15 22:06:33,679 INFO app.web_server: [chain] TTS voice: F1 · Nyugodt női (English, mode auto)
++2026-09-15 22:06:33,838 INFO app.web_server: [chain] TTS voice: F1 · Nyugodt női (Hungarian, mode auto)
++2026-09-15 22:06:33,887 INFO app.web_server: [chain] llm done (227 chars, 417 ms)
++2026-09-15 22:06:33,888 INFO app.web_server: [chain] stage llm completed: 227 chars generated
++2026-09-15 22:06:33,888 INFO app.web_server: [chain] TTS voice: F1 · Nyugodt női (Hungarian, mode auto)
++2026-09-15 22:06:33,889 INFO app.web_server: [chain] tts done (5 chunks, 421 ms)
++2026-09-15 22:06:33,889 INFO app.web_server: [chain] stage tts completed: 5 chunks played
++2026-09-15 22:06:33,890 INFO app.web_server: [chain] answer done: 227 chars, total 422 ms
++2026-09-15 22:06:33,890 INFO app.background_memory: background memory deferred (conversation active; 1 queued)
++2026-09-15 22:06:33,894 INFO app.web_server: [chain] turn received (source=text, 9 chars: 'teszt log')
++2026-09-15 22:06:33,894 INFO app.web_server: [chain] stage voicemem started: memory search
++2026-09-15 22:06:33,894 INFO app.web_server: [chain] stage e5 started: embedding query
++2026-09-15 22:06:33,894 INFO app.web_server: [chain] memory start
++2026-09-15 22:06:33,894 INFO app.web_server: [chain] emotion start (init)
++2026-09-15 22:06:33,895 INFO app.web_server: [chain] emotion done (analyzer unavailable — semantic-only)
++2026-09-15 22:06:33,895 INFO app.web_server: [chain] memory done (8 hits)
++2026-09-15 22:06:33,896 INFO app.web_server: [chain] stage voicemem completed: memory search done (8 hits)
++2026-09-15 22:06:33,896 INFO app.web_server: [chain] stage e5 completed: embedding query done
++2026-09-15 22:06:33,896 INFO app.web_server: [chain] stage llm started: qwen3.6-35b-a3b streaming
++2026-09-15 22:06:33,896 INFO app.web_server: [chain] llm start (qwen3.6-35b-a3b @ http://127.0.0.1:8080/v1)
++2026-09-15 22:06:33,908 INFO app.web_server: [chain] llm first token (14 ms)
++2026-09-15 22:06:33,957 INFO app.web_server: [chain] tts start (chunk 1, 20 chars)
++2026-09-15 22:06:33,957 INFO app.web_server: [chain] TTS voice: F1 · Nyugodt női (English, mode auto)
++2026-09-15 22:06:33,958 INFO app.web_server: [chain] stage tts started: speaking the reply
++2026-09-15 22:06:33,959 INFO app.web_server: [chain] first TTS audio sent to the browser (65 ms)
++2026-09-15 22:06:34,117 INFO app.web_server: [chain] TTS voice: F1 · Nyugodt női (English, mode auto)
++2026-09-15 22:06:34,289 INFO app.web_server: [chain] TTS voice: F1 · Nyugodt női (English, mode auto)
++2026-09-15 22:06:34,350 INFO app.web_server: [chain] llm done (201 chars, 454 ms)
++2026-09-15 22:06:34,351 INFO app.web_server: [chain] stage llm completed: 201 chars generated
++2026-09-15 22:06:34,351 INFO app.web_server: [chain] TTS voice: F1 · Nyugodt női (English, mode auto)
++2026-09-15 22:06:34,352 INFO app.web_server: [chain] tts done (4 chunks, 458 ms)
++2026-09-15 22:06:34,352 INFO app.web_server: [chain] stage tts completed: 4 chunks played
++2026-09-15 22:06:34,352 INFO app.web_server: [chain] answer done: 201 chars, total 458 ms
++2026-09-15 22:06:34,353 INFO app.background_memory: background memory deferred (conversation active; 1 queued)
++2026-09-15 22:06:34,358 INFO app.web_server: [chain] turn received (source=text, 19 chars: 'Szia, hogy vagy ma?')
++2026-09-15 22:06:34,358 INFO app.web_server: [chain] stage voicemem started: memory search
++2026-09-15 22:06:34,358 INFO app.web_server: [chain] stage e5 started: embedding query
++2026-09-15 22:06:34,358 INFO app.web_server: [chain] memory start
++2026-09-15 22:06:34,358 INFO app.web_server: [chain] emotion start (init)
++2026-09-15 22:06:34,359 INFO app.web_server: [chain] emotion done (analyzer unavailable — semantic-only)
++2026-09-15 22:06:34,360 INFO app.web_server: [chain] memory done (8 hits)
++2026-09-15 22:06:34,360 INFO app.web_server: [chain] stage voicemem completed: memory search done (8 hits)
++2026-09-15 22:06:34,360 INFO app.web_server: [chain] stage e5 completed: embedding query done
++2026-09-15 22:06:34,360 INFO app.web_server: [chain] stage llm started: qwen3.6-35b-a3b streaming
++2026-09-15 22:06:34,360 INFO app.web_server: [chain] llm start (qwen3.6-35b-a3b @ http://127.0.0.1:8080/v1)
++2026-09-15 22:06:34,372 INFO app.web_server: [chain] llm first token (14 ms)
++2026-09-15 22:06:34,409 INFO app.web_server: [chain] tts start (chunk 1, 28 chars)
++2026-09-15 22:06:34,409 INFO app.web_server: [chain] TTS voice: F1 · Nyugodt női (Hungarian, mode auto)
++2026-09-15 22:06:34,409 INFO app.web_server: [chain] stage tts started: speaking the reply
++2026-09-15 22:06:34,411 INFO app.web_server: [chain] first TTS audio sent to the browser (52 ms)
++2026-09-15 22:06:34,544 INFO app.web_server: [chain] TTS voice: F1 · Nyugodt női (Hungarian, mode auto)
++2026-09-15 22:06:34,569 INFO app.web_server: [chain] TTS voice: F1 · Nyugodt női (Hungarian, mode auto)
++2026-09-15 22:06:34,570 INFO app.web_server: [chain] TTS voice: F1 · Nyugodt női (English, mode auto)
++2026-09-15 22:06:34,728 INFO app.web_server: [chain] TTS voice: F1 · Nyugodt női (Hungarian, mode auto)
++2026-09-15 22:06:34,777 INFO app.web_server: [chain] llm done (224 chars, 417 ms)
++2026-09-15 22:06:34,777 INFO app.web_server: [chain] stage llm completed: 224 chars generated
++2026-09-15 22:06:34,777 INFO app.web_server: [chain] TTS voice: F1 · Nyugodt női (Hungarian, mode auto)
++2026-09-15 22:06:34,779 INFO app.web_server: [chain] tts done (6 chunks, 420 ms)
++2026-09-15 22:06:34,779 INFO app.web_server: [chain] stage tts completed: 6 chunks played
++2026-09-15 22:06:34,779 INFO app.web_server: [chain] answer done: 224 chars, total 421 ms
++2026-09-15 22:06:34,779 INFO app.background_memory: background memory deferred (conversation active; 1 queued)
++2026-09-15 22:06:34,781 WARNING app.web_server: serving page version 0.10.2 (web/voicemem.html literal const PAGE_VERSION='0.0.0'; is stale — run scripts/sync_page_version.py)
++2026-09-15 22:06:34,812 WARNING app.web_server: serving page version 0.10.2 (web/voicemem.html literal const PAGE_VERSION='0.0.0-0.10.2'; is stale — run scripts/sync_page_version.py)
++2026-09-15 22:06:34,828 INFO app.web_server: web UI page version 0.4.12 (backend 0.10.2) — STALE PAGE, reload needed
++2026-09-15 22:06:34,832 INFO app.web_server: [chain] speech start (level 0.60)
++2026-09-15 22:06:34,832 INFO app.web_server: [chain] stage vad completed: speech start (level 0.60)
++2026-09-15 22:06:34,833 INFO app.web_server: [chain] speech end (512 ms of speech)
++2026-09-15 22:06:34,834 INFO app.web_server: [chain] stage vad completed: speech end (512 ms)
++2026-09-15 22:06:34,834 INFO app.web_server: [chain] stage asr started: transcribing utterance
++2026-09-15 22:06:34,834 INFO app.web_server: [chain] ASR flush done (0 ms, engine mock)
++2026-09-15 22:06:34,834 INFO app.web_server: [chain] stage asr completed: transcript ready (0 ms engine time)
++2026-09-15 22:06:34,834 INFO app.web_server: [chain] ASR EMPTY after 512 ms of speech: 
++2026-09-15 22:06:34,834 INFO app.web_server: utterance dumped: /tmp/vm_vadtrig_test_9d1k8y0r/logs/last_empty_utterance.wav (512 ms, reason=empty transcript)
++2026-09-15 22:06:34,837 INFO app.web_server: [chain] speech start (level 0.60)
++2026-09-15 22:06:34,837 INFO app.web_server: [chain] stage vad completed: speech start (level 0.60)
++2026-09-15 22:06:34,838 INFO app.web_server: [chain] speech end (512 ms of speech)
++2026-09-15 22:06:34,838 INFO app.web_server: [chain] stage vad completed: speech end (512 ms)
++2026-09-15 22:06:34,838 INFO app.web_server: [chain] stage asr started: transcribing utterance
++2026-09-15 22:06:34,839 INFO app.web_server: [chain] ASR flush done (0 ms, engine mock)
++2026-09-15 22:06:34,839 INFO app.web_server: [chain] stage asr completed: transcript ready (0 ms engine time)
++2026-09-15 22:06:34,839 INFO app.web_server: [chain] ASR EMPTY after 512 ms of speech: 
++2026-09-15 22:06:34,839 INFO app.web_server: utterance dumped: /tmp/vm_vadtrig_test_asn16nag/logs/last_empty_utterance.wav (512 ms, reason=empty transcript)
++2026-09-15 22:06:34,841 INFO app.web_server: [chain] speech start (level 0.60)
++2026-09-15 22:06:34,841 INFO app.web_server: [chain] stage vad completed: speech start (level 0.60)
++2026-09-15 22:06:34,842 INFO app.web_server: [chain] speech end (512 ms of speech)
++2026-09-15 22:06:34,842 INFO app.web_server: [chain] stage vad completed: speech end (512 ms)
++2026-09-15 22:06:34,842 INFO app.web_server: [chain] stage asr started: transcribing utterance
++2026-09-15 22:06:34,843 INFO app.web_server: [chain] ASR flush done (0 ms, engine mock)
++2026-09-15 22:06:34,843 INFO app.web_server: [chain] stage asr completed: transcript ready (0 ms engine time)
++2026-09-15 22:06:34,843 INFO app.web_server: [chain] ASR EMPTY after 512 ms of speech: 
++2026-09-15 22:06:34,843 INFO app.web_server: utterance dumped: /tmp/vm_vadtrig_test_smlmz4mu/logs/last_empty_utterance.wav (512 ms, reason=empty transcript)
+diff --git a/voicemem-agent/pyproject.toml b/voicemem-agent/pyproject.toml
+index 003cb79..c7928c1 100755
+--- a/voicemem-agent/pyproject.toml
++++ b/voicemem-agent/pyproject.toml
+@@ -17,7 +17,7 @@ build-backend = "setuptools.build_meta"
+ 
+ [project]
+ name = "voicemem-agent"
+-version = "0.10.1"
++version = "0.10.2"
+ description = "Fully local HU/EN voice agent with long-term memory - M0/M1"
+ requires-python = ">=3.11"
+ dependencies = [
+diff --git a/voicemem-agent/releases/BUILD_HISTORY.json b/voicemem-agent/releases/BUILD_HISTORY.json
+index 2fd3022..bf0844c 100755
+--- a/voicemem-agent/releases/BUILD_HISTORY.json
++++ b/voicemem-agent/releases/BUILD_HISTORY.json
+@@ -298,6 +298,24 @@
+       "sha256": "A9C781E0D4DE8F9843D196AB43FDD945DF686B772370FC9466E6ECD5B866B541",
+       "test_gate_exit_code": 0,
+       "deep_validation": "pass: embedding, memory, memory-semantics, release, runtime-deps; skip: 15"
++    },
++    {
++      "at_utc": "2026-09-15T22:03:05Z",
++      "outcome": "success",
++      "version": "0.10.2",
++      "zip": "VoiceMemAgent_v0.10.2.zip",
++      "sha256": "6FF6D92FDBE8CFFD7FB46DE431742BB936264803445C8EE6C58A4C86A4516447",
++      "test_gate_exit_code": 0,
++      "deep_validation": "pass: embedding, memory, memory-semantics, release, runtime-deps; skip: 15"
++    },
++    {
++      "at_utc": "2026-09-15T22:09:27Z",
++      "outcome": "success",
++      "version": "0.10.2",
++      "zip": "VoiceMemAgent_v0.10.2.zip",
++      "sha256": "F56E5155043B9900B2A45799F4FA1663ED8475584F9DBA1F1BBD80B13C525A54",
++      "test_gate_exit_code": 0,
++      "deep_validation": "pass: embedding, memory, memory-semantics, release, runtime-deps; skip: 15"
+     }
+   ]
+ }
+diff --git a/voicemem-agent/releases/RELEASE_INDEX.json b/voicemem-agent/releases/RELEASE_INDEX.json
+index c7ffba1..833d420 100755
+--- a/voicemem-agent/releases/RELEASE_INDEX.json
++++ b/voicemem-agent/releases/RELEASE_INDEX.json
+@@ -1,6 +1,28 @@
+ {
+   "schema_version": 1,
+   "releases": [
++    {
++      "version": "0.10.2",
++      "built_at_utc": "2026-09-15T22:09:27Z",
++      "zip": "VoiceMemAgent_v0.10.2.zip",
++      "sha256": "F56E5155043B9900B2A45799F4FA1663ED8475584F9DBA1F1BBD80B13C525A54",
++      "size_bytes": 2766235,
++      "notes": "v0.10.2 P0 LLM-PRIORITY + REPRODUCIBILITY KIADAS (operator order: ASR REGRESSION + LLM PRIORITY + REPRODUCIBILITY FIX - a TTFT 40-60 s-re degradalodott, a hatter-memoria munka foglalta az egyetlen llama-server slotot). BIZONYITEK (valodi b10717 szerver, produkcios flag-ekkel, sandbox stand-in modell; scripts/llm_slot_forensic.py, audit/VoiceMEM_llmpriority_v0102): (1) FIFO-sor: a user chat TTFT-je a futt hatter-kerees mögott 299.7 s (a mechanizma pontosan a mertett 40-60 s produkcios jelenseg); (2) DISCONNECT-YIELD: a hatter-keres streaming kliens-oldali megszakitasa utan a user TTFT 3.2 s (-98.9%) - a b10717 SZABADITJA a slotot kliens-disconnectre (a megszakitas transzportja hangolt); (3) LCP-cache: a /metrics szamlaloirol mert TENYLEGES ujra-kiertekelt tokenek:same-prefix 20/2657 (99.2% reuse), disjoint 2647/2650; a user-chat prefix a kozbejovo extraction UTAN IS tuleli (19 token reprocessed) - a cache nem a hibas tag; (4) JSON-mode + streaming osszeallitas ervenyes. IMPLEMENTALVA: (A) voicemem/utils/common/llm_bg_gate.py - kooperativ megszakitas (BG_CANCEL thread-event; check_cancel minden lableces elott; bg_chat_create: streaming kerelesek chunk-kozotti cancel-poll + stream.close() = slot-felszabaditas; a BackgroundCancelledError BaseException - az ingest-lanc 'except Exception' fallback-jai NEM nyelhetik el); (B) app/background_memory.py gate v2: arm() most a futt lancot IS megszakitja, a megszakadt pair visszasorolodik (elo probalkozasok szamlalva, sosem dobodik el), release() utani nyitas csak a VALODI idle-ablakban (beszed-keret + LLM-delta + turn aktivitas-jel + VOICEMEM_BG_IDLE_S csendes ablak a vak 2 s grace helyett); (C) a két nagy láb (extrakcio + conflict resolution) a bg_chat_create transzporton fut + a resolve lab 60 s timeout-ot kapott (korabban NEM volt - az SDK defaultja 600 s!); (D) asr_language vegigvezetese a PRODUKCIOS parakeet motorba (PART 3: auto/hu diagnostikai mod - a ParakeetForTDT API-ban nincs nyelv-parameter, a hint rögzitesre kerul + az atirat irasrendje ellenorizve); (E) openai==3.14.0 EXAKT PIN (vendor pyproject + install_m1.ps1 16. lepes OR-assert + requirements.lock.json machine-readable manifest wheel-sha256-okkal) - a teljes memoria-lanc fuggosege korabban teljesen unpinned volt; (F) release-meta invariáns teszt (VERSION=CHANGELOG-top=RELEASE_INDEX-legujabb=PAGE_VERSION, nincs ujabb bejegyzes a VERSIONnel, gate_record nem ujabb); (G) VAD-diagnosztika hatar-eset teszt (pontosan kuszob: beszed-indulas, sose 'never reached' - az operator PART 13 harom esete: alatta/rajta/felette). Tesztek: +32 uj (gate v2: cancel/requeue/stale-rejection/idle 7 + llm_bg_gate 9 + nyelv-mod 10 + VAD hatar-eset 1 + release-invariant 1 + runtime-deps openai-dokumentacio 1 + ujabb sorrend-ellenorzesek), teljes regresszio 0. HATAROK (oszinten): a valodi 35B TTFT-elony es a CUDA-lab merese a celgepen  tortenik (scripts/llm_slot_forensic.py - ugyanaz a minta, mint a v0.10.1 ASR-forensic); a sandbox szamok a MECHANIZMUST bizonyitjak, nem a produkcios kezeldet.",
++      "git_commit": "64d0374b4bfee333dd6908796eda1a1f655d8a1f",
++      "test_gate": "run_release_gate.py (v0.8.1 gate-order fix)",
++      "test_gate_exit_code": 0,
++      "gate_record": {
++        "ran_at_utc": "2026-09-15T22:03:47Z",
++        "verdict": "GREEN",
++        "tree_fingerprint": "768cc7b5292de2b4c7a601092232b21d6534ec2e6b43d686426b86f90416c1ad",
++        "tests": 1386,
++        "env_gap_failures": 6,
++        "regressions": 0
++      },
++      "validation_deep_pass": "embedding, memory, memory-semantics, release, runtime-deps",
++      "validation_deep_skipped": 15,
++      "validation_strict": false
++    },
+     {
+       "version": "0.10.1",
+       "built_at_utc": "2026-09-15T19:41:10Z",
+diff --git a/voicemem-agent/requirements.lock b/voicemem-agent/requirements.lock
+index fab73ac..1f07a1f 100755
+--- a/voicemem-agent/requirements.lock
++++ b/voicemem-agent/requirements.lock
+@@ -43,6 +43,19 @@ websockets==16.0        # uvicorn WS support - sandbox-igazolt
+ #                              # 16. lepesi OR (pip install
+ #                              # "transformers==5.17.0" + verzio-assert) a
+ #                              # funasr/speechbrain UTAN viszaallitja.
++# openai==3.14.0                # v0.10.2 (PART 11): EXACT PIN - a teljes
++#                              # hatter-memoria lanc (extrakcio/conflict/
++#                              # scoring) + az uj kooperativ megszakitasi
++#                              # transzport (llm_bg_gate streaming) ezen az
++#                              # SDK-n fut. A lebego pin telepitesi-idopont
++#                              # szerint MAS verziot oldhatott fel (ugyanaz a
++#                              # nem-reprodukalhatosagi osztaly, amit a
++#                              # v0.10.1 transformers-pin zarott). 3.14.0 = a
++#                              # sandbox gate-verify-altallomany. Wheel
++#                              # sha256: 232a85a1c0ff6820534630fbfdb99313990
++#                              # ed80e66f39892a3abcff4130e2b16 (lock.json-ban
++#                              # is). Telepites: a vendor (12. lepes) utani
++#                              # 16. lepesben OR-assert tortenik.
+ # onnxruntime==1.23.0          # Silero VAD ONNX (CPU build) - v0.3.4: a
+ #                              # telepito a 13. lepesben KULON telepiti (a
+ #                              # lock aktival sorai nem viszik a venv-be, es
+diff --git a/voicemem-agent/requirements.txt b/voicemem-agent/requirements.txt
+index 4228337..97f9ae3 100755
+--- a/voicemem-agent/requirements.txt
++++ b/voicemem-agent/requirements.txt
+@@ -27,6 +27,17 @@ websockets>=13        # uvicorn WS support (bongeszo <-> backend /ws)
+ 
+ # --- TARGET-ONLY (nehez, guardolt import a kodban) --------------------------
+ # Ezeket a sandboxba NEM kell telepiteni (nincs GPU / nincs hang).
++openai==3.14.0          # v0.10.2 (PART 11): a hatter-memoria lanc LLM kliense.
++                       # A teljes vendor-lanc (extrakcio -> conflict resolution
++                       # -> scoring) + a user-priority megszakitas transzport
++                       # (voicemem/utils/common/llm_bg_gate.py: streaming +
++                       # disconnect) EZZEL az SDK-val fut. Korabban teljesen
++                       # unpinned volt (a vendor pyproject sima "openai"-jat
++                       # telepitesi-idopont szerint oldotta fel a pip - ugyanaz
++                       # a nem-reprodukalhatosagi osztaly, amit a v0.10.1
++                       # transformers-pin zarott). A telepites a vendor (12.
++                       # lepes) utan a 16. lepes OR-assert-jevel tortenik;
++                       # wheel sha256 a requirements.lock.json-ben.
+ transformers==5.17.0  # NVIDIA Parakeet TDT 0.6B v3 (v0.6.0 production ASR)
+                      # betoltese a ParakeetForTDT + AutoProcessor utvonalan
+                      # (app/asr_parakeet.py, models/asr/parakeet-tdt-0.6b-v3,
+diff --git a/voicemem-agent/scripts/build_release_sandbox.py b/voicemem-agent/scripts/build_release_sandbox.py
+index 715992c..0ca5ba9 100755
+--- a/voicemem-agent/scripts/build_release_sandbox.py
++++ b/voicemem-agent/scripts/build_release_sandbox.py
+@@ -45,8 +45,8 @@ from pathlib import Path
+ REPO = Path(__file__).resolve().parent.parent
+ RELEASES = REPO / "releases"
+ 
+-NEW_VERSION = "0.10.1"
+-PREV_VERSION = "0.10.0"
++NEW_VERSION = "0.10.2"
++PREV_VERSION = "0.10.1"
+ ZIP_NAME = f"VoiceMemAgent_v{NEW_VERSION}.zip"
+ 
+ PLACEHOLDER_DIRS = [
+@@ -68,50 +68,60 @@ PLACEHOLDER_DIRS = [
+ ROOT_FILES = [
+     "README.md", "CHANGELOG.md", "LICENSES.md", "CONTRACT.md", "VERSION",
+     "INSTALL_MANIFEST.example.json", "requirements.txt", "requirements.lock",
+-    "pyproject.toml", ".gitignore", "START.bat", "MODELS.lock.json",
++    "requirements.lock.json", "pyproject.toml", ".gitignore", "START.bat",
++    "MODELS.lock.json",
+     # v0.5.0: the controlled VoiceMem ownership artifacts ship in the ZIP
+     "VOICEMEM_PIN.json", "UPSTREAM_POLICY.md",
+ ]
+ 
+ NOTES = (
+-    "v0.10.1 P0 ASR FORENZIKAI KIADAS (operator order: URGENT P0 - magyar "
+-    "beszed orosz / osszefuggestelen angol atiratkent jelenik meg a "
+-    "celgepen). A FORENZIKA ALLASA (sandbox, pinned modell + produkcios "
+-    "utvonal, 2026-09-15): (1) a v0.9.2->v0.10.0 TERMEK-DELTA NEM erinti "
+-    "a hangutat (teljes fa-diff: csak memoria-szemantika fajlok valtoztak; "
+-    "ASR/VAD/audio/web kod byte-azonos); (2) transformers 5.9.0-5.17.0 "
+-    "CPU-n a TELJES HU korpuszon (6 fajl: piper-HU + valodi Windows "
+-    "capture) HELYES, byte-azonos kiadasokkal - tiszta "
+-    "konyvtar-verzio-regresszio NINCS (5.6.x-5.8.x: a ParakeetForTDT class "
+-    "hianyzik, hangos import-hiba); (3) a produkcios Silero VAD "
+-    "szegmentacio helyes (pmax 1.0, sane hatarok); (4) a kiadott gate SOSEM "
+-    "futtatott valodi Parakeet-inferenciat (csak contract-tesztek) - a "
+-    "verifikacios RES, most zarva. JAVITVA: (A) web_server VAD idle-riport: "
+-    "a 'peak 0.97 < 0.25' HALO log-dontes (a riportablokk a vsm.update "
+-    "ELOTT futott - a speech-start trigger-keret beszamitott a csucsba, az "
+-    "uzenet szovege feltetel nelkul allitotta a 'peak < kuszob'-ot; most "
+-    "az update UTAN fut + explicit feltetel - a VAD dontesi ut VALTOZATLAN, "
+-    "pure logging); (B) bizonyitk-megorzes: cirilles atirat eseten a "
+-    "bemeno hullamforma MINDIG dumpolodik (logs/asr_wrong_language_<ts>.wav "
+-    "- edig csak az URES atiratok mentodtek), opt-in asr_dump_utterances "
+-    "konfig a teljes catch-all dumpra; (C) transformers EXAKT PIN 5.17.0 "
+-    "(install_m1.ps1 16. lepes + egyenloseg-assert; a '>= 5.6' padlo TEVES "
+-    "volt, a class az 5.9-ben landolt; a lebego pin a celgepen "
+-    "telepitesi-idopont szerint MAS verziot oldhatott fel - az ASR stack "
+-    "egyetlen nem-reprodukalhato komponense, most pin-elve); (D) UJ valodi "
+-    "inferencios regresszio-tesztek (test_real_asr_hungarian.py: valodi "
+-    "korpusz a produkcios uton, CER-budget 0.25 a mert 0.000-0.099 felett, "
+-    "cirill-tiltas; env-neutral skip) + unit tesztek a log-fixre "
+-    "(test_vad_idle_report.py); (E) scripts/asr_regression_forensic.py: a "
+-    "celgepi matrix-cella (tenyleges env-dump + modell-SHA-ellenorzes a "
+-    "pinned revizio ellen + korpusz-futtatas a konfiguralt es a cpu "
+-    "eszkozon) - a CUDA lanc a sandboxbol hianyzo dimenzio, ez a szkript "
+-    "zarja le. HATAROK (oszinten): a celgepi gyoker (CUDA-specifikus "
+-    "konyvtar-viselkedes vagy elo mikrofon-lanc) tavoli diagnozissal NEM "
+-    "bizonyithato - a v0.10.1 a BIZONYITHATO hibakat javitja es a teljes "
+-    "diagnosztikai eszkoztart szallitja; a celgepi 10 perces "
+-    "forensic-futtatas + a wrong-language WAV dumpok zarjak a maradekot."
++    "v0.10.2 P0 LLM-PRIORITY + REPRODUCIBILITY KIADAS (operator order: ASR "
++    "REGRESSION + LLM PRIORITY + REPRODUCIBILITY FIX - a TTFT 40-60 s-re "
++    "degradalodott, a hatter-memoria munka foglalta az egyetlen llama-server "
++    "slotot). BIZONYITEK (valodi b10717 szerver, produkcios flag-ekkel, "
++    "sandbox stand-in modell; scripts/llm_slot_forensic.py, audit/"
++    "VoiceMEM_llmpriority_v0102): (1) FIFO-sor: a user chat TTFT-je a futt "
++    "hatter-kerees mögott 299.7 s (a mechanizma pontosan a mertett 40-60 s "
++    "produkcios jelenseg); (2) DISCONNECT-YIELD: a hatter-keres streaming "
++    "kliens-oldali megszakitasa utan a user TTFT 3.2 s (-98.9%) - a b10717 "
++    "SZABADITJA a slotot kliens-disconnectre (a megszakitas transzportja "
++    "hangolt); (3) LCP-cache: a /metrics szamlaloirol mert TENYLEGES "
++    "ujra-kiertekelt tokenek:same-prefix 20/2657 (99.2% reuse), disjoint "
++    "2647/2650; a user-chat prefix a kozbejovo extraction UTAN IS "
++    "tuleli (19 token reprocessed) - a cache nem a hibas tag; (4) JSON-mode "
++    "+ streaming osszeallitas ervenyes. IMPLEMENTALVA: (A) voicemem/utils/"
++    "common/llm_bg_gate.py - kooperativ megszakitas (BG_CANCEL thread-event; "
++    "check_cancel minden lableces elott; bg_chat_create: streaming kerelesek "
++    "chunk-kozotti cancel-poll + stream.close() = slot-felszabaditas; a "
++    "BackgroundCancelledError BaseException - az ingest-lanc 'except "
++    "Exception' fallback-jai NEM nyelhetik el); (B) app/background_memory.py "
++    "gate v2: arm() most a futt lancot IS megszakitja, a megszakadt pair "
++    "visszasorolodik (elo probalkozasok szamlalva, sosem dobodik el), "
++    "release() utani nyitas csak a VALODI idle-ablakban (beszed-keret + LLM-"
++    "delta + turn aktivitas-jel + VOICEMEM_BG_IDLE_S csendes ablak a "
++    "vak 2 s grace helyett); (C) a két nagy láb (extrakcio + conflict "
++    "resolution) a bg_chat_create transzporton fut + a resolve lab "
++    "60 s timeout-ot kapott (korabban NEM volt - az SDK defaultja 600 s!); "
++    "(D) asr_language vegigvezetese a PRODUKCIOS parakeet motorba (PART 3: "
++    "auto/hu diagnostikai mod - a ParakeetForTDT API-ban nincs nyelv-"
++    "parameter, a hint rögzitesre kerul + az atirat irasrendje ellenorizve); "
++    "(E) openai==3.14.0 EXAKT PIN (vendor pyproject + install_m1.ps1 16. "
++    "lepes OR-assert + requirements.lock.json machine-readable manifest "
++    "wheel-sha256-okkal) - a teljes memoria-lanc fuggosege korabban teljesen "
++    "unpinned volt; (F) release-meta invariáns teszt (VERSION=CHANGELOG-top="
++    "RELEASE_INDEX-legujabb=PAGE_VERSION, nincs ujabb bejegyzes a VERSIONnel, "
++    "gate_record nem ujabb); (G) VAD-diagnosztika hatar-eset teszt (pontosan "
++    "kuszob: beszed-indulas, sose 'never reached' - az operator PART 13 "
++    "harom esete: alatta/rajta/felette). Tesztek: +32 uj (gate v2: cancel/"
++    "requeue/stale-rejection/idle 7 + llm_bg_gate 9 + nyelv-mod 10 + VAD "
++    "hatar-eset 1 + release-invariant 1 + runtime-deps openai-dokumentacio "
++    "1 + ujabb sorrend-ellenorzesek), teljes regresszio 0. HATAROK "
++    "(oszinten): a valodi 35B TTFT-elony es a CUDA-lab merese a celgepen "
++    " tortenik (scripts/llm_slot_forensic.py - ugyanaz a minta, mint a "
++    "v0.10.1 ASR-forensic); a sandbox szamok a MECHANIZMUST bizonyitjak, "
++    "nem a produkcios kezeldet."
+ )
++
+ #: v0.6.0 markers: the modular ASR engine contract - asr_core (AudioBuffer,
+ #: AsrResult, AsrError, registry, select_engine), the two NVIDIA adapters,
+ #: the official-context SileroVad feed, the engine-contract web-server leg,
+@@ -785,6 +795,58 @@ V0101_MARKERS = {
+     ],
+ }
+ 
++#: v0.10.2 markers: the user-priority release - the vendor cooperative
++#: cancellation gate, the BackgroundMemoryGate v2 (cancel-on-arm + requeue +
++#: idle policy), the resolve-leg timeout, the ASR language diagnostic mode,
++#: the openai exact pin, and the regression battery covering all of it.
++V0102_MARKERS = {
++    "vendor/voicemem/voicemem/utils/common/llm_bg_gate.py": [
++        "BG_CANCEL = threading.Event()",
++        "class BackgroundCancelledError(BaseException)",
++        "def bg_chat_create",
++    ],
++    "app/background_memory.py": [
++        "VOICEMEM_BG_IDLE_S",
++        "def note_activity",
++        "BackgroundCancelledError as exc:",
++    ],
++    "app/web_server.py": [
++        'self._memory_gate.note_activity("vad-frame")',
++        'self._memory_gate.note_activity("llm-delta")',
++    ],
++    "vendor/voicemem/voicemem/leftbrain/extract_facts_openai.py": [
++        'leg="memory-extraction"',
++        'leg="conflict-resolution"',
++        '"timeout": 60.0, "max_retries": 2',
++    ],
++    "app/asr_parakeet.py": [
++        "def _resolve_language_mode",
++        '"language_mode": self._language_mode',
++    ],
++    "requirements.txt": [
++        "openai==3.14.0",
++    ],
++    "scripts/install_m1.ps1": [
++        '$OpenAiPin = "3.14.0"',
++    ],
++    "requirements.lock.json": [
++        "voicemem-critical-path-lock/1",
++    ],
++    "scripts/llm_slot_forensic.py": [
++        "llm-slot-forensic/1",
++    ],
++    "tests/unit/test_llm_bg_gate.py": [
++        "BgChatCreateTests",
++    ],
++    "tests/unit/test_background_memory_gate.py": [
++        "UserPriorityCancellationTests",
++        "IdlePolicyTests",
++    ],
++    "tests/unit/test_asr_language_mode.py": [
++        "EngineLanguageModeTests",
++    ],
++}
++
+ #: v0.9.1 markers: the web VAD onset fix - the SPEECH_START trigger frame
+ #: is CAPTURED (no early return in the speech_start branch), CLI parity is
+ #: pinned by a dedicated regression test, and the gate baseline records the
+@@ -2090,6 +2152,20 @@ def build() -> int:
+                     raise AssertionError(
+                         f"self-check: v0.10.1 file missing from the ZIP: {must}"
+                     )
++            # v0.10.2: the LLM-priority deliverables must ship in the ZIP.
++            for must in (
++                "vendor/voicemem/voicemem/utils/common/llm_bg_gate.py",
++                "app/background_memory.py",
++                "scripts/llm_slot_forensic.py",
++                "requirements.lock.json",
++                "tests/unit/test_llm_bg_gate.py",
++                "tests/unit/test_background_memory_gate.py",
++                "tests/unit/test_asr_language_mode.py",
++            ):
++                if root_prefix + must not in names:
++                    raise AssertionError(
++                        f"self-check: v0.10.2 file missing from the ZIP: {must}"
++                    )
+             # cumulative markers (v0.3.5 web payload, v0.3.6 CRLF START.bat)
+             for rel, markers in CUMULATIVE_MARKERS.items():
+                 content = zf.read(root_prefix + rel)
+@@ -2295,7 +2371,7 @@ def build() -> int:
+                             f"self-check: {rel} lacks v0.4.11 marker {m!r}"
+                         )
+             # v0.4.12: stale-page detection + raw capture + send-as-turn
+-            for rel, markers in {**V0412_MARKERS, **V0413_MARKERS, **V0414_MARKERS, **V0415_MARKERS, **V0416_MARKERS, **V0417_MARKERS, **V0418_MARKERS, **V0419_MARKERS, **V0420_MARKERS, **V0421_MARKERS, **V050_MARKERS, **V052_MARKERS, **V060_MARKERS, **V061_MARKERS, **V062_MARKERS, **V063_MARKERS, **V064_MARKERS, **V070_MARKERS, **V071_MARKERS, **V072_MARKERS, **V080_MARKERS, **V081_MARKERS, **V090_MARKERS, **V091_MARKERS, **V092_MARKERS, **V0100_MARKERS, **V0101_MARKERS}.items():
++            for rel, markers in {**V0412_MARKERS, **V0413_MARKERS, **V0414_MARKERS, **V0415_MARKERS, **V0416_MARKERS, **V0417_MARKERS, **V0418_MARKERS, **V0419_MARKERS, **V0420_MARKERS, **V0421_MARKERS, **V050_MARKERS, **V052_MARKERS, **V060_MARKERS, **V061_MARKERS, **V062_MARKERS, **V063_MARKERS, **V064_MARKERS, **V070_MARKERS, **V071_MARKERS, **V072_MARKERS, **V080_MARKERS, **V081_MARKERS, **V090_MARKERS, **V091_MARKERS, **V092_MARKERS, **V0100_MARKERS, **V0101_MARKERS, **V0102_MARKERS}.items():
+                 src_text = zf.read(root_prefix + rel).decode("utf-8", errors="replace")
+                 for m in markers:
+                     if m not in src_text:
+diff --git a/voicemem-agent/scripts/install_m1.ps1 b/voicemem-agent/scripts/install_m1.ps1
+index bebc307..61e2834 100755
+--- a/voicemem-agent/scripts/install_m1.ps1
++++ b/voicemem-agent/scripts/install_m1.ps1
+@@ -928,6 +928,32 @@ if ($LASTEXITCODE -ne 0) {
+ }
+ Write-Host ("    transformers {0} rendben (== 5.17.0 pin: a ParakeetForTDT class betoltodik, a telepites reprodukalhato)." -f $TfVersion)
+ 
++# --- v0.10.2 (PART 11): openai EXAKT PIN (a hatter-memoria lanc es a kooperativ megszakitas transzport) ---
++# A teljes hatter-memoria lanc (extrakcio -> conflict resolution -> scoring)
++# es a v0.10.2 user-priority megszakitas transzport (llm_bg_gate: streaming +
++# disconnect) EZZEL az SDK-val fut. A vendor pyproject eddig sima "openai"-t
++# irt - telepitesi-idopont szerint mas verziot oldott fel (ugyanaz a nem-
++# reprodukalhatosagi osztaly, amit a v0.10.1 transformers-pin zarott le).
++# A 3.14.0 = a v0.10.2 sandbox gate altal tesztelt valtozat (vendor-bateria +
++# streaming-transzport + JSON-mode osszeallitas). Wheel sha256:
++# 232a85a1c0ff6820534630fbfdb99313990ed80e66f39892a3abcff4130e2b16
++# (requirements.lock.json).
++$OpenAiPin = "3.14.0"
++& $VenvPython -m pip install "openai==$OpenAiPin"
++if ($LASTEXITCODE -ne 0) {
++    Fail-Install "Az openai == $OpenAiPin telepitese nem sikerult (a hatter-memoria lanc + a megszakitas transzport EZZEL fut - nelkule a memoria-lanc nem reprodukalhato)." "Ujrafuttatas (idempotens), vagy inditsd ujra a START.bat-ot (repair)."
++}
++$OpenAiVersion = (& $VenvPython -c "import openai; print(openai.__version__)" 2>$null)
++if ($LASTEXITCODE -ne 0) {
++    Fail-Install "Az openai import nem sikerult az or-telepites utan." "Nezd a pip hibauzenetet fent; ujrafuttatas (idempotens)."
++}
++# Verzio-ASSERT (tuple-osszehasonlitas, kesz allapotban sosem bukik el):
++& $VenvPython -c "import sys, openai; v = tuple(int(x) for x in openai.__version__.split('+')[0].split('.')[:3]); sys.exit(0 if v == (3, 14, 0) else 1)"
++if ($LASTEXITCODE -ne 0) {
++    Fail-Install ("Az openai verzio a or utan sem == 3.14.0 ({0}) - a memoria-lanc fuggosege most EXAKT pinnel telepul." -f $OpenAiVersion) 'Valamelyik csomag (voicemem pin / mem0ai fuggoseg) visszabeszelte. Kezzel: .venv\Scripts\python.exe -m pip install 'openai==3.14.0' es ujrafuttatas.'
++}
++Write-Host ("    openai {0} rendben (== 3.14.0 pin: a hatter-memoria lanc + a user-priority megszakitas transzportja reprodukalhato)." -f $OpenAiVersion)
++
+ # ===========================================================================
+ # 17) Modellek letoltese (scripts\download_models.ps1, idempotens)
+ # ===========================================================================
+diff --git a/voicemem-agent/scripts/release_tree.py b/voicemem-agent/scripts/release_tree.py
+index 93bbf5c..fb5a50e 100755
+--- a/voicemem-agent/scripts/release_tree.py
++++ b/voicemem-agent/scripts/release_tree.py
+@@ -37,7 +37,8 @@ STAGED_DIRS = ("app", "config", "scripts", "tests", "web", "vendor")
+ ROOT_FILES = (
+     "README.md", "CHANGELOG.md", "LICENSES.md", "CONTRACT.md", "VERSION",
+     "INSTALL_MANIFEST.example.json", "requirements.txt", "requirements.lock",
+-    "pyproject.toml", ".gitignore", "START.bat", "MODELS.lock.json",
++    "requirements.lock.json", "pyproject.toml", ".gitignore", "START.bat",
++    "MODELS.lock.json",
+     "VOICEMEM_PIN.json", "UPSTREAM_POLICY.md",
+ )
+ 
+diff --git a/voicemem-agent/tests/integration/test_memory_safety.py b/voicemem-agent/tests/integration/test_memory_safety.py
+index 3ccaec0..f2ad563 100755
+--- a/voicemem-agent/tests/integration/test_memory_safety.py
++++ b/voicemem-agent/tests/integration/test_memory_safety.py
+@@ -204,6 +204,42 @@ class _MockHandler(BaseHTTPRequestHandler):
+     def log_message(self, fmt, *args):  # noqa: A003
+         pass
+ 
++    def _sse(self, body: dict, payload: dict) -> None:
++        """v0.10.2: SSE response for streaming requests (same payload)."""
++        content = json.dumps(payload, ensure_ascii=False)
++        deltas = [content[i:i + 64] for i in range(0, len(content), 64)] or [""]
++        chunks = []
++        for piece in deltas:
++            chunks.append({
++                "id": "chatcmpl-mock",
++                "object": "chat.completion.chunk",
++                "created": int(time.time()),
++                "model": body.get("model", "mock-llm"),
++                "choices": [{"index": 0,
++                             "delta": {"role": "assistant", "content": piece},
++                             "finish_reason": None}],
++            })
++        chunks.append({
++            "id": "chatcmpl-mock",
++            "object": "chat.completion.chunk",
++            "created": int(time.time()),
++            "model": body.get("model", "mock-llm"),
++            "choices": [{"index": 0, "delta": {},
++                         "finish_reason": "stop"}],
++            "usage": {"prompt_tokens": 1, "completion_tokens": 1,
++                      "total_tokens": 2},
++        })
++        out = b""
++        for chunk in chunks:
++            out += b"data: " + json.dumps(chunk, ensure_ascii=False).encode("utf-8") + b"\n\n"
++        out += b"data: [DONE]\n\n"
++        self.send_response(200)
++        self.send_header("Content-Type", "text/event-stream")
++        self.send_header("Cache-Control", "no-cache")
++        self.send_header("Content-Length", str(len(out)))
++        self.end_headers()
++        self.wfile.write(out)
++
+     def do_POST(self):  # noqa: N802
+         if self.path.split("?")[0] != "/v1/chat/completions":
+             self._json(404, {"error": {"message": f"no route {self.path}"}})
+@@ -211,6 +247,12 @@ class _MockHandler(BaseHTTPRequestHandler):
+         length = int(self.headers.get("Content-Length", "0"))
+         body = json.loads(self.rfile.read(length) or b"{}")
+         payload = _route(body.get("messages") or [])
++        if body.get("stream"):
++            # v0.10.2: the vendor legs' cooperative-cancellation transport
++            # (llm_bg_gate.bg_chat_create) streams — serve SSE exactly the
++            # way llama-server does (deltas + finish_reason chunk + [DONE]).
++            self._sse(body, payload)
++            return
+         self._json(200, {
+             "id": f"chatcmpl-t15-{int(time.time() * 1000)}",
+             "object": "chat.completion",
+diff --git a/voicemem-agent/tests/integration/test_temporal_memory.py b/voicemem-agent/tests/integration/test_temporal_memory.py
+index 402787a..f67662e 100755
+--- a/voicemem-agent/tests/integration/test_temporal_memory.py
++++ b/voicemem-agent/tests/integration/test_temporal_memory.py
+@@ -191,6 +191,42 @@ class _MockHandler(BaseHTTPRequestHandler):
+     def log_message(self, fmt, *args):  # noqa: A003
+         pass
+ 
++    def _sse(self, body: dict, payload: dict) -> None:
++        """v0.10.2: SSE response for streaming requests (same payload)."""
++        content = json.dumps(payload, ensure_ascii=False)
++        deltas = [content[i:i + 64] for i in range(0, len(content), 64)] or [""]
++        chunks = []
++        for piece in deltas:
++            chunks.append({
++                "id": "chatcmpl-mock",
++                "object": "chat.completion.chunk",
++                "created": int(time.time()),
++                "model": body.get("model", "mock-llm"),
++                "choices": [{"index": 0,
++                             "delta": {"role": "assistant", "content": piece},
++                             "finish_reason": None}],
++            })
++        chunks.append({
++            "id": "chatcmpl-mock",
++            "object": "chat.completion.chunk",
++            "created": int(time.time()),
++            "model": body.get("model", "mock-llm"),
++            "choices": [{"index": 0, "delta": {},
++                         "finish_reason": "stop"}],
++            "usage": {"prompt_tokens": 1, "completion_tokens": 1,
++                      "total_tokens": 2},
++        })
++        out = b""
++        for chunk in chunks:
++            out += b"data: " + json.dumps(chunk, ensure_ascii=False).encode("utf-8") + b"\n\n"
++        out += b"data: [DONE]\n\n"
++        self.send_response(200)
++        self.send_header("Content-Type", "text/event-stream")
++        self.send_header("Cache-Control", "no-cache")
++        self.send_header("Content-Length", str(len(out)))
++        self.end_headers()
++        self.wfile.write(out)
++
+     def do_POST(self):  # noqa: N802
+         if self.path.split("?")[0] != "/v1/chat/completions":
+             self._json(404, {"error": {"message": f"no route {self.path}"}})
+@@ -198,6 +234,12 @@ class _MockHandler(BaseHTTPRequestHandler):
+         length = int(self.headers.get("Content-Length", "0"))
+         body = json.loads(self.rfile.read(length) or b"{}")
+         payload = _route(body.get("messages") or [])
++        if body.get("stream"):
++            # v0.10.2: the vendor legs' cooperative-cancellation transport
++            # (llm_bg_gate.bg_chat_create) streams — serve SSE exactly the
++            # way llama-server does (deltas + finish_reason chunk + [DONE]).
++            self._sse(body, payload)
++            return
+         self._json(200, {
+             "id": f"chatcmpl-v10-{int(time.time() * 1000)}",
+             "object": "chat.completion",
+diff --git a/voicemem-agent/tests/unit/_isolation_extraction_limits.py b/voicemem-agent/tests/unit/_isolation_extraction_limits.py
+index 5f89b95..3a5619f 100755
+--- a/voicemem-agent/tests/unit/_isolation_extraction_limits.py
++++ b/voicemem-agent/tests/unit/_isolation_extraction_limits.py
+@@ -37,6 +37,44 @@ class _Resp:
+         self.choices = [_Choice(content, finish_reason)]
+ 
+ 
++class _Delta:
++    def __init__(self, content):
++        self.content = content
++
++
++class _ChunkChoice:
++    def __init__(self, content, finish_reason):
++        self.delta = _Delta(content)
++        self.finish_reason = finish_reason
++
++
++class _Chunk:
++    """One SSE chunk shape (the openai SDK yields these on stream=True)."""
++
++    def __init__(self, content, finish_reason, usage=None):
++        self.choices = [_ChunkChoice(content, finish_reason)]
++        self.usage = usage
++
++
++class _Stream:
++    """Iterable + closeable stream (v0.10.2: the vendor legs issue streaming
++    requests through llm_bg_gate.bg_chat_create — the cooperative
++    cancellation transport)."""
++
++    def __init__(self, chunks):
++        self._it = iter(chunks)
++        self.closed = False
++
++    def close(self):
++        self.closed = True
++
++    def __iter__(self):
++        return self
++
++    def __next__(self):
++        return next(self._it)
++
++
+ class _Completions:
+     def __init__(self, captured):
+         self._captured = captured
+@@ -45,11 +83,18 @@ class _Completions:
+         self._captured.update(kw)
+         if kw.get("max_tokens") is not None and kw["max_tokens"] <= 4:
+             # emulate hard truncation: JSON cut mid-string
+-            return _Resp('{"memory": [{"id": "0", "text": "User trunca', "length")
+-        return _Resp(json.dumps({
+-            "memory": [{"id": "0", "text": "User bought new running shoes",
+-                        "attributed_to": "user"}],
+-            "emotion": "", "traits": []}), "stop")
++            text, finish = '{"memory": [{"id": "0", "text": "User trunca', "length"
++        else:
++            text, finish = json.dumps({
++                "memory": [{"id": "0", "text": "User bought new running shoes",
++                            "attributed_to": "user"}],
++                "emotion": "", "traits": []}), "stop"
++        # v0.10.2: the legs always stream — serve SSE-shaped chunks the way
++        # llama-server does (deltas + a final finish_reason/usage chunk).
++        pieces = [text[i:i + 64] for i in range(0, len(text), 64)]
++        chunks = [_Chunk(p, None) for p in pieces]
++        chunks.append(_Chunk("", finish, usage={"prompt_tokens": 1}))
++        return _Stream(chunks)
+ 
+ 
+ class _Chat:
+diff --git a/voicemem-agent/tests/unit/test_background_memory_gate.py b/voicemem-agent/tests/unit/test_background_memory_gate.py
+index c99f5d5..04bcc8b 100755
+--- a/voicemem-agent/tests/unit/test_background_memory_gate.py
++++ b/voicemem-agent/tests/unit/test_background_memory_gate.py
+@@ -16,11 +16,21 @@ Covers app/background_memory.py (BackgroundMemoryGate):
+ from __future__ import annotations
+ 
+ import asyncio
++import threading
+ import os
+ import unittest
+ 
+ from app.background_memory import BackgroundMemoryGate
+ 
++try:  # the vendor cooperative-cancel surface (present in prod + sandbox)
++    from voicemem.utils.common import llm_bg_gate
++    from voicemem.utils.common.llm_bg_gate import BackgroundCancelledError
++    HAS_VENDOR_GATE = True
++except ImportError:  # degraded-mode install: the cancel tests degrade to no-ops
++    llm_bg_gate = None
++    BackgroundCancelledError = None
++    HAS_VENDOR_GATE = False
++
+ 
+ class _Recorder:
+     """SYNC ingest stub — the gate runs it via asyncio.to_thread, so it must
+@@ -41,8 +51,17 @@ def _run(coro):
+ 
+ 
+ class GateTests(unittest.TestCase):
++    def setUp(self):
++        if HAS_VENDOR_GATE:
++            llm_bg_gate.BG_CANCEL.clear()
++
++    def tearDown(self):
++        if HAS_VENDOR_GATE:
++            llm_bg_gate.BG_CANCEL.clear()
++
+     def _make(self, **kw):
+         rec = _Recorder()
++        kw.setdefault("idle_s", 0.05)  # v0.10.2 idle policy: fast in tests
+         gate = BackgroundMemoryGate(rec, grace_s=0.05, **kw)
+         return gate, rec
+ 
+@@ -120,7 +139,7 @@ class GateTests(unittest.TestCase):
+                 if u == "u0":
+                     raise RuntimeError("boom")
+             gate = BackgroundMemoryGate(
+-                bad_ingest, grace_s=0.05, on_fail=fails.append
++                bad_ingest, grace_s=0.05, idle_s=0.05, on_fail=fails.append
+             )
+             gate.arm("speech")
+             await gate.submit("u0", "r0")
+@@ -138,7 +157,7 @@ class GateTests(unittest.TestCase):
+             events: list[str] = []
+             gate = BackgroundMemoryGate(
+                 lambda u, r: events.append("ingest"),
+-                grace_s=0.05,
++                grace_s=0.05, idle_s=0.05,
+                 on_begin=lambda: events.append("begin"),
+                 on_end=lambda: events.append("end"),
+             )
+@@ -165,7 +184,7 @@ class GateTests(unittest.TestCase):
+                 task = asyncio.get_running_loop().create_task(coro)
+                 spawned.append(task)
+                 return task
+-            gate = BackgroundMemoryGate(lambda u, r: None, grace_s=0.05, spawn=spawn)
++            gate = BackgroundMemoryGate(lambda u, r: None, grace_s=0.05, idle_s=0.05, spawn=spawn)
+             gate.arm("speech")
+             await gate.submit("u", "r")
+             gate.release()
+@@ -197,6 +216,220 @@ class GateTests(unittest.TestCase):
+             del os.environ["VOICEMEM_BG_GRACE_S"]
+ 
+ 
++
++
++@unittest.skipUnless(HAS_VENDOR_GATE, "vendored llm_bg_gate required")
++class UserPriorityCancellationTests(unittest.TestCase):
++    """v0.10.2 (operator PART 8): arm() cancels in-flight work + requeue."""
++
++    def setUp(self):
++        llm_bg_gate.BG_CANCEL.clear()
++
++    def tearDown(self):
++        llm_bg_gate.BG_CANCEL.clear()
++
++    def _cancelled_once_ingest(self, state, ready):
++        """A vendor-chain stand-in: blocks until released, then check_cancel.
++
++        Models the real legs (extract/resolve via bg_chat_create): while
++        running, a cancel event makes the next boundary raise
++        BackgroundCancelledError. `state["mode"]` switches it to a plain
++        success on the retry.
++        """
++        def ingest(user_text: str, reply: str) -> None:
++            ready.wait(timeout=5.0)
++            if state["mode"] == "cancel":
++                llm_bg_gate.check_cancel("test-leg")
++                raise AssertionError("unreachable when cancelled")
++            state["completed"].append(user_text)
++        return ingest
++
++    def test_arm_cancels_inflight_and_requeues(self):
++        state = {"mode": "cancel", "completed": []}
++        ready = threading.Event()
++
++        async def scene():
++            gate = BackgroundMemoryGate(
++                self._cancelled_once_ingest(state, ready),
++                grace_s=0.05, idle_s=0.05,
++            )
++            await gate.submit("hello", "hi")
++            await asyncio.sleep(0.1)       # the ingest is now blocked in the thread
++            self.assertTrue(gate.is_processing)
++            gate.arm("speech")              # the user needs the slot
++            self.assertTrue(llm_bg_gate.BG_CANCEL.is_set(),
++                            "arm() must set the vendor cancel event")
++            ready.set()                     # the blocked leg proceeds -> sees cancel
++            await asyncio.sleep(0.2)
++            self.assertFalse(gate.is_processing, "the chain must be gone")
++            self.assertEqual(state["completed"], [],
++                             "a cancelled ingest NEVER counts as done")
++            self.assertEqual(gate.stats.cancelled, 1)
++            self.assertEqual(gate.stats.requeued, 1)
++            self.assertEqual(gate.stats.finished, 0)
++            self.assertEqual(gate.pending, 1, "the turn pair is re-queued")
++            # memory store untainted: no partial write happened (state empty)
++            # now let the user finish + the conversation go idle: the retry runs
++            state["mode"] = "ok"
++            gate.release()
++            await asyncio.sleep(0.25)
++            self.assertEqual(state["completed"], ["hello"],
++                             "the requeued pair must be retried after idle")
++            self.assertEqual(gate.stats.finished, 1)
++        _run(scene())
++
++    def test_requeue_coalesces_identical_resubmit(self):
++        """A pair submitted again while its cancelled run is being requeued
++        must not duplicate in the queue (the v0.9.2 never-double contract)."""
++        state = {"mode": "cancel", "completed": []}
++        ready = threading.Event()
++
++        async def scene():
++            gate = BackgroundMemoryGate(
++                self._cancelled_once_ingest(state, ready),
++                grace_s=0.05, idle_s=0.05,
++            )
++            await gate.submit("dup", "reply")
++            await asyncio.sleep(0.1)
++            gate.arm("speech")
++            ready.set()
++            await asyncio.sleep(0.15)        # cancelled + requeued
++            await gate.submit("dup", "reply")  # exact duplicate arrives again
++            self.assertEqual(gate.pending, 1,
++                             "identical pair must coalesce, not duplicate")
++            self.assertEqual(gate.stats.coalesced, 1)
++        _run(scene())
++
++    def test_stale_result_never_reaches_store(self):
++        """The mid-request abort discards partial text INSIDE the leg: the
++        store only ever sees a completed leg's result (bg_chat_create
++        raises before returning anything). Modelled with the real vendor
++        helper over a fake streaming client whose SECOND chunk arrival
++        sets the cancel event (the user armed mid-generation)."""
++        from types import SimpleNamespace
++
++        from voicemem.utils.common.llm_bg_gate import bg_chat_create
++
++        class _Chunk:
++            def __init__(self, content=None, finish=None):
++                self.choices = [SimpleNamespace(
++                    delta=SimpleNamespace(content=content),
++                    finish_reason=finish)] if (content or finish) else []
++                self.usage = None
++
++        class _Stream:
++            """Iterates chunks; entering the SECOND element arms the cancel."""
++            def __init__(self, chunks):
++                self._it = iter(chunks)
++                self._seen = 0
++                self.closed = False
++            def close(self):
++                self.closed = True
++            def __iter__(self):
++                return self
++            def __next__(self):
++                item = next(self._it)
++                self._seen += 1
++                if self._seen >= 2:
++                    llm_bg_gate.BG_CANCEL.set()
++                return item
++
++        stream = _Stream([_Chunk("partial-"), _Chunk("answer")])
++        client = SimpleNamespace(chat=SimpleNamespace(completions=SimpleNamespace(
++            create=lambda **kw: stream)))
++        # the user arms the slot mid-generation: the SECOND chunk arrival
++        # sets the cancel event, so the helper must abort BEFORE assembling
++        # the full answer — nothing is returned, the stream is closed (the
++        # server slot is freed), and the store call site never runs.
++        with self.assertRaises(BackgroundCancelledError):
++            bg_chat_create(client, leg="stale-test",
++                           messages=[{"role": "user", "content": "x"}],
++                           model="m")
++        self.assertTrue(stream.closed, "the stream must be closed (slot freed)")
++
++    def test_arm_idempotent_cancel_and_activity_clock(self):
++        async def scene():
++            gate = BackgroundMemoryGate(lambda u, r: None,
++                                        grace_s=0.05, idle_s=0.05)
++            gate.arm("speech")
++            t_after_arm = gate._last_activity
++            self.assertGreater(t_after_arm, 0.0)
++            gate.arm("speech")   # second arm: no crash, clock refreshes
++            self.assertGreaterEqual(gate._last_activity, t_after_arm)
++        _run(scene())
++
++
++@unittest.skipUnless(HAS_VENDOR_GATE, "vendored llm_bg_gate required")
++class IdlePolicyTests(unittest.TestCase):
++    """v0.10.2 (operator PART 9): background starts only in a QUIET window."""
++
++    def setUp(self):
++        llm_bg_gate.BG_CANCEL.clear()
++
++    def tearDown(self):
++        llm_bg_gate.BG_CANCEL.clear()
++
++    def test_activity_notes_defer_start(self):
++        rec = _Recorder()
++
++        async def scene():
++            gate = BackgroundMemoryGate(rec, grace_s=0.05, idle_s=0.4)
++            gate.arm("turn")
++            await gate.submit("u1", "r1")
++            gate.release()                    # reply done at t0
++            for _ in range(6):                # user keeps making noise
++                await asyncio.sleep(0.1)
++                gate.note_activity("vad-frame")
++            await asyncio.sleep(0.02)
++            self.assertTrue(gate.is_armed,
++                             "continuous activity must keep the gate closed")
++            self.assertEqual(rec.calls, [], "nothing may start")
++            self.assertGreaterEqual(gate.stats.idle_waits, 1)
++            await asyncio.sleep(0.5)          # quiet for > idle_s now
++            self.assertFalse(gate.is_armed,
++                             "quiet window reached: the gate must open")
++            await asyncio.sleep(0.15)
++            self.assertEqual(rec.done(), ["u1"])
++        _run(scene())
++
++    def test_idle_window_measured_from_last_activity(self):
++        rec = _Recorder()
++
++        async def scene():
++            gate = BackgroundMemoryGate(rec, grace_s=0.05, idle_s=0.25)
++            gate.arm("turn")
++            await gate.submit("u1", "r1")
++            gate.release()
++            await asyncio.sleep(0.1)          # INSIDE the grace+idle window
++            gate.note_activity("llm-delta")   # a late delta resets the clock
++            await asyncio.sleep(0.1)
++            self.assertTrue(gate.is_armed, "the idle clock restarted")
++            await asyncio.sleep(0.35)         # now quiet long enough
++            self.assertFalse(gate.is_armed)
++            await asyncio.sleep(0.1)
++            self.assertEqual(rec.done(), ["u1"])
++        _run(scene())
++
++    def test_start_wait_measured_in_stats(self):
++        rec = _Recorder()
++
++        async def scene():
++            gate = BackgroundMemoryGate(rec, grace_s=0.05, idle_s=0.15)
++            gate.arm("turn")
++            await gate.submit("u1", "r1")
++            gate.release()
++            await asyncio.sleep(0.35)
++            self.assertEqual(rec.done(), ["u1"])
++            self.assertGreaterEqual(gate.stats.last_start_wait_s, 0.15,
++                                    "release->start delay must be measured")
++            d = gate.stats.as_dict()
++            self.assertIn("last_start_wait_s", d)
++            self.assertIn("cancelled", d)
++            self.assertIn("requeued", d)
++            self.assertIn("idle_waits", d)
++        _run(scene())
++
++
+ class RealLayerContractTests(unittest.TestCase):
+     """The gate's ingest path must request REAL completion (wait=True)."""
+ 
+diff --git a/voicemem-agent/tests/unit/test_vad_idle_report.py b/voicemem-agent/tests/unit/test_vad_idle_report.py
+index b4de400..297d7bc 100644
+--- a/voicemem-agent/tests/unit/test_vad_idle_report.py
++++ b/voicemem-agent/tests/unit/test_vad_idle_report.py
+@@ -126,6 +126,29 @@ class IdleVadReportTests(_IdleReportBase):
+         self.assertTrue(self._session._in_speech,
+                         "the trigger frame must still START speech")
+ 
++    def test_exactly_threshold_frame_starts_speech_and_never_reports_below(self) -> None:
++        """v0.10.2 (operator PART 13): the EXACTLY-at-threshold window.
++
++        The VadStateMachine is threshold-INCLUSIVE (``p >= threshold``
++        starts speech, app/vad.py); the idle report fires only when the
++        peak is STRICTLY below (``peak < threshold``). A window of frames
++        at exactly 0.25 must therefore START speech on its first frame and
++        never produce a "never reached" line — the two comparison
++        operators stay consistent at the boundary (the diagnostic can
++        never contradict the decision path at the threshold itself).
++        """
++        self._run([0.25] * REPORT_FRAMES)
++        never = [ln for ln in self._info_lines()
++                 if "never reached the speech threshold" in ln]
++        self.assertEqual(
++            never, [],
++            f"at-threshold frames must not be reported below: {never}",
++        )
++        self.assertTrue(
++            self._session._in_speech,
++            "threshold-inclusive VSM: prob == threshold must start speech",
++        )
++
+     def test_genuinely_idle_window_still_reports(self) -> None:
+         """150 quiet frames below the threshold DO report (v0.4.7 pact)."""
+         self._run([0.10] * REPORT_FRAMES)
+diff --git a/voicemem-agent/tests/validation/test_feature_release.py b/voicemem-agent/tests/validation/test_feature_release.py
+index 4785e94..6b6e846 100755
+--- a/voicemem-agent/tests/validation/test_feature_release.py
++++ b/voicemem-agent/tests/validation/test_feature_release.py
+@@ -152,6 +152,98 @@ class ReleaseVersionFeatureTest(FeatureValidationTest):
+             m.group(2), version, "config YAML project.version != VERSION file"
+         )
+ 
++    def test_logic_release_metadata_invariants(self):
++        """v0.10.2 (operator PART 12): cross-artifact consistency.
++
++        A future release must never ship with STALE release metadata: the
++        version must agree across EVERY ledger that records it —
++        VERSION, pyproject, the yaml, the page literal, the TOP CHANGELOG
++        entry, the NEWEST RELEASE_INDEX entry (and no entry NEWER than
++        VERSION), and the gate record the tree was gated with. Each of
++        these going stale independently is exactly the "release metadata
++        inconsistency" class the operator ordered closed.
++        """
++        import json
++        import re
++
++        version = _read_text(REPO_ROOT / "VERSION").strip()
++        self.assertTrue(SEMVER.match(version))
++
++        # 1. pyproject + yaml (already covered by the sync test, restated
++        #    here as part of the invariant CHAIN).
++        pyproject = _read_text(REPO_ROOT / "pyproject.toml")
++        m = re.search(r'^version\s*=\s*"([0-9]+\.[0-9]+\.[0-9]+)"', pyproject, re.M)
++        self.assertIsNotNone(m, "pyproject version line missing")
++        self.assertEqual(m.group(1), version)
++
++        # 2. the TOP CHANGELOG entry is exactly VERSION (a bumped VERSION
++        #    without a changelog entry — or a changelog entry ahead of a
++        #    forgotten VERSION bump — both fail here).
++        changelog = _read_text(REPO_ROOT / "CHANGELOG.md")
++        headings = re.findall(r"^## \[([0-9]+\.[0-9]+\.[0-9]+)\]", changelog, re.M)
++        self.assertTrue(headings, "CHANGELOG has no version headings")
++        self.assertEqual(
++            headings[0], version,
++            f"the TOP CHANGELOG entry is {headings[0]}, VERSION is {version} "
++            "- stale release metadata",
++        )
++
++        # 3. the shipped page literal equals VERSION (a stale PAGE_VERSION
++        #    was a real v0.8.0 defect; the builder verifies it, the gate
++        #    verifies it, and now the release validation verifies it too).
++        html = (REPO_ROOT / "web" / "voicemem.html").read_text(encoding="utf-8")
++        m = re.search(r"const PAGE_VERSION='([^']+)';", html)
++        self.assertIsNotNone(m, "PAGE_VERSION literal missing from the page")
++        self.assertEqual(m.group(1), version)
++
++        # 4. RELEASE_INDEX lifecycle-tolerant invariants (a release is
++        #    gated BEFORE it is built, so the index legitimately lacks the
++        #    current version until the builder writes it):
++        #      a) no entry may be NEWER than VERSION (always checkable);
++        #      b) when the VERSION's zip EXISTS on disk (i.e. it was built
++        #         and staged), the index MUST carry its entry — a published
++        #         artifact missing from the index is exactly the stale-
++        #         metadata defect this test exists to catch.
++        index_path = REPO_ROOT / "releases" / "RELEASE_INDEX.json"
++        if index_path.is_file():
++            index = json.loads(_read_text(index_path))
++            entries = index.get("releases", [])
++            if entries:
++                versions = [tuple(int(p) for p in e["version"].split("."))
++                            for e in entries]
++                vt = tuple(int(p) for p in version.split("."))
++                self.assertLessEqual(
++                    max(versions), vt,
++                    "RELEASE_INDEX contains an entry NEWER than VERSION: "
++                    f"{max(versions)} > {vt} - stale forward metadata",
++                )
++                if (REPO_ROOT / "releases" /
++                        f"VoiceMemAgent_v{version}.zip").is_file():
++                    self.assertIn(
++                        vt, versions,
++                        f"the built zip for {version} is missing from "
++                        "RELEASE_INDEX.json - stale release metadata",
++                    )
++
++        # 5. the gate record (when present) may never be NEWER than VERSION
++        #    (a leftover future record is definitely stale). Equality at
++        #    build time is enforced by build_release_sandbox.py's
++        #    _verify_gate_record (it refuses to build with a record whose
++        #    version != the tree VERSION); during a release cycle the record
++        #    is legitimately from the PREVIOUS version until the new gate
++        #    finishes, so only the stale-forward direction fails here.
++        gate_path = REPO_ROOT / "releases" / "gate_record.json"
++        if gate_path.is_file():
++            record = json.loads(_read_text(gate_path))
++            rec_v = record.get("version") or ""
++            if SEMVER.match(rec_v):
++                self.assertLessEqual(
++                    tuple(int(p) for p in rec_v.split(".")),
++                    tuple(int(p) for p in version.split(".")),
++                    f"gate_record.json version {rec_v} is NEWER than VERSION "
++                    f"{version} - stale forward metadata",
++                )
++
+     def test_logic_changelog_has_entry_for_current_version(self):
+         version = _read_text(REPO_ROOT / "VERSION").strip()
+         changelog = _read_text(REPO_ROOT / "CHANGELOG.md")
+diff --git a/voicemem-agent/tests/validation/test_feature_runtime.py b/voicemem-agent/tests/validation/test_feature_runtime.py
+index 8bda739..f835b03 100755
+--- a/voicemem-agent/tests/validation/test_feature_runtime.py
++++ b/voicemem-agent/tests/validation/test_feature_runtime.py
+@@ -47,7 +47,8 @@ class RuntimeDepsFeatureTest(FeatureValidationTest):
+     def test_logic_target_only_deps_documented(self):
+         requirements = (REPO_ROOT / "requirements.txt").read_text(encoding="utf-8")
+         for dep in ("transformers", "onnxruntime", "sounddevice", "soundfile",
+-                    "sentence-transformers"):
++                    "sentence-transformers",
++                    "openai"):  # v0.10.2: the memory-chain LLM client
+             pattern = re.compile(rf"(?m)^\s*{re.escape(dep)}\b")
+             self.assertRegex(
+                 requirements, pattern,
+diff --git a/voicemem-agent/vendor/voicemem/pyproject.toml b/voicemem-agent/vendor/voicemem/pyproject.toml
+index fb8cc5b..4783681 100755
+--- a/voicemem-agent/vendor/voicemem/pyproject.toml
++++ b/voicemem-agent/vendor/voicemem/pyproject.toml
+@@ -26,7 +26,15 @@ classifiers = [
+ # ModuleNotFoundError: funasr —— 名字叫 slm，没人想得到 ASR 在里面。
+ dependencies = [
+     "numpy",
+-    "openai",
++    # v0.10.2 (PART 11): EXACT PIN — the whole background memory chain
++    # (extraction / conflict resolution / scoring) runs on this SDK, and
++    # the new cooperative-cancellation transport (voicemem.utils.common.
++    # llm_bg_gate) uses its streaming interface. An unpinned "openai"
++    # resolved to whatever was newest at install time — the same
++    # non-reproducibility class the v0.10.1 transformers pin closed for
++    # ASR. 3.14.0 = the version the v0.10.2 sandbox gate verified
++    # (vendor battery + streaming transport + JSON-mode assembly).
++    "openai==3.14.0",
+     "mem0ai",
+     # ── 音频链路 ──
+     "torch",
+diff --git a/voicemem-agent/vendor/voicemem/voicemem/leftbrain/extract_facts_openai.py b/voicemem-agent/vendor/voicemem/voicemem/leftbrain/extract_facts_openai.py
+index 934004b..5375020 100755
+--- a/voicemem-agent/vendor/voicemem/voicemem/leftbrain/extract_facts_openai.py
++++ b/voicemem-agent/vendor/voicemem/voicemem/leftbrain/extract_facts_openai.py
+@@ -22,6 +22,11 @@ from voicemem.leftbrain.mem0_additive_prompt_build import (
+ )
+ 
+ from voicemem.utils.common.cost_log import log_usage as _log_usage
++from voicemem.utils.common.llm_bg_gate import (
++    BackgroundCancelledError as _BgCancelled,
++    bg_chat_create,
++    check_cancel as _bg_check_cancel,
++)
+ 
+ 
+ def remove_code_blocks(content: str) -> str:
+@@ -389,7 +394,9 @@ class OpenAIMem0V3AdditiveExtractor:
+         else:
+             _MERGED_UTTERANCE.pop("text", None)
+ 
+-        resp = client.chat.completions.create(
++        resp = bg_chat_create(
++            client,
++            leg="memory-extraction",
+             model=self._cfg.resolved_model(),
+             messages=[
+                 {"role": "system", "content": system},
+@@ -611,7 +618,7 @@ class ConflictResolver:
+         if not api_key:
+             raise ValueError("缺少 OPENAI_API_KEY")
+ 
+-        kw: dict[str, Any] = {"api_key": api_key}
++        kw: dict[str, Any] = {"api_key": api_key, "timeout": 60.0, "max_retries": 2}
+         if self._cfg.base_url:
+             kw["base_url"] = self._cfg.base_url
+         client = OpenAI(**kw)
+@@ -644,7 +651,9 @@ class ConflictResolver:
+             '{"memory": []} is a normal and correct answer.'
+           )
+ 
+-        resp = client.chat.completions.create(
++        resp = bg_chat_create(
++            client,
++            leg="conflict-resolution",
+             model=self._cfg.resolved_model(),
+             messages=[{"role": "user", "content": user_content}],
+             response_format={"type": "json_object"},
+diff --git a/voicemem-agent/web/voicemem.html b/voicemem-agent/web/voicemem.html
+index 010a5ea..4ae5541 100755
+--- a/voicemem-agent/web/voicemem.html
++++ b/voicemem-agent/web/voicemem.html
+@@ -2048,7 +2048,7 @@ const SAMPLE_RATE=24000;          // must match the backend WEB_SAMPLE_RATE
+    capture fixes, because the browser was still running the v0.4.9 JS).
+    The page also reports itself to the backend on /api/lang, so the field log
+    names the page version. Update this together with VERSION/pyproject. */
+-const PAGE_VERSION='0.10.1';
++const PAGE_VERSION='0.10.2';
+ let ws=null, live=false, paused=false;
+ 
+ /* --- Playback ------------------------------------------------------ */
+diff --git a/worklog.md b/worklog.md
+index c367c71..12f1b11 100755
+--- a/worklog.md
++++ b/worklog.md
+@@ -3716,3 +3716,20 @@ Work Log:
+ Stage Summary:
+ - v0.10.1 RELEASED with the full forensic story: the shipped v0.10.0 audio path was byte-identical to v0.9.2; the CPU library stack (transformers 5.9-5.17) is proven correct on the whole HU corpus; the VAD is correct; the lying VAD log line is fixed; the floating transformers pin (the drift vector) is now EXACT 5.17.0; the gate never ran real ASR inference before — now it does; the wrong-language dump + the on-target forensic script close the remaining (CUDA/live-audio) variables on the ACTUAL machine.
+ - OPERATOR NEXT STEP (the P0 closer): install v0.10.1 on the target, run scripts\asr_regression_forensic.py, and if a live failure occurs, send back logs/asr_wrong_language_*.wav + the report.json — the WAV decides: bad audio IN (mic chain) vs good audio IN + wrong text OUT (CUDA leg).
++
++---
++Task ID: v0102-llmpriority (P0, part 1: forensic plan + recon)
++Agent: main session
++Task: VOICE MEM v0.10.x ASR REGRESSION + LLM PRIORITY + REPRODUCIBILITY FIX (operator 15-part P0). v0.10.1 (ASR-side forensic, previous session) is PUBLISHED - this task extends with PART 7-10 (LLM latency/priority/cache), PART 12 (release invariants), PART 14 (regression coverage) and the full release.
++
++Work Log:
++- Recon complete: app/background_memory.py (gate: defers STARTS only, in-flight ingest NEVER cancelled - module docstring states this deliberately), app/llm.py (LlmClient, streaming chat + chat_json non-streaming), app/web_server.py integration points (arm at VAD speech_start:2317 + turn start:2692; release at answer_done/error/interrupt:2662/2722/3113/3126; submit:3139; gate built:1881 with spawn=self._spawn).
++- Vendor background chain mapped: web_server._gated_memory_ingest -> vm.ingest(wait=True) -> orchestrator.Ingest -> _finish_ingest -> left.ingest_facts -> extract_facts_openai (EXTRACTION leg: timeout=60.0 max_retries=2, 10.4K-token prompt) + ConflictResolver.resolve (RESOLVE leg: OpenAI(**kw) WITHOUT timeout -> SDK default 600s!) + annotator/rb/slot-summary legs (each constructs ad-hoc openai.OpenAI via OPENAI_BASE_URL env pin).
++- LLM latency ROOT-CAUSE HYPOTHESIS (to be proven empirically, not assumed): single llama-server slot (parallel=1, b10717), FIFO task queue; a background chain running in the post-reply idle window occupies the slot up to ~111s warm (v0.9.2 E4 measurement of the full chain); user speech -> arm() only closes the gate for NEW work; the in-flight leg(s) continue; the user chat request queues behind them -> observed 40-60s TTFT. The unbounded resolve leg (no timeout) + extraction retries (max_retries=2) make it worse.
++- asr_language traced (PART 3): config.py:141 default "", read by LEGACY engines only (app/asr.py:738, app/asr_nemotron.py:294); the PRODUCTION parakeet engine (app/asr_parakeet.py) never reads it - confirmed the operator's observation. ParakeetForTDT has no language parameter (v0.10.1 forensic PHASE 6) - the fix is honest config->engine wiring + diagnostic mode + transcript-language guard + measurement in the forensic tool.
++- Empirical layer being built: llama.cpp b10717 from the EXACT tag (source build - the release has no ubuntu asset) + Qwen3-0.6B Q4_K_M stand-in (the v0.9.2 evidence pattern) for real slot/cancel/cache/LCP measurements (PART 7/10 evidence on the exact server build).
++- Release pipeline mapped (Explore agent): build_release_sandbox.py 8 steps + self-check + V0101_MARKERS pattern; run_release_gate.py (MIN_TOTAL_TESTS=1090, KNOWN_ENV_FAILURES pins test_logic_release_index_schema_and_zip_integrity); test_feature_release.py assertion list (NO cross-artifact invariant exists yet - the PART 12 slot); test_background_memory_gate.py fixture style (_Recorder/_run/scene/spawn stubs).
++- VERSION DECISION: v0.10.2. v0.10.1 is already published (zip + gate record + CHANGELOG entry + served artifacts, SHA A9C781E0...); this task touches runtime code (gate/vendor legs/engine) - per the project's own immutability rule a published version cannot be re-cut. The operator's "v0.10.1" label for this task is interpreted as "the v0.10.x line"; the release carrying these fixes is v0.10.2 (documented in the final report).
++
++Stage Summary:
++- Plan set: (A) empirical slot forensic script + sandbox run on real b10717; (B) user-priority: vendor-side cooperative cancel token (llm_bg_gate.py) + streaming cancel helper on the two big legs + resolve timeout fix + gate v2 (cancel-on-arm, requeue, idle-based start policy, stats); (C) asr_language wiring + auto/hu diagnostic + forensic measurement; (D) dependency pinning audit (openai SDK pin! it is currently unpinned) + lock manifest; (E) release invariant test + builder self-check extension; (F) regression tests (cancel/priority/stale-rejection/idle/cache/release); (G) v0.10.2 gate + release + recovery package + report.

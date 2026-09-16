@@ -37,7 +37,8 @@ STAGED_DIRS = ("app", "config", "scripts", "tests", "web", "vendor")
 ROOT_FILES = (
     "README.md", "CHANGELOG.md", "LICENSES.md", "CONTRACT.md", "VERSION",
     "INSTALL_MANIFEST.example.json", "requirements.txt", "requirements.lock",
-    "pyproject.toml", ".gitignore", "START.bat", "MODELS.lock.json",
+    "requirements.lock.json", "pyproject.toml", ".gitignore", "START.bat",
+    "MODELS.lock.json",
     "VOICEMEM_PIN.json", "UPSTREAM_POLICY.md",
 )
 

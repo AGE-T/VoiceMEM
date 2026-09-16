@@ -47,7 +47,8 @@ class RuntimeDepsFeatureTest(FeatureValidationTest):
     def test_logic_target_only_deps_documented(self):
         requirements = (REPO_ROOT / "requirements.txt").read_text(encoding="utf-8")
         for dep in ("transformers", "onnxruntime", "sounddevice", "soundfile",
-                    "sentence-transformers"):
+                    "sentence-transformers",
+                    "openai"):  # v0.10.2: the memory-chain LLM client
             pattern = re.compile(rf"(?m)^\s*{re.escape(dep)}\b")
             self.assertRegex(
                 requirements, pattern,
