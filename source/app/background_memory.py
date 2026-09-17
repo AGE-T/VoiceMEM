@@ -245,9 +245,16 @@ class BackgroundMemoryGate:
         the vendor legs abort before their next request or between stream
         chunks (the HTTP stream closes, freeing the llama-server slot).
         Idempotent; always refreshes the activity clock.
+
+        v0.10.3 (forensic validation prep): every transition of an OPEN
+        gate to ARMED is logged — the ``[gate armed]`` timestamp is the
+        "acquire" side of the gate timeline the llm_slot_forensic S8 phase
+        reconstructs from logs/web-server.log. Logging only; no control-flow
+        change.
         """
         if self._gate_open.is_set():
             self.stats.arm_count += 1
+            logger.info("background memory gate armed (reason=%s)", reason)
         self._cancel_grace()
         self._gate_open.clear()
         self._awaiting_idle = False
@@ -265,7 +272,15 @@ class BackgroundMemoryGate:
 
         Safe to call from any turn-exit path (success, error, interrupt);
         a speech frame arriving inside the window re-arms instantly.
+
+        v0.10.3 (forensic validation prep): the release transition is
+        logged — the ``[gate released]`` timestamp is the "release" side of
+        the gate timeline the llm_slot_forensic S8 phase reconstructs.
         """
+        logger.info(
+            "background memory gate released (turn ended; grace=%.1fs idle=%.1fs)",
+            self._grace_s, self._idle_s,
+        )
         self._cancel_grace()
         self.stats.last_release_ts = time.monotonic()
         self._last_activity = max(self._last_activity, time.monotonic())
@@ -323,6 +338,14 @@ class BackgroundMemoryGate:
             self._awaiting_idle = False
             _vendor_clear_cancel("idle")
             self._gate_open.set()
+            # v0.10.3 (forensic validation prep): the open transition is
+            # logged — from here a background chain MAY start; the S8
+            # product-trace phase uses this timestamp to bound "was
+            # background work legitimately allowed to be on the slot?".
+            logger.info(
+                "background memory gate open (idle window held; "
+                "background may start)"
+            )
             return
         # still busy recently: re-check after the remaining interval
         self.stats.idle_waits += 1
@@ -388,6 +411,16 @@ class BackgroundMemoryGate:
                     time.monotonic() - self.stats.last_release_ts
                 )
             self.stats.current = item.user_text
+            # v0.10.3 (forensic validation prep): the chain START is logged —
+            # this is the timestamp from which an in-flight chain can contend
+            # with the next user turn (the S8 outlier attribution checks
+            # exactly this window). Pure logging; no behaviour change.
+            logger.info(
+                "background memory ingest started (turn_no=%d, %d queued, "
+                "start_wait=%.1fs)",
+                item.turn_no, len(self._queue) + 1,
+                self.stats.last_start_wait_s,
+            )
             if self._on_begin is not None:
                 try:
                     self._on_begin()

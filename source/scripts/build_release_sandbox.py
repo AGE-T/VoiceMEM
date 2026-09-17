@@ -45,8 +45,8 @@ from pathlib import Path
 REPO = Path(__file__).resolve().parent.parent
 RELEASES = REPO / "releases"
 
-NEW_VERSION = "0.10.3"
-PREV_VERSION = "0.10.2"
+NEW_VERSION = "0.10.4"
+PREV_VERSION = "0.10.3"
 ZIP_NAME = f"VoiceMemAgent_v{NEW_VERSION}.zip"
 
 PLACEHOLDER_DIRS = [
@@ -75,56 +75,64 @@ ROOT_FILES = [
 ]
 
 NOTES = (
-    "v0.10.3 UPSTREAM DEEP-AUDIT SELECTIVE PORT + LATENCY/KORREKTHEG-"
-    "JAVITASOK (operator order: P0 DEEP UPSTREAM AUDIT + SELECTIVE PORT; a "
-    "teljes 52-commitos upstream tortenet (xzf-thu/VoiceMem @ 6cacb3c, pin "
-    "e8384e08 ota) commitonkent kiolvasva DIFF-szintuen - audit/"
-    "VoiceMEM_upstreamaudit_v0103/REPORT.md a teljes 24 pontos "
-    "jelentessel). ATVETT (6 port): (1) TTS SZOVEG-NORMALIZACIO (app/"
-    "text_utils.normalize_for_speech, a _synthesize_chunk egyetlen "
-    "fojtopontjan) - a jelzett „ (U+201E) Supertonic-crash FIXE: "
-    "tipografiai idozojelek/dash/ellipsis/NBSP/ZW* ASCII-megfelelore "
-    "mapeolve, betuk/szamok erintetlenek, a beszed-tartalom szo-szintre "
-    "azonos; (2) HEARING() LEJATSZASI-VARAKOZASI ABLAK (upstream 7581656 "
-    "mintaja): a barge-in ablak a KIKULDOTT audio becsult lejatszasi "
-    "idejeig marad nyitva (24 kHz PCM16 ledger + elso-audio-idobelyeg + "
-    "0.35 s slack) - korabban a turn-task veje = utolso kuldott bajt, a "
-    "bongeszo meg jatszott: ebben a holtaban a barge-in halott volt ES a "
-    "sajat TTS-visszhangja fantom-turnot indithatott (a v0.4.4 echo-leak "
-    "utja, VAD-valtozas nelkul zarva); a grace az ELSO AUDIOTOL szamit (a "
-    "TTS elso frame ~1 s, a regi grace hang elott lejart); (3) UJ TURN "
-    "MEGALLITJA A REGI LEJATSZAST (upstream 'force' minta): tippeles "
-    "while answering eseten answer_interrupt + ledger-nullazas - a ket "
-    "valasz nem fonodik ossze a hangszoroan; (4) PARHUSAMOS TTS-"
-    "SZEGMENSZINTEZIS (upstream 7f842a8 ket-szintu pipeline-a, 2 fokozatu "
-    "semaphore): a kovetkezo chunk szintezise a jelenlegi lejatszasa "
-    "kozben fut - a regi szekvencialis worker minden szegmenshataron egy "
-    "teljes szintezis-turnt varakoztatott (a hallhato szegmenskobok oka), "
-    "az elso chunk latenciaja VALTOZATLAN; (5) MEGSZAKITOTT TURN A "
-    "HISTORY-BAN (upstream SessionBuffer 'interrupted' szemantikaja): a "
-    "barge-in utan a kikuldott (hallott) valaszresz + '[interrupted]' "
-    "jelo a beszelgetes-tortenetbe kerul - korabban minden megszakitott "
-    "turn kiesett a kontextusbol es a modell ujrakoszontott; (6) VENDOR "
-    "RETRIEVAL-JAVITASOK: situation_pattern (heartnote) slot-cap 2 "
-    "(upstream 333dbcb) + response_experience slot 0 + irasi kapu ki "
-    "(upstream fa537a9; az atribucios hivas es a user-oldali trait-"
-    "kivezetes MEGMARAD) + QUERY-GATED RECENCY (upstream a507978 "
-    "adaptacioja, HU+EN cue-k): a VM-LOCAL-011 recency-bonus csak "
-    "'mostan mit csinalsz' tipusu kerdeseknel szall be - az attributum-"
-    "kerdesek tiszta hasonlosagi sorrendet tartanak (upstream merte "
-    "ugyanezt: a regy HELYES 0.810-es valasz 6.-ra esett egy ujabb 0.773 "
-    "moge). ELUTASITOTT/DEFERALT (indokkal, a REPORT-ban): spekulativ "
-    "retrieval (a pinelt parakeet streaming=False), AudioWorklet-lejatszo "
-    "+ AudioTimeline heard-text + reverzibilis barge-kandidatus + LCS-echo "
-    "(a hearing-ablak lefedi a fo hibat), memory-language-per-space. "
-    "KORNYEZET-VISSZAALLITAS (sandbox state-restore utan, NEM "
-    "termekvaltozas): openai/sentence-transformers/torch/transformers/"
-    "mem0ai ujratesztelese, az E5-modell pinned ujraletoltese, a Qwen-"
-    "tokenizer helyreallitasa - a prompt-size kontrakt a PRODUKCIOS "
-    "tokenizerrel ujramerve (6118->6265, a +146 a 3.6-vocab, a prompt-"
-    "fajl byte-azonos). VOICEMEM_PIN.json: a v0.10.2 nyitott ledger-tetel "
-    "zarva (VM-LOCAL-019..021 backfill) + uj VM-LOCAL-016..018 - 22 "
-    "bejegyzes. Tesztek: +23 uj (test_upstream_audit_ports.py)."
+    "v0.10.4 FORENZIKAI LOGOLASI KIADAS (operator order: a v0.10.3 utan "
+    "elkeszult llm_slot_forensic-upgrade valtozasainak KIZAROLAGOS "
+    "kiszallitasa - semmi mas). A kiadas CELJA: a celgepen a scripts/"
+    "llm_slot_forensic.py a 30-42 s keses-outliereket egyertelmuen "
+    "kategorizalja 5 osztaly kozott: (1) hatter-tartalom versenges "
+    "(background slot contention), (2) VALODI eloter LLM-keses, (3) "
+    "elofeldolgozas-dominalt keses (memory+emotion), (4) llama-server "
+    "sor/slot-foglaltsag (queueing), (5) hatter-gate ehezes (gate "
+    "starvation). VALTOZAS - kizarolag ADDITIV LOGOLAS, a futasi vezerles "
+    "es a keses-viselkedes VALTOZATLAN (a diff: uj logger.info / uj _diag "
+    "sorok, nulla kontrol-ut-modositas): (1) app/background_memory.py - 4 "
+    "uj INFO-sor: gate ARMED (open->armed atmenet, reason-nal), gate "
+    "RELEASED (turn vege, grace/idle ertekekkel), gate OPEN (az "
+    "idle-ablak tartasa utan - innen indulhat hatter-lanc), INGEST "
+    "STARTED (turn_no + sorszam + start_wait) - ez a gate "
+    "acquire/release idovonal, amit az uj S8 fazis olvas; (2) app/"
+    "web_server.py - 1 uj _diag sor a memory+emotion asyncio.wait utan "
+    "(emotion prosody done/pending): az emotion-elofeldolgozas vege "
+    "elvalik az LLM-idotol (korabban csak az init-feloldas volt "
+    "latsszik); (3) scripts/llm_slot_forensic.py - schema "
+    "llm-slot-forensic/2: UJ S8 OFFLINE TERMEK-LOG KORRELACIOS FAZIS "
+    "(logs/web-server.log + .1/.2/.3 rotaciok, LSF_SINCE szuressel): "
+    "per-turn idovonal mind a 8 korrelacios ponton (ASR final -> memory "
+    "retrieval -> emotion -> LLM request start -> elso CONTENT token -> "
+    "stream completion + hatter gate/cancel esemenyek), gaps_ms "
+    "(asr_to_turn/memory/preprocessing/llm_wait/first_token/llm_stream/"
+    "total), bg_during/bg_before IDO-HATAROLT hatter-korrelacio (a "
+    "felhasznalo BESZEDKEZDETEtol, nem a turn-starttol), determinisztikus "
+    "verdict-prioritas (NO_LLM_REQUEST/NO_FIRST_TOKEN > CONTENTION_CONFIRMED "
+    "> CONTENTION_SUSPECT_OR_CACHE_EVICTED > PREPROCESSING_DOMINATED > "
+    "REAL_LLM_LATENCY), eloszasok (min/median/p90/max) + outlier-lista "
+    "teljes bizonyitekkal + session gate-idovonal; TTFT-JAVITAS: a ttft_ms "
+    "az elso NEM-URES content-deltatol szamit (a role/keep-alive chunk "
+    "korabban hamisan elso-tokennek szamitott - a produkcios "
+    "pipeline-metriccal osszehasonlithatva); METRICS-JAVITAS: a nyers "
+    "llamacpp szamlalo-delatak tenykent rogzitodnek (a "
+    "histogram-megfigyelesszamlalo korabban tokennek olvashato volt - "
+    "regresszios teszt pineli), a token-szamitas csak explicit "
+    "token-total szamlalobol; CRASH-SAFE fazisok (a szerver-leall nem "
+    "viszi magaval a kesobbi fazisokat, hiba-esetben a report a fazis-"
+    "hibaval keszul el). NEM-VALTOZOTT (szerzodes): a llama-baseline a "
+    "celgepen (-ngl 16 -c 16000 --parallel 1, q8_0 KV, temp 0.7, "
+    "reasoning off), a gate/slot/cancel szemantika (v0.10.2), a "
+    "memoria-szemantika (v0.10.0/v0.10.3), spekulativ retrieval NEM "
+    "portolt (a pinelt parakeet streaming=False), ASR/VAD/TTS lanc, "
+    "konfiguracio. Tesztek: +29 uj (test_llm_slot_forensic.py 27: "
+    "log-parser ms-precizio + garbage-elutasitas, a 31 fajta classifier, "
+    "rotacio-sorrend, since-parsing, 6-turnos szintetikus szesszio AZ "
+    "OSSZES verdict-osztallyal (healthy/contention/typed-real-LLM/"
+    "preprocessing/failed/suspect), tipusos-ASR oroklodes-tiltas, "
+    "idohatarolt bg-korrelacio, eloszasok, verdict-egysegtesztek, "
+    "metrics-preferencia + a histogram-szamlalo regresszio, httpx "
+    "MockTransport streaming szonda (ttft = elso CONTENT delta); "
+    "test_background_memory_gate.py GateForensicLoggingTests 2: "
+    "assertLogs a pontos S8-parszolt prefixekkel + CANCELLED/requeued "
+    "sorok arm-while-running eseten). ELOSZLAS A CELGEPEN: a report.json "
+    "turns[].gaps_ms + verdict mezoi adjak az 5-osztalyu diagnosit, az "
+    "S3 Run A/B a szerver-oldali queueing/slot-merest adja."
 )
 
 #: v0.6.0 markers: the modular ASR engine contract - asr_core (AudioBuffer,
@@ -887,6 +895,41 @@ V0103_MARKERS = {
         "NormalizeForSpeechTests",
         "PlaybackTailTests",
         "SourceQuotaTests",
+    ],
+}
+
+#: v0.10.4 markers: the additive forensic logging — the gate armed/
+#: released/open/ingest-started INFO lines (background_memory), the
+#: prosody-wait diag line (web_server), the llm-slot-forensic/2 schema
+#: with the offline S8 product-trace phase and the deterministic
+#: verdict classes, and the two forensic test files. Logging only —
+#: zero control-flow change (the release contract).
+V0104_MARKERS = {
+    "app/background_memory.py": [
+        "background memory gate armed (reason=%s)",
+        "background memory gate released (turn ended; grace=%.1fs idle=%.1fs)",
+        "background memory gate open (idle window held; ",
+        "background memory ingest started (turn_no=%d, %d queued, ",
+    ],
+    "app/web_server.py": [
+        "emotion prosody done (waited)",
+        "emotion prosody pending (late",
+    ],
+    "scripts/llm_slot_forensic.py": [
+        "llm-slot-forensic/2",
+        "def s8_product_trace",
+        "CONTENTION_CONFIRMED",
+        "PREPROCESSING_DOMINATED",
+        "REAL_LLM_LATENCY",
+    ],
+    "tests/unit/test_llm_slot_forensic.py": [
+        "class ParseTests",
+        "class RebuildTests",
+        "class MetricsTests",
+        "class StreamProbeTests",
+    ],
+    "tests/unit/test_background_memory_gate.py": [
+        "GateForensicLoggingTests",
     ],
 }
 
@@ -2414,7 +2457,7 @@ def build() -> int:
                             f"self-check: {rel} lacks v0.4.11 marker {m!r}"
                         )
             # v0.4.12: stale-page detection + raw capture + send-as-turn
-            for rel, markers in {**V0412_MARKERS, **V0413_MARKERS, **V0414_MARKERS, **V0415_MARKERS, **V0416_MARKERS, **V0417_MARKERS, **V0418_MARKERS, **V0419_MARKERS, **V0420_MARKERS, **V0421_MARKERS, **V050_MARKERS, **V052_MARKERS, **V060_MARKERS, **V061_MARKERS, **V062_MARKERS, **V063_MARKERS, **V064_MARKERS, **V070_MARKERS, **V071_MARKERS, **V072_MARKERS, **V080_MARKERS, **V081_MARKERS, **V090_MARKERS, **V091_MARKERS, **V092_MARKERS, **V0100_MARKERS, **V0101_MARKERS, **V0102_MARKERS, **V0103_MARKERS}.items():
+            for rel, markers in {**V0412_MARKERS, **V0413_MARKERS, **V0414_MARKERS, **V0415_MARKERS, **V0416_MARKERS, **V0417_MARKERS, **V0418_MARKERS, **V0419_MARKERS, **V0420_MARKERS, **V0421_MARKERS, **V050_MARKERS, **V052_MARKERS, **V060_MARKERS, **V061_MARKERS, **V062_MARKERS, **V063_MARKERS, **V064_MARKERS, **V070_MARKERS, **V071_MARKERS, **V072_MARKERS, **V080_MARKERS, **V081_MARKERS, **V090_MARKERS, **V091_MARKERS, **V092_MARKERS, **V0100_MARKERS, **V0101_MARKERS, **V0102_MARKERS, **V0103_MARKERS, **V0104_MARKERS}.items():
                 src_text = zf.read(root_prefix + rel).decode("utf-8", errors="replace")
                 for m in markers:
                     if m not in src_text:

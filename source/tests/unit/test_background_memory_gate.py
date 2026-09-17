@@ -430,6 +430,74 @@ class IdlePolicyTests(unittest.TestCase):
         _run(scene())
 
 
+class GateForensicLoggingTests(unittest.TestCase):
+    """v0.10.3 forensic validation prep: the gate emits the acquire/release
+    timeline lines that scripts/llm_slot_forensic.py S8 parses from
+    logs/web-server.log.
+
+    These pin the LOGGING only — the behaviour itself is pinned by the
+    other tests in this file (all unchanged; a logging line must never be
+    a behavioural change)."""
+
+    def setUp(self):
+        if HAS_VENDOR_GATE:
+            llm_bg_gate.BG_CANCEL.clear()
+
+    def tearDown(self):
+        if HAS_VENDOR_GATE:
+            llm_bg_gate.BG_CANCEL.clear()
+
+    def test_armed_released_open_started_lines(self):
+        rec = _Recorder()
+
+        async def scene():
+            with self.assertLogs("app.background_memory", level="INFO") as cm:
+                gate = BackgroundMemoryGate(rec, grace_s=0.05, idle_s=0.05)
+                gate.arm("speech")             # open -> armed (acquire)
+                await gate.submit("u1", "r1")  # worker defers while armed
+                gate.release()                 # release
+                await asyncio.sleep(0.25)       # idle window -> open -> started
+                self.assertEqual(rec.done(), ["u1"])
+            text = "\n".join(cm.output)
+            self.assertIn(
+                "background memory gate armed (reason=speech)", text)
+            self.assertIn(
+                "background memory deferred (conversation active; 1 queued)", text)
+            self.assertIn(
+                "background memory gate released (turn ended; grace=", text)
+            self.assertIn(
+                "background memory gate open (idle window held; "
+                "background may start)", text)
+            self.assertIn(
+                "background memory ingest started (turn_no=1, 1 queued, "
+                "start_wait=", text)
+        _run(scene())
+
+    @unittest.skipUnless(HAS_VENDOR_GATE, "vendored llm_bg_gate required")
+    def test_cancel_lines_on_arm_while_running(self):
+        ready = threading.Event()
+
+        def ingest(user_text: str, reply: str) -> None:
+            ready.wait(timeout=5.0)
+            llm_bg_gate.check_cancel("test-leg")
+
+        async def scene():
+            gate = BackgroundMemoryGate(ingest, grace_s=0.05, idle_s=0.05)
+            with self.assertLogs("app.background_memory", level="INFO") as cm:
+                await gate.submit("u", "r")
+                await asyncio.sleep(0.1)   # the ingest is blocked in its thread
+                gate.arm("speech")         # user needs the slot -> CANCELLED
+                ready.set()                # the leg now sees the cancel event
+                await asyncio.sleep(0.15)  # re-queue logged
+            text = "\n".join(cm.output)
+            self.assertIn(
+                "background memory CANCELLED (user needs the slot: speech)",
+                text)
+            self.assertIn(
+                "background memory cancelled mid-chain, re-queued", text)
+        _run(scene())
+
+
 class RealLayerContractTests(unittest.TestCase):
     """The gate's ingest path must request REAL completion (wait=True)."""
 

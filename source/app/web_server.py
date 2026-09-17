@@ -2999,6 +2999,19 @@ class WebSession:
         st.components["embedding"].end()
 
         # Prosody emotion: waited result, or late tag_update.
+        # v0.10.3 (forensic validation prep): one additive diag line marking
+        # the PROSODY analysis end. asyncio.wait above returns when memory AND
+        # emotion both finished (or timed out), so "memory done" and this line
+        # share a timestamp when the prosody task held the turn; when it ran
+        # past the wait budget this line says so explicitly — the S8 product
+        # trace in scripts/llm_slot_forensic.py reads exactly this marker to
+        # separate emotion preprocessing time from LLM time. Logging only.
+        if emo_task is not None:
+            self._diag(
+                "emotion prosody done (waited)"
+                if emo_task in done
+                else "emotion prosody pending (late — ran past the wait window)"
+            )
         if emo_task is not None:
             if emo_task in done:
                 try:
