@@ -1,0 +1,22 @@
+Mirror sync evidence — v0.10.4 TTS code-switching fix (Task TTS-CS-1)
+Date: 2026-09-18 (UTC)
+
+1. Sync: scripts/sync_github_mirror.sh (VOICEMEM_SYNC_WORKDIR=/home/z/mirror-sync,
+   fine-grained PAT via GITHUB_TOKEN env — never written to any repo/file)
+   Push: 3572cfd..45a956a  main -> main
+   New mirror HEAD: 45a956a 'sync: source/ (first-party tree)'
+
+2. Fresh ANONYMOUS clone verification:
+   git clone https://github.com/AGE-T/VoiceMEM.git -> HEAD 45a956a confirmed
+   segment_language_spans present: source/app/text_utils.py (2 hits),
+   source/app/web_server.py (3 hits), source/app/pipeline.py (2 hits)
+   source/tests/unit/test_tts_code_switching.py: 42 test functions
+   source/audit/VoiceMEM_tts_codeswitch_v0104/: REPORT.md + evidence present
+
+3. Byte-identity (sha256, local tree vs fresh mirror clone):
+   MATCH app/text_utils.py  817b1a3a3b993919c0b76bfe0e84804969279ded5581a9350acff86c7a22f1f3
+   MATCH app/web_server.py  e2d80142de6983b0f9cb8b7e1c046df71b52f1ff4629701d438562d685c8b8b7
+   MATCH app/pipeline.py  2e328bf9b5f24c8cefbcf5a5d54b6641148991fa9096504a368d26be0dcd2cea
+   MATCH tests/unit/test_tts_code_switching.py  f186abcc272c496e055c9824bd239f94a545e74ccff1b7aa66ba81cba56f3ac0
+
+4. Local workspace commit: bee5fea (voicemem-agent tree inside the workspace repo).
