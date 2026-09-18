@@ -102,6 +102,7 @@ from app.text_utils import (
     SentenceStream,
     detect_language,
     normalize_for_speech,
+    segment_language_spans,
 )
 from app.voice_settings import (
     PREVIEW_SENTENCES,
@@ -3336,6 +3337,22 @@ class WebSession:
         is what the engine actually synthesizes with. v0.7.0: the engine
         returns 44.1 kHz int16 (Supertonic-native); the resample to the
         24 kHz browser wire happens at THIS boundary (unchanged mechanism).
+
+        v0.10.4 TTS code-switching fix (field report): language used to be
+        selected ONCE PER CHUNK, so an English phrase quoted inside a
+        Hungarian sentence ("A "touch base" egy gyakori angol kifejezés.")
+        was read with the Hungarian model and became unintelligible. In auto
+        voice mode the normalized chunk is now segmented into language spans
+        (quoted/parenthesized foreign phrases — see
+        ``app.text_utils.segment_language_spans``); each span is synthesized
+        with its own Supertonic language but the SAME resolved voice (one
+        speaker quoting a foreign phrase, not a different person), the PCM
+        parts are concatenated, and the chunk stays ONE ordered payload for
+        the sender — playback ordering is untouched by construction. Pure
+        HU/EN chunks still synthesize exactly as before (single span). Forced
+        voice modes keep the single forced language (documented override).
+        Barge-in semantics are unchanged: the speak worker's task
+        cancellation still discards any not-yet-sent span.
         """
         c = self._c
         st = c.status
@@ -3361,22 +3378,35 @@ class WebSession:
                 f"TTS voice: {voice_label(voice_id)} "
                 f"({language_name(language)}, mode {c.voice.mode})"
             )
+        # v0.10.4 code-switching: span segmentation ONLY in auto mode — a
+        # forced voice mode is an explicit single-language override.
+        spans: list[tuple[str, str]] = [(chunk, language)]
+        if c.voice is None or c.voice.mode == "auto":
+            spans = segment_language_spans(chunk, language)
         st.components["tts"].begin()
+        parts: list[Any] = []
         try:
-            pcm16k = await asyncio.to_thread(
-                c.tts.synthesize, chunk, language, length_scale, voice_id or None
-            )
+            for span_text, span_lang in spans:
+                pcm16k = await asyncio.to_thread(
+                    c.tts.synthesize, span_text, span_lang, length_scale, voice_id or None
+                )
+                if pcm16k is not None and len(pcm16k):
+                    parts.append(pcm16k)
         except Exception as exc:  # noqa: BLE001
             st.components["tts"].fail(str(exc))
             return None
         st.components["tts"].end()
         if voice_id:
             c.set_active_voice(voice_id, language)
-        if pcm16k is None or not len(pcm16k):
+        if not parts:
             return None
         import numpy as np
 
-        x = np.asarray(pcm16k).astype(np.float32) / 32768.0
+        if len(parts) == 1:
+            pcm16k = np.asarray(parts[0])
+        else:
+            pcm16k = np.concatenate([np.asarray(p) for p in parts])
+        x = pcm16k.astype(np.float32) / 32768.0
         out = resample_linear(x, c.config.output_sample_rate, WEB_SAMPLE_RATE)
         return float32_to_pcm16_bytes(out)
 

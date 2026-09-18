@@ -76,7 +76,12 @@ from app.teacher_persona import (
     build_system_prompt,
     fit_prompt_budget,
 )
-from app.text_utils import LANG_HU, SentenceStream, detect_language
+from app.text_utils import (
+    LANG_HU,
+    SentenceStream,
+    detect_language,
+    segment_language_spans,
+)
 from app.voicemem_bridge import (
     COMMIT_COMMITTED,
     COMMIT_FAILED,
@@ -691,6 +696,14 @@ class VoicePipeline:
         audit / latency benchmark) skips playback but still stamps
         ``first_audio_s`` after synthesis. ``length_scale`` (M2) is
         forwarded to the TTS (None = engine default).
+
+        v0.10.4 TTS code-switching fix (CLI path, mirrors web_server): in
+        auto voice mode the chunk is segmented into language spans (quoted/
+        parenthesized foreign phrases — ``app.text_utils.segment_language_
+        spans``) and each span is synthesized with its own Supertonic
+        language in the SAME resolved voice; the PCM parts are concatenated
+        so the chunk still plays as ONE buffer. Pure HU/EN chunks and forced
+        voice modes keep today's single-call behaviour exactly.
         """
         if not text or not text.strip():
             return _CHUNK_SKIPPED
@@ -701,16 +714,31 @@ class VoicePipeline:
         voice_id: Optional[str] = None
         if self._voice_settings is not None:
             voice_id, language = self._voice_settings.resolve(language)
+        # v0.10.4 code-switching: span segmentation ONLY in auto mode — a
+        # forced voice mode is an explicit single-language override.
+        spans: list[tuple[str, str]] = [(text, language)]
+        if self._voice_settings is None or self._voice_settings.mode == "auto":
+            spans = segment_language_spans(text, language)
+        parts: list[Any] = []
         try:
-            pcm = await asyncio.to_thread(
-                self._tts.synthesize, text, language, length_scale, voice_id
-            )
+            for span_text, span_lang in spans:
+                part = await asyncio.to_thread(
+                    self._tts.synthesize, span_text, span_lang, length_scale, voice_id
+                )
+                if part is not None and len(part):
+                    parts.append(part)
         except Exception as exc:  # noqa: BLE001 - TTS failure skips the chunk
             self._log.warning("TTS synthesis raised for chunk %r: %s", text[:40], exc)
-            pcm = None
-        if pcm is None:
+            parts = []
+        if not parts:
             self._log.warning("TTS produced no audio; chunk skipped: %r", text[:60])
             return _CHUNK_FAILED
+        if len(parts) == 1:
+            pcm = parts[0]
+        else:
+            import numpy as np  # noqa: PLC0415 - mixed spans only, local by convention
+
+            pcm = np.concatenate(parts)
         if await self._maybe_abort(vad_prob_fn):
             return _CHUNK_ABORTED
 

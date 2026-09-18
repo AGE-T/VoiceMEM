@@ -129,6 +129,229 @@ def detect_language(text: str) -> str:
 
 
 # --------------------------------------------------------------------------- #
+# Span-level language segmentation (TTS code-switching, v0.10.4 field fix)
+# --------------------------------------------------------------------------- #
+#
+# Field report (v0.10.4): language was selected ONCE PER TTS CHUNK, so an
+# English phrase embedded inside a Hungarian sentence ("A "touch base" egy
+# gyakori angol kifejezés.") was synthesized with the Hungarian Supertonic
+# model — Hungarian grapheme-to-phoneme rules read the English graphemes and
+# the phrase became unintelligible. ``detect_language`` cannot provide span
+# boundaries (it returns exactly one label for the whole input), so this
+# section adds a SEPARATE span segmentation used by the TTS call sites. The
+# policy is deliberately narrow — see ``segment_language_spans``.
+
+#: English contractions (ASCII apostrophes; ``normalize_for_speech`` maps
+#: U+2019 first). Hungarian orthography never uses apostrophes, so these are
+#: unambiguous English evidence, and the apostrophe must never be treated as
+#: a quote delimiter or a word boundary ("I'd", "don't", "we're").
+EN_CONTRACTIONS = frozenset({
+    "i'd", "i'll", "i'm", "i've",
+    "you'd", "you'll", "you're", "you've",
+    "he'd", "he'll", "he's", "she'd", "she'll", "she's",
+    "it'd", "it'll", "it's",
+    "we'd", "we'll", "we're", "we've",
+    "they'd", "they'll", "they're", "they've",
+    "that's", "there's", "what's", "who's", "let's",
+    "ain't", "can't", "couldn't", "didn't", "doesn't", "don't",
+    "hadn't", "hasn't", "haven't", "isn't", "mightn't", "mustn't",
+    "needn't", "shan't", "shouldn't", "wasn't", "weren't", "won't",
+    "wouldn't", "y'all",
+})
+
+#: Letter pairs Hungarian orthography never writes natively (Hungarian uses
+#: cs/k/s/t/f/v/g/kv for these sounds) but English words carry constantly.
+#: Any of these inside a word is strong English evidence. "ch" is included
+#: even though Hungarian loans exist ("technika", "pech") — only the QUOTED
+#: span detector consumes it, so the worst case is one loanword in quotes
+#: read with English phonetics (documented, intelligible).
+EN_CONSONANT_CLUSTERS = ("ch", "ck", "sh", "th", "ph", "wh", "gh", "qu")
+
+#: Vowel pairs impossible in native Hungarian words ("ou" in "touch", "ee" in
+#: "need", "oo" in "good"). "au"/"ea"/"eu" are deliberately absent ("autó",
+#: "tea", "euro" are everyday Hungarian loans), and so is "ai": Hungarian
+#: forms adjectives in "-ai" ("hazai" — domestic) constantly, and that word
+#: class matters far more than the English words it would have caught.
+EN_VOWEL_CLUSTERS = ("ou", "ee", "oo", "oa", "ue", "ui", "ei")
+
+#: Hungarian digraphs that do NOT collide with common English words. The
+#: other four digraphs are excluded on purpose: "only"/"really" carry "ly",
+#: "city"/"party" carry "ty", "many"/"money" carry "ny", and using them
+#: would shred ordinary English sentences.
+HU_STRONG_DIGRAPHS = ("sz", "cs", "gy", "zs")
+
+#: Word-level English stopwords: the chunk-level table minus the Hungarian
+#: function words "a" (the HU definite article) and "is" (HU "also") — at
+#: word level those two are Hungarian first and would shred every Hungarian
+#: sentence into alternating spans.
+EN_WORD_STOPWORDS = frozenset(EN_STOPWORDS) - {"a", "is"}
+
+
+def _classify_word(token: str) -> str:
+    """One classification for one (lowercased, edge-stripped) token.
+
+    Returns ``LANG_HU`` / ``LANG_EN`` or ``""`` (neutral). Priority order
+    matters:
+
+    1. digits / URLs / e-mails are neutral — they never carry language;
+    2. a Hungarian diacritic beats every English signal ("chatelünk" is
+       Hungarian despite the "ch");
+    3. English letter clusters beat the stopword tables, so quoted CONTENT
+       words with positive English evidence ("touch", "catch") classify as
+       English even though no stopword table lists them;
+    4. everything else (names, signal-free loans like "projekt", "base")
+       is neutral and stays with the host language.
+    """
+    if not token:
+        return ""
+    if any(ch.isdigit() for ch in token) or "://" in token or "@" in token:
+        return ""
+    if any(ch in HU_DIACRITICS for ch in token):
+        return LANG_HU
+    if token in EN_CONTRACTIONS:
+        return LANG_EN
+    if any(c in token for c in EN_CONSONANT_CLUSTERS) or "q" in token:
+        return LANG_EN
+    if any(c in token for c in EN_VOWEL_CLUSTERS):
+        return LANG_EN
+    if token in HU_STOPWORDS or token in HU_PLAIN_WORDS:
+        return LANG_HU
+    if any(d in token for d in HU_STRONG_DIGRAPHS):
+        return LANG_HU
+    if token in EN_WORD_STOPWORDS:
+        return LANG_EN
+    return ""
+
+
+def _scan_regions(text: str) -> list[tuple[int, int]]:
+    """Inclusive ``(start, end)`` ranges of paired set-off delimiters.
+
+    * Double quotes pair greedily (``normalize_for_speech`` already mapped
+      every typographic double-quote form to ASCII ``"``).
+    * Parentheses pair at nesting level one.
+    * Single quotes pair only when alnum-boundary rules prove an opening
+      (preceded by a non-alphanumeric, followed by an alphanumeric) or a
+      closing (preceded by an alphanumeric, followed by a non-alphanumeric)
+      — so the apostrophes of contractions ("I'd", "don't", "base's") are
+      never treated as delimiters.
+
+    Unclosed regions are dropped and a region overlapping an already
+    accepted one is skipped — both degrade to plain host text, never crash.
+    """
+    regions: list[tuple[int, int]] = []
+    n = len(text)
+    dq = par = sq = -1
+    for i, ch in enumerate(text):
+        if ch == '"':
+            if dq < 0:
+                dq = i
+            else:
+                regions.append((dq, i))
+                dq = -1
+        elif ch == "(":
+            if par < 0:
+                par = i
+        elif ch == ")":
+            if par >= 0:
+                regions.append((par, i))
+                par = -1
+        elif ch == "'":
+            prev = text[i - 1] if i > 0 else ""
+            nxt = text[i + 1] if i + 1 < n else ""
+            if prev.isalnum() and nxt.isalnum():
+                continue  # internal apostrophe (contraction) — not a delimiter
+            if sq >= 0 and prev.isalnum():
+                regions.append((sq, i))
+                sq = -1
+            elif sq < 0 and nxt.isalnum():
+                sq = i
+            # anything else: a stray apostrophe — ignore
+    accepted: list[tuple[int, int]] = []
+    last_end = -1
+    for start, end in regions:
+        if start > last_end:
+            accepted.append((start, end))
+            last_end = end
+    return accepted
+
+
+def _region_language(content: str, host: str, foreign: str) -> str:
+    """Language of one set-off region's content — evidence-gated.
+
+    * no foreign evidence → host: a quoted native, signal-free phrase never
+      splits (``A "hazai" megoldás`` stays one Hungarian chunk);
+    * foreign evidence, no host evidence → foreign: ``"touch base"`` inside
+      Hungarian (the reported production bug);
+    * evidence on both sides → the existing weighted ``detect_language``
+      arbitrates, and only a FOREIGN verdict splits (conservative).
+    """
+    ev = {LANG_HU: 0, LANG_EN: 0}
+    for token in _tokenize(content):
+        cls = _classify_word(token)
+        if cls:
+            ev[cls] += 1
+    if ev[foreign] == 0:
+        return host
+    if ev[host] == 0:
+        return foreign
+    detected = detect_language(content)
+    return detected if detected == foreign else host
+
+
+def segment_language_spans(text: str, host_language: str) -> list[tuple[str, str]]:
+    """Split *text* into ``(span_text, span_lang)`` segments for TTS.
+
+    The production TTS path selects one Supertonic language per synthesis
+    call; before this fix the unit of selection was the whole CHUNK, which
+    made embedded foreign phrases unintelligible. This function segments a
+    chunk at EXPLICIT set-off boundaries only — paired quotes (double or
+    single) and parentheses — so:
+
+    * pure Hungarian / pure English text returns ONE span and the caller
+      synthesizes exactly as before (byte-identical behaviour);
+    * a quoted foreign phrase becomes its own span with its own language,
+      spoken by the SAME voice (voice continuity is the caller's job);
+    * unquoted code-switching ("touch base-elni" without quotes) stays with
+      the host language: word-level runs cannot place phrase boundaries
+      without a lexicon ("touch" is English-signal-bearing, "base" is
+      signal-neutral) and Hungarian loans ("technika") would false-positive.
+      Documented policy — the field-reported cases are all quoted;
+    * forced voice modes are handled by the CALLER (they skip this
+      function entirely and keep today's single-language behaviour).
+
+    Hard invariant: ``"".join(t for t, _ in result) == text`` — no character
+    is lost, added or reordered, so playback ordering cannot change.
+    """
+    if not text or not text.strip():
+        return [(text, host_language)]
+    host = LANG_EN if host_language == LANG_EN else LANG_HU
+    foreign = LANG_HU if host == LANG_EN else LANG_EN
+    spans: list[tuple[str, str]] = []
+    pos = 0
+    for start, end in _scan_regions(text):
+        if start > pos:
+            spans.append((text[pos:start], host))
+        spans.append(
+            (
+                text[start : end + 1],
+                _region_language(text[start + 1 : end], host, foreign),
+            )
+        )
+        pos = end + 1
+    if pos < len(text):
+        spans.append((text[pos:], host))
+    merged: list[tuple[str, str]] = []
+    for span_text, span_lang in spans:
+        if not span_text:
+            continue
+        if merged and merged[-1][1] == span_lang:
+            merged[-1] = (merged[-1][0] + span_text, span_lang)
+        else:
+            merged.append((span_text, span_lang))
+    return merged or [(text, host)]
+
+
+# --------------------------------------------------------------------------- #
 # Speech normalisation (TTS input)
 # --------------------------------------------------------------------------- #
 
