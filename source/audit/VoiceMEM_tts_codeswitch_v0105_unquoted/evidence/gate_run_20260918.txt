@@ -1,0 +1,170 @@
+VOICEMEM RELEASE GATE RUN — phase-2 TTS code-switching tree (unquoted phrase runs)
+================================================================================
+Task ID      : G-gate (gate-runner subagent)
+Purpose      : The FULL release gate that was never run on the final phase-2 tree
+               (TTS-CS-2 follow-up: unquoted English phrase detection, phrase-run
+               mechanism R1-R6; 61-test suite in tests/unit/test_tts_code_switching.py).
+Run at (UTC) : started 2026-09-18T19:00:30Z, finished 2026-09-18T19:10:53Z
+Git HEAD     : 8c8bc937e7eabeaf66d268319cb48ee6dfcacf62 (workspace repo /home/z/my-project,
+               commit "b164ae68-403a-4bea-acce-5e126ae2a35d" = the phase-2 TTS
+               code-switching change: app/text_utils.py +255, tests 42->61,
+               tests/integration/test_pipeline_mock.py modified, no other source files)
+Tree state   : voicemem-agent source clean at HEAD; only runtime artifacts modified
+               by the test runs themselves (data/emotion_demo_log.jsonl,
+               logs/web-server.log — same side-effect class as every previous gate run)
+Env sanity   : /home/z/.venv/bin/python -c "import mem0, voicemem, torch, openai,
+               transformers, sentence_transformers, qdrant_client, onnxruntime"
+               -> env OK
+Runner env   : MALLOC_ARENA_MAX=1 MALLOC_TRIM_THRESHOLD_=131072, cwd =
+               /home/z/my-project/voicemem-agent, /home/z/.venv/bin/python
+
+PROCEDURE
+---------
+Prescribed layers (pytest, foreground, 600s cap each — no layer needed a retry or
+a split; no layer exceeded ~3 min):
+
+  1) /home/z/.venv/bin/python -m pytest tests/unit -q
+  2) /home/z/.venv/bin/python -m pytest tests/integration -q
+  3) /home/z/.venv/bin/python -m pytest tests/validation -q
+
+Cross-check (canonical gate convention, same mechanism as the v0.10.5 gate record
+releases/gate_record.json — scripts/run_release_gate.py uses unittest discovery):
+
+  0) python -m compileall -q app          -> OK (app/*.py compile clean)
+  1) python -m unittest discover -s tests/unit -t .        (VMA_VALIDATION_REPORT set)
+  2) python -m unittest discover -s tests/integration -t . (VMA_VALIDATION_REPORT set)
+  3) python -m unittest discover -s tests/validation -t .  (VMA_VALIDATION_REPORT set)
+
+LAYER SUMMARIES (verbatim)
+--------------------------
+[Layer 1 — tests/unit, pytest -q, 175.21s (0:02:55)]
+=========================== short test summary info ============================
+FAILED tests/unit/test_install_manifest.py::BuildManifestTests::test_voicemem_controlled_fork_identity_from_pin
+FAILED tests/unit/test_voicemem_bridge.py::VoiceMemBridgeDegradedTests::test_degraded_warning_logged_exactly_once
+FAILED tests/unit/test_voicemem_bridge.py::VoiceMemBridgeDegradedTests::test_is_available_false_without_package
+FAILED tests/unit/test_voicemem_bridge.py::VoiceMemBridgeDegradedTests::test_process_turn_degraded_context
+4 failed, 1096 passed, 13 skipped, 1 warning, 8 subtests passed in 175.21s (0:02:55)
+
+[Layer 1 — tests/unit, unittest discover, 161.515s]
+Ran 1103 tests in 161.515s
+FAILED (failures=4, skipped=5)
+FAIL: test_voicemem_controlled_fork_identity_from_pin (tests.unit.test_install_manifest.BuildManifestTests.test_voicemem_controlled_fork_identity_from_pin)
+FAIL: test_degraded_warning_logged_exactly_once (tests.unit.test_voicemem_bridge.VoiceMemBridgeDegradedTests.test_degraded_warning_logged_exactly_once)
+FAIL: test_is_available_false_without_package (tests.unit.test_voicemem_bridge.VoiceMemBridgeDegradedTests.test_is_available_false_without_package)
+FAIL: test_process_turn_degraded_context (tests.unit.test_voicemem_bridge.VoiceMemBridgeDegradedTests.test_process_turn_degraded_context)
+
+[Layer 2 — tests/integration, pytest -q, 105.04s (0:01:45)]
+123 passed, 2 skipped, 8 warnings in 105.04s (0:01:45)
+
+[Layer 2 — tests/integration, unittest discover, 85.696s]
+Ran 123 tests in 85.696s
+OK (skipped=1)
+
+[Layer 3 — tests/validation, pytest -q, 28.32s]
+250 passed, 21 skipped, 2 warnings in 28.32s
+
+[Layer 3 — tests/validation, unittest discover, 20.690s]
+Ran 271 tests in 20.690s
+OK (skipped=21)
+
+TOTALS
+------
+Pytest convention (the prescribed procedure):
+  layer        passed  failed  skipped  collected
+  unit          1096       4       13       1113   (+8 subtests passed)
+  integration    123       0        2        125
+  validation     250       0       21        271
+  COMBINED      1469       4       36       1509
+
+Canonical gate convention (unittest discover — the exact counting the v0.10.5
+gate record releases/gate_record.json uses; "Ran N" includes the skipped):
+  layer        ran  failures  skipped
+  unit        1103         4        5
+  integration  123         0        1
+  validation   271         0       21
+  COMBINED    1497         4       27
+
+Phase-2 targeted suite inside the layers: tests/unit/test_tts_code_switching.py
+61 passed, 0 failed, 0 skipped in 1.32s (suite went 42 -> 61 tests; +19).
+
+REGRESSION COMPARISON vs v0.10.5 BASELINE
+-----------------------------------------
+Baseline (releases/gate_record.json, ran_at_utc 2026-09-18T16:34:53Z, verdict
+GREEN, version 0.10.5): 1478 tests = unit 1084 / integration 123 / validation
+271; 4 failures (all pinned env-gap); 0 errors; 28 skipped; regressions [].
+
+This run: 1497 tests = unit 1103 / integration 123 / validation 271;
+4 failures; 0 errors; 27 skipped.
+
+  - Delta +19 tests, ALL in tests/unit/test_tts_code_switching.py (42 -> 61):
+    exactly the phase-2 change. Integration unchanged (test_pipeline_mock.py
+    still 47 test functions — the +17 line diff modified existing tests).
+  - No test loss (floor 1090 << 1497).
+  - Skipped 27 vs 28: ONE validation test that was skipped at v0.10.5 now PASSES
+    (validation skip 21 vs 22) — a skip->pass improvement, not a regression.
+
+VERDICT: ZERO NEW REGRESSIONS vs the v0.10.5 GREEN baseline.
+Every failing test is byte-identical (test ID) to the pinned env-gap set in the
+v0.10.5 gate record; no unknown failure appeared in any layer.
+
+PINNED ENV-GAP FAILURES OBSERVED (4/4 = the documented pre-existing set)
+------------------------------------------------------------------------
+1. tests.unit.test_install_manifest.BuildManifestTests.test_voicemem_controlled_fork_identity_from_pin
+   E AssertionError: True is not false (tests/unit/test_install_manifest.py:261)
+   (block["pin_verified"] is True because the voicemem dist IS pip-installed in
+   this venv)
+   v0.10.5 gate pin: "manifest build needs venv extras (sandbox env)"
+2. tests.unit.test_voicemem_bridge.VoiceMemBridgeDegradedTests.test_degraded_warning_logged_exactly_once
+   E AssertionError: no logs of level WARNING or higher triggered on
+   app.voicemem_bridge (tests/unit/test_voicemem_bridge.py:58)
+   v0.10.5 gate pin: "venv gained voicemem extras post-v0.9.0 (forensic runs) -
+   degraded-mode simulation no longer degrades (stash-verified)"
+3. tests.unit.test_voicemem_bridge.VoiceMemBridgeDegradedTests.test_is_available_false_without_package
+   E AssertionError: True is not false (tests/unit/test_voicemem_bridge.py:35)
+   (bridge.is_available() is True — the vendor extras are present)
+   v0.10.5 gate pin: "voicemem venv extras absent in degraded sandbox (env)"
+4. tests.unit.test_voicemem_bridge.VoiceMemBridgeDegradedTests.test_process_turn_degraded_context
+   E AssertionError: SearchResult(hits=[], classification=QueryClassification(
+   slots=[], entities=[]), ..., search_mode='fallback', ...) is not None
+   (tests/unit/test_voicemem_bridge.py:43 — the real memory stack answers, so the
+   degraded-mode "ctx.turn is None" contract cannot hold in this venv)
+   v0.10.5 gate pin: same venv-extras class as #2 (stash-verified there)
+
+All four pass on the target machine / a clean venv (documented at v0.8.0-v0.10.5
+gates); they are environment artifacts of this sandbox, not code regressions.
+
+DEEP VALIDATION REPORT (supplementary; logs/validation_report.json, written by
+the validation layer on this tree, mtime 2026-09-18T19:08Z)
+  pass    : embedding, memory, memory-semantics, release, runtime-deps, tts, vad
+  skipped : asr, audio, emotion, gpu-check, llm, models, models-download,
+            oneclick-state, pyexec, runtime-gpu, runtime-torch-pin, runtime-venv,
+            speaker  (13)
+  vs v0.10.5 (6 pass / 14 skip): the tts deep check moved skip -> pass on the
+  phase-2 tree. No deep feature regressed.
+
+NOTES / ANOMALIES
+-----------------
+- Counting-convention difference (expected, documented): pytest collects a few
+  items unittest discovery does not (unit 1113 vs 1103, integration 125 vs 123)
+  and counts some conditional skips differently (unit 13 vs 5, integration 2 vs
+  1). The canonical gate numbers above use the unittest convention, which is
+  what the v0.10.5 record (1478 = 1084/123/271) is expressed in; the +19 delta
+  is exact under that convention. Both runners agree on the failure set.
+- pytest unit layer also reports "8 subtests passed" (subtest-aware counting).
+- Harmless interpreter-exit noise after the pytest summaries in all layers:
+  "Exception ignored in SyncHttpxClientWrapper.__del__ ... AttributeError:
+  'NoneType' object has no attribute 'CLOSED'" (openai/httpx2 teardown during
+  interpreter shutdown). Exit codes unaffected (integration/validation exit 0;
+  unit exit 1 is exactly the 4 pinned failures).
+- No layer hung; no retry was needed; longest layer 175.21s << 600s cap.
+- compileall app/: clean.
+- Test-run side effects on the working tree (same class as every previous gate
+  run): data/emotion_demo_log.jsonl and logs/web-server.log were appended by the
+  suite. No source file was touched by the gate.
+
+GATE CONCLUSION
+---------------
+GREEN on the final phase-2 tree: 1497 tests (canonical counting; 1084+19 unit /
+123 integration / 271 validation), 0 NEW regressions, the same 4 pinned sandbox
+env-gap failures as the v0.10.5 GREEN record, 27 skipped. The missing gate step
+of TTS-CS-2 is now closed with evidence.

@@ -45,8 +45,8 @@ from pathlib import Path
 REPO = Path(__file__).resolve().parent.parent
 RELEASES = REPO / "releases"
 
-NEW_VERSION = "0.10.4"
-PREV_VERSION = "0.10.3"
+NEW_VERSION = "0.10.5"
+PREV_VERSION = "0.10.4"
 ZIP_NAME = f"VoiceMemAgent_v{NEW_VERSION}.zip"
 
 PLACEHOLDER_DIRS = [
@@ -75,64 +75,59 @@ ROOT_FILES = [
 ]
 
 NOTES = (
-    "v0.10.4 FORENZIKAI LOGOLASI KIADAS (operator order: a v0.10.3 utan "
-    "elkeszult llm_slot_forensic-upgrade valtozasainak KIZAROLAGOS "
-    "kiszallitasa - semmi mas). A kiadas CELJA: a celgepen a scripts/"
-    "llm_slot_forensic.py a 30-42 s keses-outliereket egyertelmuen "
-    "kategorizalja 5 osztaly kozott: (1) hatter-tartalom versenges "
-    "(background slot contention), (2) VALODI eloter LLM-keses, (3) "
-    "elofeldolgozas-dominalt keses (memory+emotion), (4) llama-server "
-    "sor/slot-foglaltsag (queueing), (5) hatter-gate ehezes (gate "
-    "starvation). VALTOZAS - kizarolag ADDITIV LOGOLAS, a futasi vezerles "
-    "es a keses-viselkedes VALTOZATLAN (a diff: uj logger.info / uj _diag "
-    "sorok, nulla kontrol-ut-modositas): (1) app/background_memory.py - 4 "
-    "uj INFO-sor: gate ARMED (open->armed atmenet, reason-nal), gate "
-    "RELEASED (turn vege, grace/idle ertekekkel), gate OPEN (az "
-    "idle-ablak tartasa utan - innen indulhat hatter-lanc), INGEST "
-    "STARTED (turn_no + sorszam + start_wait) - ez a gate "
-    "acquire/release idovonal, amit az uj S8 fazis olvas; (2) app/"
-    "web_server.py - 1 uj _diag sor a memory+emotion asyncio.wait utan "
-    "(emotion prosody done/pending): az emotion-elofeldolgozas vege "
-    "elvalik az LLM-idotol (korabban csak az init-feloldas volt "
-    "latsszik); (3) scripts/llm_slot_forensic.py - schema "
-    "llm-slot-forensic/2: UJ S8 OFFLINE TERMEK-LOG KORRELACIOS FAZIS "
-    "(logs/web-server.log + .1/.2/.3 rotaciok, LSF_SINCE szuressel): "
-    "per-turn idovonal mind a 8 korrelacios ponton (ASR final -> memory "
-    "retrieval -> emotion -> LLM request start -> elso CONTENT token -> "
-    "stream completion + hatter gate/cancel esemenyek), gaps_ms "
-    "(asr_to_turn/memory/preprocessing/llm_wait/first_token/llm_stream/"
-    "total), bg_during/bg_before IDO-HATAROLT hatter-korrelacio (a "
-    "felhasznalo BESZEDKEZDETEtol, nem a turn-starttol), determinisztikus "
-    "verdict-prioritas (NO_LLM_REQUEST/NO_FIRST_TOKEN > CONTENTION_CONFIRMED "
-    "> CONTENTION_SUSPECT_OR_CACHE_EVICTED > PREPROCESSING_DOMINATED > "
-    "REAL_LLM_LATENCY), eloszasok (min/median/p90/max) + outlier-lista "
-    "teljes bizonyitekkal + session gate-idovonal; TTFT-JAVITAS: a ttft_ms "
-    "az elso NEM-URES content-deltatol szamit (a role/keep-alive chunk "
-    "korabban hamisan elso-tokennek szamitott - a produkcios "
-    "pipeline-metriccal osszehasonlithatva); METRICS-JAVITAS: a nyers "
-    "llamacpp szamlalo-delatak tenykent rogzitodnek (a "
-    "histogram-megfigyelesszamlalo korabban tokennek olvashato volt - "
-    "regresszios teszt pineli), a token-szamitas csak explicit "
-    "token-total szamlalobol; CRASH-SAFE fazisok (a szerver-leall nem "
-    "viszi magaval a kesobbi fazisokat, hiba-esetben a report a fazis-"
-    "hibaval keszul el). NEM-VALTOZOTT (szerzodes): a llama-baseline a "
-    "celgepen (-ngl 16 -c 16000 --parallel 1, q8_0 KV, temp 0.7, "
-    "reasoning off), a gate/slot/cancel szemantika (v0.10.2), a "
-    "memoria-szemantika (v0.10.0/v0.10.3), spekulativ retrieval NEM "
-    "portolt (a pinelt parakeet streaming=False), ASR/VAD/TTS lanc, "
-    "konfiguracio. Tesztek: +29 uj (test_llm_slot_forensic.py 27: "
-    "log-parser ms-precizio + garbage-elutasitas, a 31 fajta classifier, "
-    "rotacio-sorrend, since-parsing, 6-turnos szintetikus szesszio AZ "
-    "OSSZES verdict-osztallyal (healthy/contention/typed-real-LLM/"
-    "preprocessing/failed/suspect), tipusos-ASR oroklodes-tiltas, "
-    "idohatarolt bg-korrelacio, eloszasok, verdict-egysegtesztek, "
-    "metrics-preferencia + a histogram-szamlalo regresszio, httpx "
-    "MockTransport streaming szonda (ttft = elso CONTENT delta); "
-    "test_background_memory_gate.py GateForensicLoggingTests 2: "
-    "assertLogs a pontos S8-parszolt prefixekkel + CANCELLED/requeued "
-    "sorok arm-while-running eseten). ELOSZLAS A CELGEPEN: a report.json "
-    "turns[].gaps_ms + verdict mezoi adjak az 5-osztalyu diagnosit, az "
-    "S3 Run A/B a szerver-oldali queueing/slot-merest adja."
+    "v0.10.5 TTS CODE-SWITCHING JAVITO KIADAS (operator order: a v0.10.4 "
+    "utan ertkezett terepi hibajelentes KIZAROLAGOS javitasa - semmi mas). "
+    "A HIBA (terepi jelentes): a beszed nyelve TTS-CHUNK-ONKENT volt "
+    "kivalasztva (detect_language egyetlen cimket ad a teljes chunkra), "
+    "igy a magyar mondatbaagyazott angol kifejezes (pl. A \"touch base\" "
+    "egy gyakori angol kifejezes.) a MAGYAR hangmodellel lett felolvasva - "
+    "a Supertonic HU G2P az angol grafemakat magyar betuertekekkel ejtette, "
+    "a beszed egy resze erthetetlen vagy ertelmetlen hangzasu lett; a "
+    "web-server.log a chunkokat HU->EN->HU->EN valtasokkal mutatta "
+    "(chunk-szintu valtas), a CHUNKON BELULI keveres kifejezhetetlen volt. "
+    "A JAVITAS - SPAN-SZINTU NYELVI UTVONALVALTAS A HIVO OLDALAKON (a TTS "
+    "engine NEM valtozott): (1) app/text_utils.py - uj "
+    "segment_language_spans(text, host_language): EVIDENCIA-KAPUS, SET-OFF "
+    "hataru szegmentacio. CSAK paros idezojel- es zarojel-regiok a "
+    "split-hajok (kizarolag explicit kiemelesi markerek); az "
+    "aposztrof-parositast alnum-hatar orzi, az osszevont alakok (I'd, "
+    "don't) SOHA nem elvalasztok; nyitott/atalapo regiok a host-nyelvre "
+    "degradalnak, soha nem crashelnek. EVIDENCIA-KAPU: csak pozitiv "
+    "szo-szintu idegen-nyelvi bizonyitek eseten split-el egy regio (EN "
+    "osszevont alakok; ch/ck/sh/th/ph/wh/gh/qu + ou/ee/oo/oa/ue/ui/ei "
+    "HANGKULCSCOPORTOK, au/ea/eu/ai KIZARVA az auto/tea/euro/hazai "
+    "magyar szavak miatt; HU eros digrafok sz/cs/gy/zs, ny/ly/ty KIZARVA "
+    "az only/really/city miatt; EN stopwordok az a/is nelkul) - a "
+    "hazai-osztalu hamis pozitivok elnyomva; a detektor csak akkor dont, "
+    "ha MINDKET oldalon van bizonyitek; a signal-semleges kolcsonszavak "
+    "(projekt) a hosttal maradnak; IDEZET NELKULI keveres (touch "
+    "base-elni) dokumentaltan host marad (lexikon nelkuli "
+    "frazishatar lehetetlen). SZINTezis: span-onkenti nyelv UGYANAZZAL a "
+    "feloldott hanggal (egy beszelo idezetel, nem masik ember), PCM "
+    "konkatenacio, EGY rendezett payload - a \"\".join(span_texts) == "
+    "text HARD invariant, a lejatszasi sorrend konstrukciosan "
+    "valtozatlan. (2) app/web_server.py _synthesize_chunk: auto "
+    "hangmodban span-szegmentacio + span-onkenti asyncio.to_thread "
+    "szintezis, a barge-in a meg nem kuldot spanokat ugyanugy eldobja. "
+    "(3) app/pipeline.py _speak_chunk: a CLI utvonal ugyanez (numpy "
+    "konkatenacio). NEM VALTOZOTT (szerzodes): az engine + SDK alairas "
+    "(app/tts_supertonic.py), a rendezett kuldo sor es a "
+    "_TTS_MAX_PARALLEL_CHUNKS=2 pump, a forced hangmodok (hu/en "
+    "egynyelvuek maradnak), a tiszta HU/EN chunkok BYTETAZONOS "
+    "egy-hivo utvonala (NULLA hozzaadott kesleltetes), LLM/ASR/futasi "
+    "vezerles, a llama-baseline (ngl 16 -c 16000 --parallel 1, q8_0 KV, "
+    "temp 0.7), memoria- es gate-szemantika, konfiguracio. TESZTEK: +42 "
+    "uj (tests/unit/test_tts_code_switching.py: tiszta szegmentacios "
+    "bateria - az osszes kotelezo mondat + osszevont alakok + idezojel/"
+    "zarojel/kotjel/szam/URL/e-mail + nyitatlan idezojel + osszefuto "
+    "regiok + szoveg-megorzesi invariant + kesleltetesi or; web "
+    "integracio a WebSession._synthesize_chunk-en MockTtsEngine-nel "
+    "(span-onkenti hivo-sorozatok, hang-folytonossag, forced modok); CLI "
+    "integracio a VoicePipeline._speak_chunk-on). KESLELTETES (mert "
+    "sandbox): szegmentacio 3.7-9.4 us/chunk, 362 karakteres 3-span "
+    "legrosszabb eset 80 us; tiszta chunkokra pontosan az eddigi egy "
+    "hivo - nulla plusz. AUDIT: audit/VoiceMEM_tts_codeswitch_v0104/ "
+    "(REPORT.md A-G + evidence)."
 )
 
 #: v0.6.0 markers: the modular ASR engine contract - asr_core (AudioBuffer,
@@ -930,6 +925,34 @@ V0104_MARKERS = {
     ],
     "tests/unit/test_background_memory_gate.py": [
         "GateForensicLoggingTests",
+    ],
+}
+
+#: v0.10.5 markers: the TTS code-switching fix - span-level language
+#: routing for embedded foreign phrases at both call sites (web + CLI),
+#: the segmentation machinery in text_utils, and the 42-test suite.
+V0105_MARKERS = {
+    "app/text_utils.py": [
+        "def segment_language_spans",
+        "EN_CONTRACTIONS",
+        "def _classify_word",
+        "def _scan_regions",
+        "def _region_language",
+    ],
+    "app/web_server.py": [
+        "segment_language_spans",
+        "v0.10.4 code-switching: span segmentation ONLY in auto mode",
+    ],
+    "app/pipeline.py": [
+        "segment_language_spans",
+        "v0.10.4 code-switching: span segmentation ONLY in auto mode",
+    ],
+    "tests/unit/test_tts_code_switching.py": [
+        "class SegmentPureLanguageTests",
+        "class SegmentQuotedForeignTests",
+        "class SegmentEdgeCaseTests",
+        "class WebSynthesizeChunkTests",
+        "class PipelineSpeakChunkTests",
     ],
 }
 
@@ -2457,7 +2480,7 @@ def build() -> int:
                             f"self-check: {rel} lacks v0.4.11 marker {m!r}"
                         )
             # v0.4.12: stale-page detection + raw capture + send-as-turn
-            for rel, markers in {**V0412_MARKERS, **V0413_MARKERS, **V0414_MARKERS, **V0415_MARKERS, **V0416_MARKERS, **V0417_MARKERS, **V0418_MARKERS, **V0419_MARKERS, **V0420_MARKERS, **V0421_MARKERS, **V050_MARKERS, **V052_MARKERS, **V060_MARKERS, **V061_MARKERS, **V062_MARKERS, **V063_MARKERS, **V064_MARKERS, **V070_MARKERS, **V071_MARKERS, **V072_MARKERS, **V080_MARKERS, **V081_MARKERS, **V090_MARKERS, **V091_MARKERS, **V092_MARKERS, **V0100_MARKERS, **V0101_MARKERS, **V0102_MARKERS, **V0103_MARKERS, **V0104_MARKERS}.items():
+            for rel, markers in {**V0412_MARKERS, **V0413_MARKERS, **V0414_MARKERS, **V0415_MARKERS, **V0416_MARKERS, **V0417_MARKERS, **V0418_MARKERS, **V0419_MARKERS, **V0420_MARKERS, **V0421_MARKERS, **V050_MARKERS, **V052_MARKERS, **V060_MARKERS, **V061_MARKERS, **V062_MARKERS, **V063_MARKERS, **V064_MARKERS, **V070_MARKERS, **V071_MARKERS, **V072_MARKERS, **V080_MARKERS, **V081_MARKERS, **V090_MARKERS, **V091_MARKERS, **V092_MARKERS, **V0100_MARKERS, **V0101_MARKERS, **V0102_MARKERS, **V0103_MARKERS, **V0104_MARKERS, **V0105_MARKERS}.items():
                 src_text = zf.read(root_prefix + rel).decode("utf-8", errors="replace")
                 for m in markers:
                     if m not in src_text:

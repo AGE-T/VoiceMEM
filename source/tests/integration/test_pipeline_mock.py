@@ -187,7 +187,22 @@ class PipelineFlowTests(_PipelineTestBase):
         self.assertEqual(len(parts["llm"].calls), 1)
         # every sentence became a TTS chunk and was fully played
         self.assertGreaterEqual(len(parts["tts"].synthesized), 5)
-        self.assertEqual(len(parts["tts"].synthesized), len(parts["audio_out"].played))
+        # v0.10.5 TTS code-switching: one chunk may synthesize MULTIPLE
+        # language spans (LONG_HU_REPLY embeds the unquoted English phrase
+        # "flat white"); the span PCM parts concatenate into ONE buffer per
+        # chunk, so plays count CHUNKS while synthesized counts SPANS.
+        self.assertGreaterEqual(
+            len(parts["tts"].synthesized), len(parts["audio_out"].played)
+        )
+        self.assertEqual(len(parts["audio_out"].played), 7)  # one per sentence
+        # every synthesized span text, concatenated, carries the full reply
+        # (whitespace-insensitive compare: the sentence chunker strips
+        # inter-sentence separators — unspoken characters — so exact or
+        # word-level equality would be over-strict)
+        self.assertEqual(
+            "".join("".join(t for t, _l, _ls, _v in parts["tts"].synthesized).split()),
+            "".join(LONG_HU_REPLY.split()),
+        )
         # the complete reply was committed to long-term memory
         self.assertEqual(parts["voicemem"].committed, [result.reply])
 

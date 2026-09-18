@@ -1,15 +1,22 @@
-"""v0.10.4 TTS code-switching tests (field report: embedded language spans).
+"""TTS code-switching tests (field reports v0.10.4 + v0.10.5 phase 2).
 
-Production bug: language selection happened ONCE PER TTS CHUNK, so an
-English phrase quoted inside a Hungarian sentence ("A "touch base" egy
+Production bug (v0.10.4): language selection happened ONCE PER TTS CHUNK,
+so an English phrase quoted inside a Hungarian sentence ("A "touch base" egy
 gyakori angol kifejezés.") was synthesized with the Hungarian Supertonic
 model and became unintelligible.
+
+Production gap (v0.10.5 phase 2): UNQUOTED embedded English phrases
+("Rendben, see you later.", "Szeretnék egy gyors touch base-t veld.")
+stayed with the Hungarian model — the LLM rarely sets phrases off with
+quotes in conversational turns. Phrase RUNS now route them by evidence;
+single words NEVER re-route ("projekt"/"meeting"/"hazai" stay host).
 
 These tests pin the fix at all three levels:
 
 1. ``segment_language_spans`` (pure) — span boundaries and languages for the
    field-reported sentences + the edge battery (contractions, quotes,
-   parentheses, commas, hyphens, numbers, URLs, e-mails, unmatched quotes).
+   parentheses, commas, hyphens, numbers, URLs, e-mails, unmatched quotes,
+   phrase runs, budgets, caps, the run cap and suffix tails).
 2. ``WebSession._synthesize_chunk`` (integration, mock components) — the
    per-span Supertonic language SEQUENCE actually requested by the web
    backend, the returned PCM (audio exists), the text-preservation invariant
@@ -62,6 +69,15 @@ HU_QUOTED_EN_CATCH = 'A "catch up" hasonló jelentésű ebben a mondatban.'
 EN_QUOTED_NEUTRAL = 'The Hungarian word "projekt" is used here.'
 HU_UNQUOTED_MIX = "Szeretnék röviden touch base-elni veled a projekt miatt."
 EN_QUOTED_HU = 'The word "szeretnék" means "I would like" here.'
+
+#: v0.10.5 phase 2 (unquoted phrase runs) — the field-report matrix.
+HU_UNQUOTED_TB = "Szeretnék egy gyors touch base-t veled."
+HU_UNQUOTED_CU = "Szerintem később catch up-olhatunk."
+HU_UNQUOTED_SYL = "Rendben, see you later."
+HU_UNQUOTED_SYL_CAPS = "Rendben, SEE YOU LATER!"
+HU_LOAN_MEETING = "A meeting után átbeszéljük a projektet."
+EN_PURE_CATCH = "Let's catch up later."
+EN_PURE_SYL = "See you later."
 
 
 def _spans(text: str, host: str) -> list[tuple[str, str]]:
@@ -151,11 +167,18 @@ class SegmentQuotedForeignTests(unittest.TestCase):
         spans = _spans(text, LANG_EN)
         self.assertEqual(spans[1], ('"oké"', LANG_HU))
 
-    def test_unquoted_code_switch_stays_host(self):
-        # Documented policy: unquoted code-switching keeps the host language
-        # (word-level runs cannot place the phrase boundary without a lexicon).
-        self.assertEqual(_spans(HU_UNQUOTED_MIX, LANG_HU),
-                         [(normalize_for_speech(HU_UNQUOTED_MIX), LANG_HU)])
+    def test_unquoted_code_switch_routes_by_evidence(self):
+        # v0.10.5 phase 2 policy: an UNQUOTED multi-word English phrase with
+        # positive evidence routes to EN; the hyphen-attached Hungarian verbal
+        # suffix ("-elni") stays with the host model.
+        self.assertEqual(
+            _spans(HU_UNQUOTED_MIX, LANG_HU),
+            [
+                ("Szeretnék röviden ", LANG_HU),
+                ("touch base", LANG_EN),
+                ("-elni veled a projekt miatt.", LANG_HU),
+            ],
+        )
 
     def test_quoted_hungarian_loan_with_english_cluster_documented(self):
         # "technika" contains "ch" — the documented false-positive class:
@@ -220,6 +243,203 @@ class SegmentQuotedForeignTests(unittest.TestCase):
                          [(normalize_for_speech(text), LANG_EN)])
 
 
+class SegmentPhraseRunTests(unittest.TestCase):
+    """v0.10.5 phase 2: UNQUOTED foreign phrase runs (the production gap).
+
+    Policy (audit VoiceMEM_tts_codeswitch_v0105_unquoted): a run needs
+    >= 2 words, >= 1 strong foreign-evidence word, zero host evidence,
+    starts at the evidence word, may sweep one trailing neutral word (EN;
+    HU budget is 0), never across sentence-final punctuation, hyphen
+    suffixes stay host, more than PHRASE_RUN_MAX_RUNS runs keep the whole
+    chunk host. Single words NEVER re-route.
+    """
+
+    def test_required_matrix_unquoted_touch_base(self):
+        self.assertEqual(
+            _spans(HU_UNQUOTED_TB, LANG_HU),
+            [
+                ("Szeretnék egy gyors ", LANG_HU),
+                ("touch base", LANG_EN),
+                ("-t veled.", LANG_HU),
+            ],
+        )
+
+    def test_required_matrix_unquoted_catch_up(self):
+        self.assertEqual(
+            _spans(HU_UNQUOTED_CU, LANG_HU),
+            [
+                ("Szerintem később ", LANG_HU),
+                ("catch up", LANG_EN),
+                ("-olhatunk.", LANG_HU),
+            ],
+        )
+
+    def test_required_matrix_unquoted_see_you_later(self):
+        self.assertEqual(
+            _spans(HU_UNQUOTED_SYL, LANG_HU),
+            [("Rendben, ", LANG_HU), ("see you later.", LANG_EN)],
+        )
+
+    def test_required_matrix_caps_see_you_later(self):
+        # The field-reported rendering: "SEE YOU LATER" in caps.
+        self.assertEqual(
+            _spans(HU_UNQUOTED_SYL_CAPS, LANG_HU),
+            [("Rendben, ", LANG_HU), ("SEE YOU LATER!", LANG_EN)],
+        )
+
+    def test_required_matrix_english_sentences_stay_single_span(self):
+        # Host=EN, no HU evidence words -> one span (no fragmentation).
+        for text in (EN_PURE_TOUCH, EN_PURE_CATCH, EN_PURE_SYL):
+            self.assertEqual(detect_language(text), LANG_EN)
+            self.assertEqual(_spans(text, LANG_EN),
+                             [(normalize_for_speech(text), LANG_EN)], text)
+
+    def test_single_word_loans_stay_host(self):
+        # Operator-mandated: ambiguous loanwords keep the host language
+        # (single words never re-route).
+        for text in (
+            "Szeretnék röviden beszélni veled az új projektről.",
+            HU_LOAN_MEETING,
+            "A hazai megoldás olcsóbb, mint a tea és az autó.",
+            "A projekt lezárása holnapra vár.",
+        ):
+            self.assertEqual(_spans(text, LANG_HU),
+                             [(normalize_for_speech(text), LANG_HU)], text)
+
+    def test_hungarian_evidence_word_terminates_run(self):
+        # "és" carries Hungarian evidence: the trailing budget never
+        # sweeps a host word into the run.
+        text = "Szeretnék touch base és utána menni."
+        self.assertEqual(
+            _spans(text, LANG_HU),
+            [
+                ("Szeretnék ", LANG_HU),
+                ("touch base", LANG_EN),
+                (" és utána menni.", LANG_HU),
+            ],
+        )
+
+    def test_trailing_neutral_budget_is_one_word(self):
+        # "veled" is the second signal-free word after "touch" — outside
+        # the budget, it stays with the host.
+        text = "Holnap touch base veled lesz."
+        self.assertEqual(
+            _spans(text, LANG_HU),
+            [("Holnap ", LANG_HU), ("touch base", LANG_EN),
+             (" veled lesz.", LANG_HU)],
+        )
+
+    def test_sentence_final_punctuation_blocks_budget(self):
+        # "touch." closes a clause — "Base?" is a separate sentence, so
+        # no multi-word run forms and the chunk stays host.
+        text = "Ez nem touch. Base?"
+        self.assertEqual(_spans(text, LANG_HU),
+                         [(normalize_for_speech(text), LANG_HU)])
+
+    def test_hu_budget_is_zero_lone_hu_word_in_english(self):
+        # foreign=HU runs never sweep a trailing neutral word: the lone
+        # Hungarian word "gyors" (digraph evidence, diacritic-free so the
+        # chunk detector stays EN) does not drag "place" into a HU span.
+        text = "We visited the gyors place today."
+        self.assertEqual(detect_language(text), LANG_EN)
+        self.assertEqual(_spans(text, LANG_EN),
+                         [(normalize_for_speech(text), LANG_EN)])
+
+    def test_consecutive_hu_evidence_words_route_in_english(self):
+        # Two consecutive Hungarian-evidence words DO form a run in an
+        # English sentence (both words carry their own evidence).
+        text = "We had a gyors tempó there."
+        spans = _spans(text, LANG_EN)
+        self.assertIn(("gyors tempó", LANG_HU), spans)
+        joined = "".join(s for s, _ in spans)
+        self.assertEqual(joined, normalize_for_speech(text))
+
+    def test_english_hyphen_compound_stays_whole(self):
+        # Evidence-bearing heads never trim at the hyphen: "check-in" is
+        # an English compound, not a suffixed Hungarian stem.
+        text = "Menjünk, let's check-in ott."
+        spans = _spans(text, LANG_HU)
+        self.assertIn(("let's check-in", LANG_EN), spans)
+        self.assertEqual("".join(s for s, _ in spans),
+                         normalize_for_speech(text))
+
+    def test_hungarian_case_suffix_variants_stay_host(self):
+        for text in (
+            "A holnapi touch base-től félek.",
+            "A touch base-vel kezdeném.",
+        ):
+            spans = _spans(text, LANG_HU)
+            self.assertEqual(spans[1], ("touch base", LANG_EN), text)
+            self.assertTrue(spans[2][0].startswith("-"), text)
+            self.assertEqual("".join(s for s, _ in spans),
+                             normalize_for_speech(text))
+
+    def test_run_cap_disables_switching_whole_chunk_stays_host(self):
+        # 4 detected runs exceed PHRASE_RUN_MAX_RUNS (3): the pathological
+        # chunk stays whole — no synthesis-call storm.
+        text = ("touch base meg catch up meg see you later meg "
+                "touch base meg catch up.")
+        self.assertEqual(_spans(text, LANG_HU),
+                         [(normalize_for_speech(text), LANG_HU)])
+
+    def test_three_runs_still_switch(self):
+        # At the cap exactly: switching still happens (3 runs).
+        text = "touch base, aztán catch up, majd see you later."
+        spans = _spans(text, LANG_HU)
+        self.assertEqual(_langs(spans), [LANG_EN, LANG_HU, LANG_EN,
+                                         LANG_HU, LANG_EN])
+        self.assertEqual("".join(s for s, _ in spans),
+                         normalize_for_speech(text))
+
+    def test_whitespace_only_shards_never_become_spans(self):
+        # Runs covering a whole host gap between regions must not leave
+        # whitespace-only synthesis calls behind (boundary whitespace is
+        # absorbed into the adjacent span — language-neutral material).
+        text = 'A "x" touch base "y" és kész.'
+        spans = _spans(text, LANG_HU)
+        self.assertTrue(all(s.strip() for s, _ in spans), spans)
+        self.assertIn(("touch base ", LANG_EN), spans)
+        self.assertEqual("".join(s for s, _ in spans),
+                         normalize_for_speech(text))
+
+    def test_quoted_region_and_run_in_one_chunk(self):
+        # Both levels in one chunk: the quoted region (level 1) and the
+        # unquoted run (level 2) coexist without overlap.
+        text = 'A "touch base" kifejezés, de ma catch up-olhatunk.'
+        spans = _spans(text, LANG_HU)
+        self.assertEqual(
+            spans,
+            [
+                ("A ", LANG_HU),
+                ('"touch base"', LANG_EN),
+                (" kifejezés, de ma ", LANG_HU),
+                ("catch up", LANG_EN),
+                ("-olhatunk.", LANG_HU),
+            ],
+        )
+
+    def test_documented_false_positive_neutral_sweep(self):
+        # "chat" (ch) is evidence, "ablakot" is signal-free: the budget
+        # sweeps it — the documented false-positive class, pinned here so
+        # any change is a conscious decision (same class as the quoted
+        # "technika" case from v0.10.4).
+        text = "Nyisd ki a chat ablakot."
+        spans = _spans(text, LANG_HU)
+        self.assertIn(("chat ablakot.", LANG_EN), spans)
+        self.assertEqual("".join(s for s, _ in spans),
+                         normalize_for_speech(text))
+
+    def test_numbers_urls_and_punctuation_only_tokens_are_never_runs(self):
+        for text in (
+            "A 2026-os team meeting next week lesz.",
+            "Küldd el a report a info@voicemem.ai címre.",
+        ):
+            spans = _spans(text, LANG_HU)
+            self.assertEqual("".join(s for s, _ in spans),
+                             normalize_for_speech(text))
+            self.assertTrue(all(s.strip() for s, _ in spans), text)
+
+
 class SegmentEdgeCaseTests(unittest.TestCase):
     """Contractions, punctuation, numbers, URLs, e-mails, unmatched quotes."""
 
@@ -261,9 +481,18 @@ class SegmentEdgeCaseTests(unittest.TestCase):
             )
 
     def test_unmatched_quote_degrades_to_host(self):
+        # Unclosed quotes drop the REGION (no crash, no lost text) — but the
+        # unquoted phrase-run detector still applies to the degraded text:
+        # the embedded English phrase keeps its EN routing.
         text = 'A "touch base egy dolog.'
-        self.assertEqual(_spans(text, LANG_HU),
-                         [(normalize_for_speech(text), LANG_HU)])
+        self.assertEqual(
+            _spans(text, LANG_HU),
+            [
+                ('A "', LANG_HU),
+                ("touch base", LANG_EN),
+                (" egy dolog.", LANG_HU),
+            ],
+        )
         text2 = 'Another "unbalanced one'
         self.assertEqual(_spans(text2, LANG_EN),
                          [(normalize_for_speech(text2), LANG_EN)])
@@ -423,10 +652,10 @@ class WebSynthesizeChunkTests(unittest.TestCase):
         # test_text_utils: "I think the kávé here is good" -> HU): one
         # "szeretnék" (diacritic 3 + stopword 2 = 5) outweighs the four
         # English stopwords (4), so this sentence's HOST is Hungarian. The
-        # spans then correctly keep "szeretnék" inside the HU host and
-        # render the English quote with the EN model — the segmentation
-        # only ever IMPROVES the mixed rendering; host bias itself is
-        # pre-existing, out of scope here.
+        # v0.10.5 phrase-run pass additionally routes the leading English
+        # fragment ("The word") to the EN model — same-lane improvement:
+        # the segmentation only ever IMPROVES the mixed rendering; host
+        # bias itself is pre-existing, out of scope here.
         session, components = _make_session()
         pcm = self._run(session, EN_QUOTED_HU)
         self.assertIsNotNone(pcm)
@@ -434,7 +663,8 @@ class WebSynthesizeChunkTests(unittest.TestCase):
         self.assertEqual(
             recorded,
             [
-                ('The word "szeretnék" means ', LANG_HU),
+                ("The word ", LANG_EN),
+                ('"szeretnék" means ', LANG_HU),
                 ('"I would like"', LANG_EN),
                 (" here.", LANG_HU),
             ],
@@ -466,12 +696,24 @@ class WebSynthesizeChunkTests(unittest.TestCase):
         self.assertEqual(_recorded(components),
                          [(normalize_for_speech(EN_QUOTED_NEUTRAL), LANG_EN)])
 
-    def test_unquoted_mixed_single_call(self):
+    def test_unquoted_mixed_three_calls_in_order(self):
+        # v0.10.5 phase 2: the unquoted phrase becomes its own span —
+        # three synthesis calls in text order, same voice, one payload.
         session, components = _make_session()
         pcm = self._run(session, HU_UNQUOTED_MIX)
         self.assertIsNotNone(pcm)
-        self.assertEqual(_recorded(components),
-                         [(normalize_for_speech(HU_UNQUOTED_MIX), LANG_HU)])
+        self.assertGreater(len(pcm), 0)
+        recorded = _recorded(components)
+        self.assertEqual(
+            recorded,
+            [
+                ("Szeretnék röviden ", LANG_HU),
+                ("touch base", LANG_EN),
+                ("-elni veled a projekt miatt.", LANG_HU),
+            ],
+        )
+        self.assertEqual("".join(t for t, _ in recorded),
+                         normalize_for_speech(HU_UNQUOTED_MIX))
 
     def test_typographic_quotes_no_unsupported_character_exception(self):
         # (4) the v0.10.3 normalization choke point runs BEFORE segmentation,

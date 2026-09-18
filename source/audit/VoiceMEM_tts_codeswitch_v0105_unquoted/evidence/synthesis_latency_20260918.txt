@@ -1,0 +1,31 @@
+Unquoted phrase-run synthesis latency (real Supertonic 3, CPU, F1)
+OLD = single host call (v0.10.5 behaviour, the reported bug)
+NEW = per-span calls via segment_language_spans, PCM concat
+
+case                       mode spans calls first_audio_ms  total_ms  pcm_ms    rms
+-----------------------------------------------------------------------------------
+engine warmup (load + 1 synth): 2.65 s
+
+F2 touch base-t            old      1     1         2385.6    2385.6  2100.0  0.058
+F2 touch base-t            new      3     3         1814.1    5094.2  2800.0  0.057
+    calls[ms]: 1814, 1578, 1702
+
+F3 catch up-olhatunk       old      1     1         2102.9    2102.9  2150.0  0.053
+F3 catch up-olhatunk       new      3     3         1909.2    5179.6  2750.0  0.065
+    calls[ms]: 1909, 1502, 1769
+
+F4 see you later           old      1     1         1803.0    1803.0  1150.0  0.067
+F4 see you later           new      2     2         1531.1    3375.3  1550.0  0.065
+    calls[ms]: 1531, 1844
+
+E1 pure EN (control)       old      1     1         1644.2    1644.2  1550.0  0.060
+E1 pure EN (control)       new      1     1         2061.9    2061.9  1550.0  0.062
+    calls[ms]: 2062
+
+D1 pure HU (control)       old      1     1         2634.5    2634.5  3350.0  0.056
+D1 pure HU (control)       new      1     1         2708.2    2708.2  3400.0  0.055
+    calls[ms]: 2708
+
+call latency variance (5 repeats per span, same warm engine):
+  Szeretnék egy gyors (HU prefix): median 1872 ms, min 1860, max 1901, stdev 18
+  touch base (EN run): median 1545 ms, min 1445, max 1555, stdev 46

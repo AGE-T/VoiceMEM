@@ -7,7 +7,8 @@ LLM deltas into speakable chunks for low-latency synthesis.
 
 from __future__ import annotations
 
-from typing import Optional
+import re
+from typing import NamedTuple, Optional
 
 LANG_HU = "hu"
 LANG_EN = "en"
@@ -298,26 +299,176 @@ def _region_language(content: str, host: str, foreign: str) -> str:
     return detected if detected == foreign else host
 
 
+# --------------------------------------------------------------------------- #
+# Unquoted phrase runs (v0.10.5 field gap: "Rendben, see you later." class)
+# --------------------------------------------------------------------------- #
+#
+# Production follow-up to the quoted-region fix: the assistant usually
+# embeds conversational English formulae WITHOUT quotes ("Rendben, see you
+# later.", "Szeretnék egy gyors touch base-t veled."), and those stayed
+# with the Hungarian model — HU grapheme-to-phoneme read the English
+# graphemes and the phrase became unintelligible (field: "SEE YOU LATER"
+# -> "se ju..."). A phrase RUN generalizes the quoted region lexicon-free:
+# a multi-word sequence with positive foreign evidence and zero host
+# evidence, bounded by host words, sentence punctuation or hyphen-attached
+# Hungarian suffixes. Single words NEVER re-route (loans like "projekt"/
+# "meeting"/"hazai" keep the host language — no over-detection), and a
+# chunk with too many runs stays whole (fragmentation guard). Full policy
+# and false-positive analysis: audit/VoiceMEM_tts_codeswitch_v0105_unquoted.
+
+#: A run must span at least this many words; single words stay host.
+PHRASE_RUN_MIN_WORDS = 2
+
+#: Signal-free (neutral) words may follow the last evidence word inside a
+#: run — English phrase bodies carry signal-free content words ("touch
+#: **base**", "see you **later**"). EN gets a budget of 1; HU gets 0
+#: (Hungarian words are orthographically distinctive, so a lone HU word
+#: in English text never sweeps the next word with it: "Győr today"
+#: stays one EN span).
+PHRASE_RUN_TRAILING_BUDGET = {LANG_EN: 1, LANG_HU: 0}
+
+#: More runs than this in ONE chunk -> no run switching for that chunk at
+#: all (pathological alternation stays whole; one chunk must not become a
+#: synthesis-call storm).
+PHRASE_RUN_MAX_RUNS = 3
+
+#: Punctuation that closes a clause — the trailing-neutral budget never
+#: crosses it ("touch. Base?" are two unrelated words, not a phrase).
+_PHRASE_SENTENCE_FINAL = frozenset(".!?;")
+
+
+class _PhraseWord(NamedTuple):
+    """One whitespace word prepared for phrase-run scanning.
+
+    ``start``/``end`` are char offsets into the CHUNK of the region the
+    word may cover inside a run: ``start`` sits on the first core
+    character (leading punctuation stays with the host clause), ``end``
+    sits one past the last character the run may include — the whole
+    token (trailing punctuation rides along, e.g. "later.") for plain
+    and evidence words, or the final hyphen for signal-free words with
+    an interior hyphen ("base-t": Hungarian derivational suffixes stay
+    with the host span). ``cls`` classifies the pre-hyphen head only.
+    """
+
+    start: int
+    end: int
+    cls: str
+    trimmed_at_hyphen: bool
+
+
+def _iter_phrase_words(text: str) -> list[_PhraseWord]:
+    """Whitespace tokens of *text* as :class:`_PhraseWord` records."""
+
+    words: list[_PhraseWord] = []
+    for m in re.finditer(r"\S+", text):
+        tok = m.group(0)
+        core = tok.strip(_TOKEN_STRIP)
+        if not core:
+            continue  # punctuation-only token — never part of a run
+        lead = len(tok) - len(tok.lstrip(_TOKEN_STRIP))
+        core_start = m.start() + lead
+        parts = core.split("-")
+        hyphenated = len(parts) > 1
+        head_parts = parts[:-1] if hyphenated else parts
+        # classification is case-insensitive ("SEE YOU LATER" field case);
+        # offsets stay bound to the original characters
+        clses = [_classify_word(p.lower()) for p in head_parts]
+        if LANG_HU in clses:
+            cls = LANG_HU
+        elif LANG_EN in clses:
+            cls = LANG_EN
+        else:
+            cls = ""
+        # Signal-free words with an interior hyphen contribute only their
+        # head to a run (the tail after the final hyphen is Hungarian
+        # morphology: "base-t", "up-olhatunk"). Evidence-bearing heads
+        # stay whole so English hyphen compounds ("check-in") survive.
+        if cls == "" and hyphenated:
+            end = core_start + len("-".join(head_parts))
+            words.append(_PhraseWord(core_start, end, cls, True))
+        else:
+            words.append(_PhraseWord(core_start, m.end(), cls, False))
+    return words
+
+
+def _phrase_runs(text: str, foreign: str) -> list[tuple[int, int]]:
+    """Char ranges of unquoted foreign phrase runs inside host text.
+
+    A run starts at a foreign-evidence word and extends over consecutive
+    words that carry no host evidence — further evidence words freely,
+    signal-free words only within the trailing budget and never across
+    sentence-final punctuation. A signal-free word with an interior
+    hyphen ends the run at the hyphen (Hungarian suffix stays host).
+    """
+
+    words = _iter_phrase_words(text)
+    budget_max = PHRASE_RUN_TRAILING_BUDGET.get(foreign, 0)
+    runs: list[tuple[int, int]] = []
+    i = 0
+    n = len(words)
+    while i < n:
+        if words[i].cls != foreign:
+            i += 1
+            continue
+        j = i
+        budget = budget_max
+        while j + 1 < n:
+            nxt = words[j + 1]
+            if nxt.cls == foreign:
+                j += 1
+                budget = budget_max
+                continue
+            if (
+                nxt.cls == ""
+                and budget > 0
+                and not _ends_clause(text, words[j].end)
+            ):
+                j += 1
+                budget -= 1
+                if nxt.trimmed_at_hyphen:
+                    break
+                continue
+            break
+        if j - i + 1 >= PHRASE_RUN_MIN_WORDS:
+            runs.append((words[i].start, words[j].end))
+        i = j + 1
+    return runs
+
+
+def _ends_clause(text: str, idx: int) -> bool:
+    """True when the character before *idx* closes a clause."""
+
+    return idx > 0 and text[idx - 1] in _PHRASE_SENTENCE_FINAL
+
+
 def segment_language_spans(text: str, host_language: str) -> list[tuple[str, str]]:
     """Split *text* into ``(span_text, span_lang)`` segments for TTS.
 
     The production TTS path selects one Supertonic language per synthesis
-    call; before this fix the unit of selection was the whole CHUNK, which
-    made embedded foreign phrases unintelligible. This function segments a
-    chunk at EXPLICIT set-off boundaries only — paired quotes (double or
-    single) and parentheses — so:
+    call; before v0.10.4 the unit of selection was the whole CHUNK, which
+    made embedded foreign phrases unintelligible. This function segments
+    a chunk at two evidence-gated levels:
 
-    * pure Hungarian / pure English text returns ONE span and the caller
-      synthesizes exactly as before (byte-identical behaviour);
-    * a quoted foreign phrase becomes its own span with its own language,
-      spoken by the SAME voice (voice continuity is the caller's job);
-    * unquoted code-switching ("touch base-elni" without quotes) stays with
-      the host language: word-level runs cannot place phrase boundaries
-      without a lexicon ("touch" is English-signal-bearing, "base" is
-      signal-neutral) and Hungarian loans ("technika") would false-positive.
-      Documented policy — the field-reported cases are all quoted;
-    * forced voice modes are handled by the CALLER (they skip this
-      function entirely and keep today's single-language behaviour).
+    * EXPLICIT set-off — paired quotes (double or single) and parentheses
+      (v0.10.4/5 behaviour, unchanged): ``A "touch base" egy gyakori angol
+      kifejezés.`` keeps its quoted region in English;
+    * UNQUOTED phrase runs (v0.10.5): a multi-word sequence with positive
+      foreign evidence and zero host evidence becomes its own span, so
+      ``Rendben, see you later.`` and ``Szeretnek egy gyors touch base-t
+      veld.`` speak the phrase with the foreign model while the Hungarian
+      sentence and the hyphen-attached suffixes (``-t``, ``-olhatunk``)
+      stay with the host model.
+
+    Anti-over-detection guarantees: single words NEVER re-route (loans
+    like "projekt"/"meeting" stay host); a host-evidence word always
+    terminates a run; the trailing-neutral budget is one word (EN) or zero
+    (HU); sentence-final punctuation blocks neutral sweep; more than
+    PHRASE_RUN_MAX_RUNS detected runs in one chunk disables run switching
+    for the whole chunk (fragmentation guard).
+
+    Pure Hungarian / pure English text returns ONE span and the caller
+    synthesizes exactly as before (byte-identical behaviour). Forced voice
+    modes are handled by the CALLER (they skip this function entirely).
 
     Hard invariant: ``"".join(t for t, _ in result) == text`` — no character
     is lost, added or reordered, so playback ordering cannot change.
@@ -326,29 +477,73 @@ def segment_language_spans(text: str, host_language: str) -> list[tuple[str, str
         return [(text, host_language)]
     host = LANG_EN if host_language == LANG_EN else LANG_HU
     foreign = LANG_HU if host == LANG_EN else LANG_EN
+
+    # -- level 1: explicit set-off regions (v0.10.4/5, unchanged) --------- #
+    regions = _scan_regions(text)
+    region_cuts: list[tuple[int, int, str]] = [  # (start, end_exclusive, lang)
+        (
+            start,
+            end + 1,
+            _region_language(text[start + 1 : end], host, foreign),
+        )
+        for start, end in regions
+    ]
+
+    # host gaps: the text between the regions (never inside a region — a
+    # region is an evidence-arbitrated unit of its own since v0.10.4/5)
+    host_gaps: list[tuple[int, int]] = []
+    pos = 0
+    for start, endx, _lang in region_cuts:
+        if start > pos:
+            host_gaps.append((pos, start))
+        pos = endx
+    if pos < len(text):
+        host_gaps.append((pos, len(text)))
+
+    # -- level 2: unquoted phrase runs inside the host gaps ---------------- #
+    run_cuts: list[tuple[int, int]] = []
+    for gs, ge in host_gaps:
+        run_cuts.extend(
+            (gs + rs, gs + re) for rs, re in _phrase_runs(text[gs:ge], foreign)
+        )
+    if len(run_cuts) > PHRASE_RUN_MAX_RUNS:
+        run_cuts = []  # pathological alternation — the chunk stays host
+    all_cuts: list[tuple[int, int, str]] = list(region_cuts)
+    all_cuts.extend((rs, re, foreign) for rs, re in run_cuts)
+    all_cuts.sort(key=lambda c: c[0])
+
     spans: list[tuple[str, str]] = []
     pos = 0
-    for start, end in _scan_regions(text):
+    for start, endx, lang in all_cuts:
         if start > pos:
             spans.append((text[pos:start], host))
-        spans.append(
-            (
-                text[start : end + 1],
-                _region_language(text[start + 1 : end], host, foreign),
-            )
-        )
-        pos = end + 1
+        spans.append((text[start:endx], lang))
+        pos = endx
     if pos < len(text):
         spans.append((text[pos:], host))
-    merged: list[tuple[str, str]] = []
+
+    # -- cleanup: drop empties, absorb whitespace-only shards, merge ------- #
+    kept: list[tuple[str, str]] = []
+    pending_ws = ""
     for span_text, span_lang in spans:
         if not span_text:
             continue
-        if merged and merged[-1][1] == span_lang:
-            merged[-1] = (merged[-1][0] + span_text, span_lang)
+        if not span_text.strip():
+            # whitespace-only shard at a cut boundary — never a synthesis call
+            if kept:
+                kept[-1] = (kept[-1][0] + span_text, kept[-1][1])
+            else:
+                pending_ws += span_text
+            continue
+        span_text = pending_ws + span_text
+        pending_ws = ""
+        if kept and kept[-1][1] == span_lang:
+            kept[-1] = (kept[-1][0] + span_text, span_lang)
         else:
-            merged.append((span_text, span_lang))
-    return merged or [(text, host)]
+            kept.append((span_text, span_lang))
+    if pending_ws and kept:
+        kept[-1] = (kept[-1][0] + pending_ws, kept[-1][1])
+    return kept or [(text, host)]
 
 
 # --------------------------------------------------------------------------- #

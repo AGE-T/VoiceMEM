@@ -1,0 +1,19 @@
+case                   host  spans  decisions
+----------------------------------------------------------------------------------------
+D1-hu-pure             hu    1     HU: 'Szeretnék röviden beszélni veled az új proje'
+D2-hu-loan-meeting     hu    1     HU: 'A meeting után átbeszéljük a projektet.'
+D3-hu-hazai            hu    1     HU: 'A hazai megoldás olcsóbb, mint a tea és az a'
+F1-quoted              hu    3     HU: 'A' | EN: '"touch base"' | HU: 'egy gyakori angol kifejezés.'
+F2-unquoted-tb         hu    1     HU: 'Szeretnék egy gyors touch base-t veled.'
+F3-unquoted-cu         hu    1     HU: 'Szerintem később catch up-olhatunk.'
+F4-unquoted-syl        hu    1     HU: 'Rendben, see you later.'
+F5-caps-syl            hu    1     HU: 'Rendben, SEE YOU LATER!'
+E1-en-pure             en    1     EN: "I'd like to touch base with you."
+E2-en-pure             en    1     EN: "Let's catch up later."
+E3-en-pure             en    1     EN: 'See you later.'
+----------------------------------------------------------------------------------------
+FAILURES (current v0.10.5 behaviour):
+  - F2-unquoted-tb: expected EN routing for 'touch base'
+  - F3-unquoted-cu: expected EN routing for 'catch up'
+  - F4-unquoted-syl: expected EN routing for 'see you later'
+  - F5-caps-syl: expected EN routing for 'SEE YOU LATER'

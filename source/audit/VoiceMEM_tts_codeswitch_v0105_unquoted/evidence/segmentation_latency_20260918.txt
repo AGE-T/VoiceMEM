@@ -1,0 +1,13 @@
+segment_language_spans latency (sandbox, 1000 calls per case)
+pure_hu_53ch host=hu chars=50 spans=1 per_call=27.9us
+pure_hu_53ch host=en chars=50 spans=3 per_call=30.7us
+pure_en_46ch host=hu chars=32 spans=1 per_call=32.0us
+pure_en_46ch host=en chars=32 spans=1 per_call=29.3us
+unquoted_run_43ch host=hu chars=39 spans=3 per_call=28.7us
+unquoted_run_43ch host=en chars=39 spans=2 per_call=28.6us
+unquoted_run_36ch host=hu chars=35 spans=3 per_call=21.3us
+unquoted_run_36ch host=en chars=35 spans=2 per_call=20.4us
+quoted_plus_run_55ch host=hu chars=50 spans=5 per_call=55.8us
+quoted_plus_run_55ch host=en chars=50 spans=3 per_call=37.0us
+worst_multiregion_360ch host=hu chars=178 spans=3 per_call=127.0us
+worst_multiregion_360ch host=en chars=178 spans=5 per_call=127.2us
