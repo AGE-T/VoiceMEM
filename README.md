@@ -21,6 +21,7 @@ the agent workspace.
 | `VoiceMemAgent_v0.10.4_S8LatencyCorrelation.zip` | **Evidence package** for the `S8LatencyCorrelation.zip` work unit (GOLDEN RULE deliverable: RECOVERY.md + identity.json + evidence). | 531 KB |
 | `VoiceMemAgent_v0.10.5_MemoryPerformanceAudit.zip` | **Evidence package** for the `MemoryPerformanceAudit.zip` work unit (GOLDEN RULE deliverable: RECOVERY.md + identity.json + evidence). | 48 KB |
 | `VoiceMemAgent_v0.10.5_MirrorSync.zip` | **The mirror-sync evidence** for this release: PAT permission check (redacted), sync dry-run, push log, and a fresh anonymous-clone verification that the GitHub mirror is byte-identical to the locally produced artifacts (SHA-256 tables from both sides). | 11 KB |
+| `VoiceMemAgent_v0.10.5_TTSForensicFix.zip` | **Evidence package** for the `TTSForensicFix.zip` work unit (GOLDEN RULE deliverable: RECOVERY.md + identity.json + evidence). | 28 KB |
 | `VoiceMem_asrregression_v0101_recovery.zip` | **The recovery package** for this release: `RECOVERY.md` + `identity.json` + evidence (the GREEN gate record, the code diff, changed files, test output, the release ZIP hash) — the versioned, independently restorable rollback anchor (what changed, how to verify it, how to roll back). | 33 KB |
 | `VoiceMem_forensic_v0104_recovery.zip` | **The recovery package** for this release: `RECOVERY.md` + `identity.json` + evidence (the GREEN gate record, the code diff, changed files, test output, the release ZIP hash) — the versioned, independently restorable rollback anchor (what changed, how to verify it, how to roll back). | 38 KB |
 | `VoiceMem_llmpriority_v0102_recovery.zip` | **The recovery package** for this release: `RECOVERY.md` + `identity.json` + evidence (the GREEN gate record, the code diff, changed files, test output, the release ZIP hash) — the versioned, independently restorable rollback anchor (what changed, how to verify it, how to roll back). | 36 KB |
@@ -35,7 +36,7 @@ the agent workspace.
 ## Verify your download
 
 ```bash
-sha256sum VoiceMemAgent_v0.10.5.zip VoiceMemAgent_v0.10.0_MirrorSync.zip VoiceMemAgent_v0.10.2_MirrorSync.zip VoiceMemAgent_v0.10.3_MirrorSync.zip VoiceMemAgent_v0.10.4_MirrorSync.zip VoiceMemAgent_v0.10.4_S8LatencyCorrelation.zip VoiceMemAgent_v0.10.5_MemoryPerformanceAudit.zip VoiceMemAgent_v0.10.5_MirrorSync.zip VoiceMem_asrregression_v0101_recovery.zip VoiceMem_forensic_v0104_recovery.zip VoiceMem_llmpriority_v0102_recovery.zip VoiceMem_memoryfixes_v080_recovery.zip VoiceMem_memorysemantics_v090_recovery.zip VoiceMem_runtimeopt_v092_recovery.zip VoiceMem_stabilization_v081_recovery.zip VoiceMem_temporal_v010_recovery.zip VoiceMem_upstreamaudit_v0103_recovery.zip VoiceMem_vadfix_v091_recovery.zip
+sha256sum VoiceMemAgent_v0.10.5.zip VoiceMemAgent_v0.10.0_MirrorSync.zip VoiceMemAgent_v0.10.2_MirrorSync.zip VoiceMemAgent_v0.10.3_MirrorSync.zip VoiceMemAgent_v0.10.4_MirrorSync.zip VoiceMemAgent_v0.10.4_S8LatencyCorrelation.zip VoiceMemAgent_v0.10.5_MemoryPerformanceAudit.zip VoiceMemAgent_v0.10.5_MirrorSync.zip VoiceMemAgent_v0.10.5_TTSForensicFix.zip VoiceMem_asrregression_v0101_recovery.zip VoiceMem_forensic_v0104_recovery.zip VoiceMem_llmpriority_v0102_recovery.zip VoiceMem_memoryfixes_v080_recovery.zip VoiceMem_memorysemantics_v090_recovery.zip VoiceMem_runtimeopt_v092_recovery.zip VoiceMem_stabilization_v081_recovery.zip VoiceMem_temporal_v010_recovery.zip VoiceMem_upstreamaudit_v0103_recovery.zip VoiceMem_vadfix_v091_recovery.zip
 ```
 
 Expected:
@@ -49,6 +50,7 @@ dbb35358eb78a071f084a46088894cf2e0c2c2e6b17fc0918735c6e538f64787  VoiceMemAgent_
 f9ace279cebe98abb8f438352ce724ad63f0fec7f8bbd22fb8308b055b422146  VoiceMemAgent_v0.10.4_S8LatencyCorrelation.zip
 5ceb6bd176f9ed309b6f67a9112629a5b3282b4e13cd6965e0c9c1be74eb8e28  VoiceMemAgent_v0.10.5_MemoryPerformanceAudit.zip
 a00c96ba5319babd643984eb1ef4ebd40ca216a7d2b17ab844fb257dc601394f  VoiceMemAgent_v0.10.5_MirrorSync.zip
+b5ba47263d7388bb03d599260f21040c2a86d5ce4da863b1e393ad1c75787712  VoiceMemAgent_v0.10.5_TTSForensicFix.zip
 59f0df85711dd0eb6b6d4a2848878c47c421a204a504d31963d2b74c0571bb9c  VoiceMem_asrregression_v0101_recovery.zip
 514ecdd8010e78efcc6c5cd1dd31b062c41b6a8d85019882fa597a442274842c  VoiceMem_forensic_v0104_recovery.zip
 06b065abe83e42f01f162baa1711fa22b2fddbcb63ed79851ccae567630220bd  VoiceMem_llmpriority_v0102_recovery.zip

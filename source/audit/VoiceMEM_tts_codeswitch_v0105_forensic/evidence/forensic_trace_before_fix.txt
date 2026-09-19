@@ -1,0 +1,270 @@
+[T1] delta=  3  chunks=1  calls=1
+    TEXT="Let's cut to the chase."
+      HOST=en  VOICE=F1
+      EN_SPANS=Let's cut to the chase.
+      CALLS=en:"Let's cut to the chase."
+    IDIOM 'cut to the chase' -> word languages ['en']
+
+[T1] delta=  8  chunks=1  calls=1
+    TEXT="Let's cut to the chase."
+      HOST=en  VOICE=F1
+      EN_SPANS=Let's cut to the chase.
+      CALLS=en:"Let's cut to the chase."
+    IDIOM 'cut to the chase' -> word languages ['en']
+
+[T1] delta= 23  chunks=1  calls=1
+    TEXT="Let's cut to the chase."
+      HOST=en  VOICE=F1
+      EN_SPANS=Let's cut to the chase.
+      CALLS=en:"Let's cut to the chase."
+    IDIOM 'cut to the chase' -> word languages ['en']
+
+[T2] delta=  3  chunks=2  calls=2
+    TEXT='Sometimes you just have'
+      HOST=en  VOICE=F1
+      EN_SPANS=Sometimes you just have
+      CALLS=en:'Sometimes you just have'
+    TEXT='to hit the ground running.'
+      HOST=en  VOICE=F1
+      EN_SPANS=to hit the ground running.
+      CALLS=en:'to hit the ground running.'
+    IDIOM 'hit the ground running' -> word languages ['en']
+
+[T2] delta=  8  chunks=2  calls=2
+    TEXT='Sometimes you just have'
+      HOST=en  VOICE=F1
+      EN_SPANS=Sometimes you just have
+      CALLS=en:'Sometimes you just have'
+    TEXT='to hit the ground running.'
+      HOST=en  VOICE=F1
+      EN_SPANS=to hit the ground running.
+      CALLS=en:'to hit the ground running.'
+    IDIOM 'hit the ground running' -> word languages ['en']
+
+[T2] delta= 50  chunks=1  calls=1
+    TEXT='Sometimes you just have to hit the ground running.'
+      HOST=en  VOICE=F1
+      EN_SPANS=Sometimes you just have to hit the ground running.
+      CALLS=en:'Sometimes you just have to hit the ground running.'
+    IDIOM 'hit the ground running' -> word languages ['en']
+
+[T3] delta=  3  chunks=2  calls=2
+    TEXT='We had to burn the'
+      HOST=en  VOICE=F1
+      EN_SPANS=We had to burn the
+      CALLS=en:'We had to burn the'
+    TEXT='midnight oil.'
+      HOST=en  VOICE=F1
+      EN_SPANS=midnight oil.
+      CALLS=en:'midnight oil.'
+    IDIOM 'burn the midnight oil' -> word languages ['en']
+
+[T3] delta=  8  chunks=1  calls=1
+    TEXT='We had to burn the midnight oil.'
+      HOST=en  VOICE=F1
+      EN_SPANS=We had to burn the midnight oil.
+      CALLS=en:'We had to burn the midnight oil.'
+    IDIOM 'burn the midnight oil' -> word languages ['en']
+
+[T3] delta= 32  chunks=1  calls=1
+    TEXT='We had to burn the midnight oil.'
+      HOST=en  VOICE=F1
+      EN_SPANS=We had to burn the midnight oil.
+      CALLS=en:'We had to burn the midnight oil.'
+    IDIOM 'burn the midnight oil' -> word languages ['en']
+
+[T4] delta=  3  chunks=2  calls=2
+    TEXT='Before the show,'
+      HOST=en  VOICE=F1
+      EN_SPANS=Before the show,
+      CALLS=en:'Before the show,'
+    TEXT='everyone said break a leg.'
+      HOST=en  VOICE=F1
+      EN_SPANS=everyone said break a leg.
+      CALLS=en:'everyone said break a leg.'
+    IDIOM 'break a leg' -> word languages ['en']
+
+[T4] delta=  8  chunks=2  calls=2
+    TEXT='Before the show,'
+      HOST=en  VOICE=F1
+      EN_SPANS=Before the show,
+      CALLS=en:'Before the show,'
+    TEXT='everyone said break a leg.'
+      HOST=en  VOICE=F1
+      EN_SPANS=everyone said break a leg.
+      CALLS=en:'everyone said break a leg.'
+    IDIOM 'break a leg' -> word languages ['en']
+
+[T4] delta= 43  chunks=1  calls=1
+    TEXT='Before the show, everyone said break a leg.'
+      HOST=en  VOICE=F1
+      EN_SPANS=Before the show, everyone said break a leg.
+      CALLS=en:'Before the show, everyone said break a leg.'
+    IDIOM 'break a leg' -> word languages ['en']
+
+[T5] delta=  3  chunks=2  calls=3
+    TEXT='Most már tényleg cut to'
+      HOST=hu  VOICE=F1
+      EN_SPANS=(none)
+      CALLS=hu:'Most már tényleg cut to'
+    TEXT='the chase, és menjünk tovább.'
+      HOST=hu  VOICE=F1
+      EN_SPANS=the chase,
+      CALLS=en:'the chase,' || hu:' és menjünk tovább.'
+    IDIOM 'cut to the chase' -> word languages ['en', 'hu']
+
+[T5] delta=  8  chunks=2  calls=3
+    TEXT='Most már tényleg cut to'
+      HOST=hu  VOICE=F1
+      EN_SPANS=(none)
+      CALLS=hu:'Most már tényleg cut to'
+    TEXT='the chase, és menjünk tovább.'
+      HOST=hu  VOICE=F1
+      EN_SPANS=the chase,
+      CALLS=en:'the chase,' || hu:' és menjünk tovább.'
+    IDIOM 'cut to the chase' -> word languages ['en', 'hu']
+
+[T5] delta= 53  chunks=1  calls=3
+    TEXT='Most már tényleg cut to the chase, és menjünk tovább.'
+      HOST=hu  VOICE=F1
+      EN_SPANS=to the chase,
+      CALLS=hu:'Most már tényleg cut ' || en:'to the chase,' || hu:' és menjünk tovább.'
+    IDIOM 'cut to the chase' -> word languages ['en', 'hu']
+
+[T6] delta=  3  chunks=2  calls=2
+    TEXT='Ma először checkeljük a'
+      HOST=hu  VOICE=F1
+      EN_SPANS=(none)
+      CALLS=hu:'Ma először checkeljük a'
+    TEXT='resultot, aztán megnézzük a statuszt, végül pedig beszélünk a next step-ről.'
+      HOST=hu  VOICE=F1
+      EN_SPANS=(none)
+      CALLS=hu:'resultot, aztán megnézzük a statuszt, végül pedig beszélünk a next step-ről.'
+
+[T6] delta=  8  chunks=2  calls=2
+    TEXT='Ma először checkeljük a'
+      HOST=hu  VOICE=F1
+      EN_SPANS=(none)
+      CALLS=hu:'Ma először checkeljük a'
+    TEXT='resultot, aztán megnézzük a statuszt, végül pedig beszélünk a next step-ről.'
+      HOST=hu  VOICE=F1
+      EN_SPANS=(none)
+      CALLS=hu:'resultot, aztán megnézzük a statuszt, végül pedig beszélünk a next step-ről.'
+
+[T6] delta=100  chunks=1  calls=1
+    TEXT='Ma először checkeljük a resultot, aztán megnézzük a statuszt, végül pedig beszélünk a next step-ről.'
+      HOST=hu  VOICE=F1
+      EN_SPANS=(none)
+      CALLS=hu:'Ma először checkeljük a resultot, aztán megnézzük a statuszt, végül pedig beszélünk a next step-ről.'
+
+[T7] delta=  3  chunks=3  calls=3
+    TEXT='A mai test során'
+      HOST=hu  VOICE=F1
+      EN_SPANS=(none)
+      CALLS=hu:'A mai test során'
+    TEXT='először checkeljük a resultot, aztán megnézzük a statuszt, végül pedig'
+      HOST=hu  VOICE=F1
+      EN_SPANS=(none)
+      CALLS=hu:'először checkeljük a resultot, aztán megnézzük a statuszt, végül pedig'
+    TEXT='beszélünk a next step-ről.'
+      HOST=hu  VOICE=F1
+      EN_SPANS=(none)
+      CALLS=hu:'beszélünk a next step-ről.'
+
+[T7] delta=  8  chunks=3  calls=3
+    TEXT='A mai test során'
+      HOST=hu  VOICE=F1
+      EN_SPANS=(none)
+      CALLS=hu:'A mai test során'
+    TEXT='először checkeljük a resultot, aztán megnézzük a statuszt, végül pedig'
+      HOST=hu  VOICE=F1
+      EN_SPANS=(none)
+      CALLS=hu:'először checkeljük a resultot, aztán megnézzük a statuszt, végül pedig'
+    TEXT='beszélünk a next step-ről.'
+      HOST=hu  VOICE=F1
+      EN_SPANS=(none)
+      CALLS=hu:'beszélünk a next step-ről.'
+
+[T7] delta=114  chunks=1  calls=1
+    TEXT='A mai test során először checkeljük a resultot, aztán megnézzük a statuszt, végül pedig beszélünk a next step-ről.'
+      HOST=hu  VOICE=F1
+      EN_SPANS=(none)
+      CALLS=hu:'A mai test során először checkeljük a resultot, aztán megnézzük a statuszt, végül pedig beszélünk a next step-ről.'
+
+[T8] delta=  3  chunks=2  calls=3
+    TEXT='Holnap lesz a meeting,'
+      HOST=hu  VOICE=F1
+      EN_SPANS=(none)
+      CALLS=hu:'Holnap lesz a meeting,'
+    TEXT='utána pedig catch up.'
+      HOST=hu  VOICE=F1
+      EN_SPANS=catch up.
+      CALLS=hu:'utána pedig ' || en:'catch up.'
+
+[T8] delta=  8  chunks=2  calls=3
+    TEXT='Holnap lesz a meeting,'
+      HOST=hu  VOICE=F1
+      EN_SPANS=(none)
+      CALLS=hu:'Holnap lesz a meeting,'
+    TEXT='utána pedig catch up.'
+      HOST=hu  VOICE=F1
+      EN_SPANS=catch up.
+      CALLS=hu:'utána pedig ' || en:'catch up.'
+
+[T8] delta= 44  chunks=1  calls=2
+    TEXT='Holnap lesz a meeting, utána pedig catch up.'
+      HOST=hu  VOICE=F1
+      EN_SPANS=catch up.
+      CALLS=hu:'Holnap lesz a meeting, utána pedig ' || en:'catch up.'
+
+[T9] delta=  3  chunks=2  calls=3
+    TEXT='Touch base után'
+      HOST=hu  VOICE=F1
+      EN_SPANS=Touch base
+      CALLS=en:'Touch base' || hu:' után'
+    TEXT='megbeszéljük a projektet.'
+      HOST=hu  VOICE=F1
+      EN_SPANS=(none)
+      CALLS=hu:'megbeszéljük a projektet.'
+
+[T9] delta=  8  chunks=2  calls=3
+    TEXT='Touch base után'
+      HOST=hu  VOICE=F1
+      EN_SPANS=Touch base
+      CALLS=en:'Touch base' || hu:' után'
+    TEXT='megbeszéljük a projektet.'
+      HOST=hu  VOICE=F1
+      EN_SPANS=(none)
+      CALLS=hu:'megbeszéljük a projektet.'
+
+[T9] delta= 41  chunks=1  calls=2
+    TEXT='Touch base után megbeszéljük a projektet.'
+      HOST=hu  VOICE=F1
+      EN_SPANS=Touch base
+      CALLS=en:'Touch base' || hu:' után megbeszéljük a projektet.'
+
+[T10] delta=  3  chunks=2  calls=2
+    TEXT='Ez a projekt fontos, de'
+      HOST=hu  VOICE=F1
+      EN_SPANS=(none)
+      CALLS=hu:'Ez a projekt fontos, de'
+    TEXT='most nem akarok meetinget.'
+      HOST=hu  VOICE=F1
+      EN_SPANS=(none)
+      CALLS=hu:'most nem akarok meetinget.'
+
+[T10] delta=  8  chunks=2  calls=2
+    TEXT='Ez a projekt fontos, de'
+      HOST=hu  VOICE=F1
+      EN_SPANS=(none)
+      CALLS=hu:'Ez a projekt fontos, de'
+    TEXT='most nem akarok meetinget.'
+      HOST=hu  VOICE=F1
+      EN_SPANS=(none)
+      CALLS=hu:'most nem akarok meetinget.'
+
+[T10] delta= 50  chunks=1  calls=1
+    TEXT='Ez a projekt fontos, de most nem akarok meetinget.'
+      HOST=hu  VOICE=F1
+      EN_SPANS=(none)
+      CALLS=hu:'Ez a projekt fontos, de most nem akarok meetinget.'

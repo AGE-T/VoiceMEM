@@ -327,6 +327,21 @@ PHRASE_RUN_MIN_WORDS = 2
 #: stays one EN span).
 PHRASE_RUN_TRAILING_BUDGET = {LANG_EN: 1, LANG_HU: 0}
 
+#: [v0.10.5 forensic fix] Signal-free words may also PRECEDE a run —
+#: English idiom heads are orthographically signal-free ("**cut** to the
+#: chase", "**hit** the ground running", "**burn** the midnight oil"),
+#: so an evidence-only run start amputates the head word into the host
+#: span and the idiom is spoken half-Hungarian. Same values as the
+#: trailing budget (EN 1, HU 0) for symmetry.
+PHRASE_RUN_LEADING_BUDGET = {LANG_EN: 1, LANG_HU: 0}
+
+#: [v0.10.5 forensic fix] Leading absorption requires this many
+#: foreign-evidence words INSIDE the run. A single-evidence run
+#: ("touch base", "catch up") never absorbs its leading neutral word —
+#: that is the operator-mandated loanword protection: "Holnap touch
+#: base." keeps "Holnap" with the host even though it is signal-free.
+PHRASE_RUN_LEADING_MIN_EVIDENCE = 2
+
 #: More runs than this in ONE chunk -> no run switching for that chunk at
 #: all (pathological alternation stays whole; one chunk must not become a
 #: synthesis-call storm).
@@ -399,10 +414,21 @@ def _phrase_runs(text: str, foreign: str) -> list[tuple[int, int]]:
     signal-free words only within the trailing budget and never across
     sentence-final punctuation. A signal-free word with an interior
     hyphen ends the run at the hyphen (Hungarian suffix stays host).
+
+    [v0.10.5 forensic fix] A formed run may additionally ABSORB up to
+    ``PHRASE_RUN_LEADING_BUDGET`` signal-free words immediately BEFORE
+    its first evidence word (guarded by ``PHRASE_RUN_LEADING_MIN_
+    EVIDENCE``) so that orthographically signal-free idiom heads
+    ("cut to the chase", "hit the ground running", "burn the midnight
+    oil") are not amputated into the host span. The same guards as the
+    trailing budget apply: host-evidence words block, sentence-final
+    punctuation blocks, and hyphen-trimmed (Hungarian-suffixed) or
+    non-alphabetic (digit/URL) tokens are never absorbed.
     """
 
     words = _iter_phrase_words(text)
     budget_max = PHRASE_RUN_TRAILING_BUDGET.get(foreign, 0)
+    lead_max = PHRASE_RUN_LEADING_BUDGET.get(foreign, 0)
     runs: list[tuple[int, int]] = []
     i = 0
     n = len(words)
@@ -430,9 +456,48 @@ def _phrase_runs(text: str, foreign: str) -> list[tuple[int, int]]:
                 continue
             break
         if j - i + 1 >= PHRASE_RUN_MIN_WORDS:
-            runs.append((words[i].start, words[j].end))
+            start = _absorb_leading(text, words, i, j, lead_max, foreign)
+            runs.append((words[start].start, words[j].end))
         i = j + 1
     return runs
+
+
+def _absorb_leading(
+    text: str, words: list[_PhraseWord], i: int, j: int, lead_max: int, foreign: str
+) -> int:
+    """Index of the run start after absorbing leading signal-free words.
+
+    Absorption is the mirror of the trailing budget with TWO extra
+    guards discovered by the v0.10.5 forensic audit
+    (audit/VoiceMEM_tts_codeswitch_v0105_forensic):
+
+    * the run must contain at least ``PHRASE_RUN_LEADING_MIN_EVIDENCE``
+      foreign-evidence words — a lone-evidence run ("touch base",
+      "catch up") must NOT pull its preceding neutral Hungarian word
+      ("Holnap touch base") into the foreign span;
+    * the absorbed token must be purely alphabetic and not hyphen-
+      trimmed — digits/URLs never carry language and Hungarian-suffixed
+      stems ("base-t") always stay host.
+
+    Sentence-final punctuation before the candidate blocks absorption
+    ("kész. cut to the chase" keeps "cut" host — the conservative
+    mirror of the trailing rule's clause guard).
+    """
+
+    if lead_max <= 0 or i == 0:
+        return i
+    evidence = sum(1 for k in range(i, j + 1) if words[k].cls == foreign)
+    if evidence < PHRASE_RUN_LEADING_MIN_EVIDENCE:
+        return i
+    prev = words[i - 1]
+    if prev.cls != "" or prev.trimmed_at_hyphen:
+        return i
+    core = text[prev.start : prev.end].strip(_TOKEN_STRIP)
+    if not (core and core.isalpha()):
+        return i
+    if _ends_clause(text, prev.end):
+        return i
+    return i - 1
 
 
 def _ends_clause(text: str, idx: int) -> bool:

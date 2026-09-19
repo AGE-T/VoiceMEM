@@ -1,0 +1,65 @@
+case   d  calls B/A                         EN spans B                         EN spans A
+T1     3    1/1      Let's cut to the chase.            Let's cut to the chase.           
+T1     8    1/1      Let's cut to the chase.            Let's cut to the chase.           
+T1    23    1/1      Let's cut to the chase.            Let's cut to the chase.           
+T2     3    2/2      Sometimes you just have | to hit t Sometimes you just have | to hit t
+T2     8    2/2      Sometimes you just have | to hit t Sometimes you just have | to hit t
+T2    50    1/1      Sometimes you just have to hit the Sometimes you just have to hit the
+T3     3    2/2      We had to burn the | midnight oil. We had to burn the | midnight oil.
+T3     8    1/1      We had to burn the midnight oil.   We had to burn the midnight oil.  
+T3    32    1/1      We had to burn the midnight oil.   We had to burn the midnight oil.  
+T4     3    2/2      Before the show, | everyone said b Before the show, | everyone said b
+T4     8    2/2      Before the show, | everyone said b Before the show, | everyone said b
+T4    43    1/1      Before the show, everyone said bre Before the show, everyone said bre
+T5     3    3/3      the chase,                         the chase,                        
+T5     8    3/3      the chase,                         the chase,                        
+T5    53    3/3      to the chase,                      cut to the chase,                   <-- CHANGED
+T6     3    2/2      -                                  -                                 
+T6     8    2/2      -                                  -                                 
+T6   100    1/1      -                                  -                                 
+T7     3    3/3      -                                  -                                 
+T7     8    3/3      -                                  -                                 
+T7   114    1/1      -                                  -                                 
+T8     3    3/3      catch up.                          catch up.                         
+T8     8    3/3      catch up.                          catch up.                         
+T8    44    2/2      catch up.                          catch up.                         
+T9     3    3/3      Touch base                         Touch base                        
+T9     8    3/3      Touch base                         Touch base                        
+T9    41    2/2      Touch base                         Touch base                        
+T10    3    2/2      -                                  -                                 
+T10    8    2/2      -                                  -                                 
+T10   50    1/1      -                                  -                                 
+
+TOTAL synth calls: before=59  after=59  delta=0
+
+First-call text (first-audio latency driver), before -> after:
+  T1/  3: "Let's cut to the chase." -> "Let's cut to the chase."
+  T1/  8: "Let's cut to the chase." -> "Let's cut to the chase."
+  T1/ 23: "Let's cut to the chase." -> "Let's cut to the chase."
+  T2/  3: 'Sometimes you just have' -> 'Sometimes you just have'
+  T2/  8: 'Sometimes you just have' -> 'Sometimes you just have'
+  T2/ 50: 'Sometimes you just have to hit the ground running.' -> 'Sometimes you just have to hit the ground running.'
+  T3/  3: 'We had to burn the' -> 'We had to burn the'
+  T3/  8: 'We had to burn the midnight oil.' -> 'We had to burn the midnight oil.'
+  T3/ 32: 'We had to burn the midnight oil.' -> 'We had to burn the midnight oil.'
+  T4/  3: 'Before the show,' -> 'Before the show,'
+  T4/  8: 'Before the show,' -> 'Before the show,'
+  T4/ 43: 'Before the show, everyone said break a leg.' -> 'Before the show, everyone said break a leg.'
+  T5/  3: 'Most már tényleg cut to' -> 'Most már tényleg cut to'
+  T5/  8: 'Most már tényleg cut to' -> 'Most már tényleg cut to'
+  T5/ 53: 'Most már tényleg cut ' -> 'Most már tényleg '  CHANGED
+  T6/  3: 'Ma először checkeljük a' -> 'Ma először checkeljük a'
+  T6/  8: 'Ma először checkeljük a' -> 'Ma először checkeljük a'
+  T6/100: 'Ma először checkeljük a resultot, aztán megnézzük a statuszt, végül pedig beszélünk a next step-ről.' -> 'Ma először checkeljük a resultot, aztán megnézzük a statuszt, végül pedig beszélünk a next step-ről.'
+  T7/  3: 'A mai test során' -> 'A mai test során'
+  T7/  8: 'A mai test során' -> 'A mai test során'
+  T7/114: 'A mai test során először checkeljük a resultot, aztán megnézzük a statuszt, végül pedig beszélünk a next step-ről.' -> 'A mai test során először checkeljük a resultot, aztán megnézzük a statuszt, végül pedig beszélünk a next step-ről.'
+  T8/  3: 'Holnap lesz a meeting,' -> 'Holnap lesz a meeting,'
+  T8/  8: 'Holnap lesz a meeting,' -> 'Holnap lesz a meeting,'
+  T8/ 44: 'Holnap lesz a meeting, utána pedig ' -> 'Holnap lesz a meeting, utána pedig '
+  T9/  3: 'Touch base' -> 'Touch base'
+  T9/  8: 'Touch base' -> 'Touch base'
+  T9/ 41: 'Touch base' -> 'Touch base'
+  T10/  3: 'Ez a projekt fontos, de' -> 'Ez a projekt fontos, de'
+  T10/  8: 'Ez a projekt fontos, de' -> 'Ez a projekt fontos, de'
+  T10/ 50: 'Ez a projekt fontos, de most nem akarok meetinget.' -> 'Ez a projekt fontos, de most nem akarok meetinget.'

@@ -1,0 +1,1624 @@
+[
+  {
+    "case": "T1",
+    "sentence": "Let's cut to the chase.",
+    "delta_size": 3,
+    "n_deltas": 8,
+    "n_chunks": 1,
+    "n_synth_calls": 1,
+    "chunks": [
+      {
+        "TEXT": "Let's cut to the chase.",
+        "FINAL_INPUT_AFTER_NORMALIZE": "Let's cut to the chase.",
+        "HOST_LANGUAGE": "en",
+        "DETECTED_ENGLISH_SPANS": [
+          "Let's cut to the chase."
+        ],
+        "SPANS": [
+          {
+            "SPAN_TEXT": "Let's cut to the chase.",
+            "SPAN_LANGUAGE": "en"
+          }
+        ],
+        "SELECTED_VOICE": "F1",
+        "DIAG_LINE": "TTS voice: F1 · Nyugodt női (English, mode auto)",
+        "SYNTH_CALLS": [
+          {
+            "ROUTED_LANGUAGE": "en",
+            "SUPERTONIC_LANG": "en",
+            "FINAL_TTS_TEXT": "Let's cut to the chase.",
+            "VOICE": "F1"
+          }
+        ]
+      }
+    ],
+    "idiom_word_routing": {
+      "cut to the chase": [
+        "en"
+      ]
+    }
+  },
+  {
+    "case": "T1",
+    "sentence": "Let's cut to the chase.",
+    "delta_size": 8,
+    "n_deltas": 3,
+    "n_chunks": 1,
+    "n_synth_calls": 1,
+    "chunks": [
+      {
+        "TEXT": "Let's cut to the chase.",
+        "FINAL_INPUT_AFTER_NORMALIZE": "Let's cut to the chase.",
+        "HOST_LANGUAGE": "en",
+        "DETECTED_ENGLISH_SPANS": [
+          "Let's cut to the chase."
+        ],
+        "SPANS": [
+          {
+            "SPAN_TEXT": "Let's cut to the chase.",
+            "SPAN_LANGUAGE": "en"
+          }
+        ],
+        "SELECTED_VOICE": "F1",
+        "DIAG_LINE": "TTS voice: F1 · Nyugodt női (English, mode auto)",
+        "SYNTH_CALLS": [
+          {
+            "ROUTED_LANGUAGE": "en",
+            "SUPERTONIC_LANG": "en",
+            "FINAL_TTS_TEXT": "Let's cut to the chase.",
+            "VOICE": "F1"
+          }
+        ]
+      }
+    ],
+    "idiom_word_routing": {
+      "cut to the chase": [
+        "en"
+      ]
+    }
+  },
+  {
+    "case": "T1",
+    "sentence": "Let's cut to the chase.",
+    "delta_size": 23,
+    "n_deltas": 1,
+    "n_chunks": 1,
+    "n_synth_calls": 1,
+    "chunks": [
+      {
+        "TEXT": "Let's cut to the chase.",
+        "FINAL_INPUT_AFTER_NORMALIZE": "Let's cut to the chase.",
+        "HOST_LANGUAGE": "en",
+        "DETECTED_ENGLISH_SPANS": [
+          "Let's cut to the chase."
+        ],
+        "SPANS": [
+          {
+            "SPAN_TEXT": "Let's cut to the chase.",
+            "SPAN_LANGUAGE": "en"
+          }
+        ],
+        "SELECTED_VOICE": "F1",
+        "DIAG_LINE": "TTS voice: F1 · Nyugodt női (English, mode auto)",
+        "SYNTH_CALLS": [
+          {
+            "ROUTED_LANGUAGE": "en",
+            "SUPERTONIC_LANG": "en",
+            "FINAL_TTS_TEXT": "Let's cut to the chase.",
+            "VOICE": "F1"
+          }
+        ]
+      }
+    ],
+    "idiom_word_routing": {
+      "cut to the chase": [
+        "en"
+      ]
+    }
+  },
+  {
+    "case": "T2",
+    "sentence": "Sometimes you just have to hit the ground running.",
+    "delta_size": 3,
+    "n_deltas": 17,
+    "n_chunks": 2,
+    "n_synth_calls": 2,
+    "chunks": [
+      {
+        "TEXT": "Sometimes you just have",
+        "FINAL_INPUT_AFTER_NORMALIZE": "Sometimes you just have",
+        "HOST_LANGUAGE": "en",
+        "DETECTED_ENGLISH_SPANS": [
+          "Sometimes you just have"
+        ],
+        "SPANS": [
+          {
+            "SPAN_TEXT": "Sometimes you just have",
+            "SPAN_LANGUAGE": "en"
+          }
+        ],
+        "SELECTED_VOICE": "F1",
+        "DIAG_LINE": "TTS voice: F1 · Nyugodt női (English, mode auto)",
+        "SYNTH_CALLS": [
+          {
+            "ROUTED_LANGUAGE": "en",
+            "SUPERTONIC_LANG": "en",
+            "FINAL_TTS_TEXT": "Sometimes you just have",
+            "VOICE": "F1"
+          }
+        ]
+      },
+      {
+        "TEXT": "to hit the ground running.",
+        "FINAL_INPUT_AFTER_NORMALIZE": "to hit the ground running.",
+        "HOST_LANGUAGE": "en",
+        "DETECTED_ENGLISH_SPANS": [
+          "to hit the ground running."
+        ],
+        "SPANS": [
+          {
+            "SPAN_TEXT": "to hit the ground running.",
+            "SPAN_LANGUAGE": "en"
+          }
+        ],
+        "SELECTED_VOICE": "F1",
+        "DIAG_LINE": "TTS voice: F1 · Nyugodt női (English, mode auto)",
+        "SYNTH_CALLS": [
+          {
+            "ROUTED_LANGUAGE": "en",
+            "SUPERTONIC_LANG": "en",
+            "FINAL_TTS_TEXT": "to hit the ground running.",
+            "VOICE": "F1"
+          }
+        ]
+      }
+    ],
+    "idiom_word_routing": {
+      "hit the ground running": [
+        "en"
+      ]
+    }
+  },
+  {
+    "case": "T2",
+    "sentence": "Sometimes you just have to hit the ground running.",
+    "delta_size": 8,
+    "n_deltas": 7,
+    "n_chunks": 2,
+    "n_synth_calls": 2,
+    "chunks": [
+      {
+        "TEXT": "Sometimes you just have",
+        "FINAL_INPUT_AFTER_NORMALIZE": "Sometimes you just have",
+        "HOST_LANGUAGE": "en",
+        "DETECTED_ENGLISH_SPANS": [
+          "Sometimes you just have"
+        ],
+        "SPANS": [
+          {
+            "SPAN_TEXT": "Sometimes you just have",
+            "SPAN_LANGUAGE": "en"
+          }
+        ],
+        "SELECTED_VOICE": "F1",
+        "DIAG_LINE": "TTS voice: F1 · Nyugodt női (English, mode auto)",
+        "SYNTH_CALLS": [
+          {
+            "ROUTED_LANGUAGE": "en",
+            "SUPERTONIC_LANG": "en",
+            "FINAL_TTS_TEXT": "Sometimes you just have",
+            "VOICE": "F1"
+          }
+        ]
+      },
+      {
+        "TEXT": "to hit the ground running.",
+        "FINAL_INPUT_AFTER_NORMALIZE": "to hit the ground running.",
+        "HOST_LANGUAGE": "en",
+        "DETECTED_ENGLISH_SPANS": [
+          "to hit the ground running."
+        ],
+        "SPANS": [
+          {
+            "SPAN_TEXT": "to hit the ground running.",
+            "SPAN_LANGUAGE": "en"
+          }
+        ],
+        "SELECTED_VOICE": "F1",
+        "DIAG_LINE": "TTS voice: F1 · Nyugodt női (English, mode auto)",
+        "SYNTH_CALLS": [
+          {
+            "ROUTED_LANGUAGE": "en",
+            "SUPERTONIC_LANG": "en",
+            "FINAL_TTS_TEXT": "to hit the ground running.",
+            "VOICE": "F1"
+          }
+        ]
+      }
+    ],
+    "idiom_word_routing": {
+      "hit the ground running": [
+        "en"
+      ]
+    }
+  },
+  {
+    "case": "T2",
+    "sentence": "Sometimes you just have to hit the ground running.",
+    "delta_size": 50,
+    "n_deltas": 1,
+    "n_chunks": 1,
+    "n_synth_calls": 1,
+    "chunks": [
+      {
+        "TEXT": "Sometimes you just have to hit the ground running.",
+        "FINAL_INPUT_AFTER_NORMALIZE": "Sometimes you just have to hit the ground running.",
+        "HOST_LANGUAGE": "en",
+        "DETECTED_ENGLISH_SPANS": [
+          "Sometimes you just have to hit the ground running."
+        ],
+        "SPANS": [
+          {
+            "SPAN_TEXT": "Sometimes you just have to hit the ground running.",
+            "SPAN_LANGUAGE": "en"
+          }
+        ],
+        "SELECTED_VOICE": "F1",
+        "DIAG_LINE": "TTS voice: F1 · Nyugodt női (English, mode auto)",
+        "SYNTH_CALLS": [
+          {
+            "ROUTED_LANGUAGE": "en",
+            "SUPERTONIC_LANG": "en",
+            "FINAL_TTS_TEXT": "Sometimes you just have to hit the ground running.",
+            "VOICE": "F1"
+          }
+        ]
+      }
+    ],
+    "idiom_word_routing": {
+      "hit the ground running": [
+        "en"
+      ]
+    }
+  },
+  {
+    "case": "T3",
+    "sentence": "We had to burn the midnight oil.",
+    "delta_size": 3,
+    "n_deltas": 11,
+    "n_chunks": 2,
+    "n_synth_calls": 2,
+    "chunks": [
+      {
+        "TEXT": "We had to burn the",
+        "FINAL_INPUT_AFTER_NORMALIZE": "We had to burn the",
+        "HOST_LANGUAGE": "en",
+        "DETECTED_ENGLISH_SPANS": [
+          "We had to burn the"
+        ],
+        "SPANS": [
+          {
+            "SPAN_TEXT": "We had to burn the",
+            "SPAN_LANGUAGE": "en"
+          }
+        ],
+        "SELECTED_VOICE": "F1",
+        "DIAG_LINE": "TTS voice: F1 · Nyugodt női (English, mode auto)",
+        "SYNTH_CALLS": [
+          {
+            "ROUTED_LANGUAGE": "en",
+            "SUPERTONIC_LANG": "en",
+            "FINAL_TTS_TEXT": "We had to burn the",
+            "VOICE": "F1"
+          }
+        ]
+      },
+      {
+        "TEXT": "midnight oil.",
+        "FINAL_INPUT_AFTER_NORMALIZE": "midnight oil.",
+        "HOST_LANGUAGE": "en",
+        "DETECTED_ENGLISH_SPANS": [
+          "midnight oil."
+        ],
+        "SPANS": [
+          {
+            "SPAN_TEXT": "midnight oil.",
+            "SPAN_LANGUAGE": "en"
+          }
+        ],
+        "SELECTED_VOICE": "F1",
+        "DIAG_LINE": "TTS voice: F1 · Nyugodt női (English, mode auto)",
+        "SYNTH_CALLS": [
+          {
+            "ROUTED_LANGUAGE": "en",
+            "SUPERTONIC_LANG": "en",
+            "FINAL_TTS_TEXT": "midnight oil.",
+            "VOICE": "F1"
+          }
+        ]
+      }
+    ],
+    "idiom_word_routing": {
+      "burn the midnight oil": [
+        "en"
+      ]
+    }
+  },
+  {
+    "case": "T3",
+    "sentence": "We had to burn the midnight oil.",
+    "delta_size": 8,
+    "n_deltas": 4,
+    "n_chunks": 1,
+    "n_synth_calls": 1,
+    "chunks": [
+      {
+        "TEXT": "We had to burn the midnight oil.",
+        "FINAL_INPUT_AFTER_NORMALIZE": "We had to burn the midnight oil.",
+        "HOST_LANGUAGE": "en",
+        "DETECTED_ENGLISH_SPANS": [
+          "We had to burn the midnight oil."
+        ],
+        "SPANS": [
+          {
+            "SPAN_TEXT": "We had to burn the midnight oil.",
+            "SPAN_LANGUAGE": "en"
+          }
+        ],
+        "SELECTED_VOICE": "F1",
+        "DIAG_LINE": "TTS voice: F1 · Nyugodt női (English, mode auto)",
+        "SYNTH_CALLS": [
+          {
+            "ROUTED_LANGUAGE": "en",
+            "SUPERTONIC_LANG": "en",
+            "FINAL_TTS_TEXT": "We had to burn the midnight oil.",
+            "VOICE": "F1"
+          }
+        ]
+      }
+    ],
+    "idiom_word_routing": {
+      "burn the midnight oil": [
+        "en"
+      ]
+    }
+  },
+  {
+    "case": "T3",
+    "sentence": "We had to burn the midnight oil.",
+    "delta_size": 32,
+    "n_deltas": 1,
+    "n_chunks": 1,
+    "n_synth_calls": 1,
+    "chunks": [
+      {
+        "TEXT": "We had to burn the midnight oil.",
+        "FINAL_INPUT_AFTER_NORMALIZE": "We had to burn the midnight oil.",
+        "HOST_LANGUAGE": "en",
+        "DETECTED_ENGLISH_SPANS": [
+          "We had to burn the midnight oil."
+        ],
+        "SPANS": [
+          {
+            "SPAN_TEXT": "We had to burn the midnight oil.",
+            "SPAN_LANGUAGE": "en"
+          }
+        ],
+        "SELECTED_VOICE": "F1",
+        "DIAG_LINE": "TTS voice: F1 · Nyugodt női (English, mode auto)",
+        "SYNTH_CALLS": [
+          {
+            "ROUTED_LANGUAGE": "en",
+            "SUPERTONIC_LANG": "en",
+            "FINAL_TTS_TEXT": "We had to burn the midnight oil.",
+            "VOICE": "F1"
+          }
+        ]
+      }
+    ],
+    "idiom_word_routing": {
+      "burn the midnight oil": [
+        "en"
+      ]
+    }
+  },
+  {
+    "case": "T4",
+    "sentence": "Before the show, everyone said break a leg.",
+    "delta_size": 3,
+    "n_deltas": 15,
+    "n_chunks": 2,
+    "n_synth_calls": 2,
+    "chunks": [
+      {
+        "TEXT": "Before the show,",
+        "FINAL_INPUT_AFTER_NORMALIZE": "Before the show,",
+        "HOST_LANGUAGE": "en",
+        "DETECTED_ENGLISH_SPANS": [
+          "Before the show,"
+        ],
+        "SPANS": [
+          {
+            "SPAN_TEXT": "Before the show,",
+            "SPAN_LANGUAGE": "en"
+          }
+        ],
+        "SELECTED_VOICE": "F1",
+        "DIAG_LINE": "TTS voice: F1 · Nyugodt női (English, mode auto)",
+        "SYNTH_CALLS": [
+          {
+            "ROUTED_LANGUAGE": "en",
+            "SUPERTONIC_LANG": "en",
+            "FINAL_TTS_TEXT": "Before the show,",
+            "VOICE": "F1"
+          }
+        ]
+      },
+      {
+        "TEXT": "everyone said break a leg.",
+        "FINAL_INPUT_AFTER_NORMALIZE": "everyone said break a leg.",
+        "HOST_LANGUAGE": "en",
+        "DETECTED_ENGLISH_SPANS": [
+          "everyone said break a leg."
+        ],
+        "SPANS": [
+          {
+            "SPAN_TEXT": "everyone said break a leg.",
+            "SPAN_LANGUAGE": "en"
+          }
+        ],
+        "SELECTED_VOICE": "F1",
+        "DIAG_LINE": "TTS voice: F1 · Nyugodt női (English, mode auto)",
+        "SYNTH_CALLS": [
+          {
+            "ROUTED_LANGUAGE": "en",
+            "SUPERTONIC_LANG": "en",
+            "FINAL_TTS_TEXT": "everyone said break a leg.",
+            "VOICE": "F1"
+          }
+        ]
+      }
+    ],
+    "idiom_word_routing": {
+      "break a leg": [
+        "en"
+      ]
+    }
+  },
+  {
+    "case": "T4",
+    "sentence": "Before the show, everyone said break a leg.",
+    "delta_size": 8,
+    "n_deltas": 6,
+    "n_chunks": 2,
+    "n_synth_calls": 2,
+    "chunks": [
+      {
+        "TEXT": "Before the show,",
+        "FINAL_INPUT_AFTER_NORMALIZE": "Before the show,",
+        "HOST_LANGUAGE": "en",
+        "DETECTED_ENGLISH_SPANS": [
+          "Before the show,"
+        ],
+        "SPANS": [
+          {
+            "SPAN_TEXT": "Before the show,",
+            "SPAN_LANGUAGE": "en"
+          }
+        ],
+        "SELECTED_VOICE": "F1",
+        "DIAG_LINE": "TTS voice: F1 · Nyugodt női (English, mode auto)",
+        "SYNTH_CALLS": [
+          {
+            "ROUTED_LANGUAGE": "en",
+            "SUPERTONIC_LANG": "en",
+            "FINAL_TTS_TEXT": "Before the show,",
+            "VOICE": "F1"
+          }
+        ]
+      },
+      {
+        "TEXT": "everyone said break a leg.",
+        "FINAL_INPUT_AFTER_NORMALIZE": "everyone said break a leg.",
+        "HOST_LANGUAGE": "en",
+        "DETECTED_ENGLISH_SPANS": [
+          "everyone said break a leg."
+        ],
+        "SPANS": [
+          {
+            "SPAN_TEXT": "everyone said break a leg.",
+            "SPAN_LANGUAGE": "en"
+          }
+        ],
+        "SELECTED_VOICE": "F1",
+        "DIAG_LINE": "TTS voice: F1 · Nyugodt női (English, mode auto)",
+        "SYNTH_CALLS": [
+          {
+            "ROUTED_LANGUAGE": "en",
+            "SUPERTONIC_LANG": "en",
+            "FINAL_TTS_TEXT": "everyone said break a leg.",
+            "VOICE": "F1"
+          }
+        ]
+      }
+    ],
+    "idiom_word_routing": {
+      "break a leg": [
+        "en"
+      ]
+    }
+  },
+  {
+    "case": "T4",
+    "sentence": "Before the show, everyone said break a leg.",
+    "delta_size": 43,
+    "n_deltas": 1,
+    "n_chunks": 1,
+    "n_synth_calls": 1,
+    "chunks": [
+      {
+        "TEXT": "Before the show, everyone said break a leg.",
+        "FINAL_INPUT_AFTER_NORMALIZE": "Before the show, everyone said break a leg.",
+        "HOST_LANGUAGE": "en",
+        "DETECTED_ENGLISH_SPANS": [
+          "Before the show, everyone said break a leg."
+        ],
+        "SPANS": [
+          {
+            "SPAN_TEXT": "Before the show, everyone said break a leg.",
+            "SPAN_LANGUAGE": "en"
+          }
+        ],
+        "SELECTED_VOICE": "F1",
+        "DIAG_LINE": "TTS voice: F1 · Nyugodt női (English, mode auto)",
+        "SYNTH_CALLS": [
+          {
+            "ROUTED_LANGUAGE": "en",
+            "SUPERTONIC_LANG": "en",
+            "FINAL_TTS_TEXT": "Before the show, everyone said break a leg.",
+            "VOICE": "F1"
+          }
+        ]
+      }
+    ],
+    "idiom_word_routing": {
+      "break a leg": [
+        "en"
+      ]
+    }
+  },
+  {
+    "case": "T5",
+    "sentence": "Most már tényleg cut to the chase, és menjünk tovább.",
+    "delta_size": 3,
+    "n_deltas": 18,
+    "n_chunks": 2,
+    "n_synth_calls": 3,
+    "chunks": [
+      {
+        "TEXT": "Most már tényleg cut to",
+        "FINAL_INPUT_AFTER_NORMALIZE": "Most már tényleg cut to",
+        "HOST_LANGUAGE": "hu",
+        "DETECTED_ENGLISH_SPANS": [],
+        "SPANS": [
+          {
+            "SPAN_TEXT": "Most már tényleg cut to",
+            "SPAN_LANGUAGE": "hu"
+          }
+        ],
+        "SELECTED_VOICE": "F1",
+        "DIAG_LINE": "TTS voice: F1 · Nyugodt női (Hungarian, mode auto)",
+        "SYNTH_CALLS": [
+          {
+            "ROUTED_LANGUAGE": "hu",
+            "SUPERTONIC_LANG": "hu",
+            "FINAL_TTS_TEXT": "Most már tényleg cut to",
+            "VOICE": "F1"
+          }
+        ]
+      },
+      {
+        "TEXT": "the chase, és menjünk tovább.",
+        "FINAL_INPUT_AFTER_NORMALIZE": "the chase, és menjünk tovább.",
+        "HOST_LANGUAGE": "hu",
+        "DETECTED_ENGLISH_SPANS": [
+          "the chase,"
+        ],
+        "SPANS": [
+          {
+            "SPAN_TEXT": "the chase,",
+            "SPAN_LANGUAGE": "en"
+          },
+          {
+            "SPAN_TEXT": " és menjünk tovább.",
+            "SPAN_LANGUAGE": "hu"
+          }
+        ],
+        "SELECTED_VOICE": "F1",
+        "DIAG_LINE": "TTS voice: F1 · Nyugodt női (Hungarian, mode auto)",
+        "SYNTH_CALLS": [
+          {
+            "ROUTED_LANGUAGE": "en",
+            "SUPERTONIC_LANG": "en",
+            "FINAL_TTS_TEXT": "the chase,",
+            "VOICE": "F1"
+          },
+          {
+            "ROUTED_LANGUAGE": "hu",
+            "SUPERTONIC_LANG": "hu",
+            "FINAL_TTS_TEXT": " és menjünk tovább.",
+            "VOICE": "F1"
+          }
+        ]
+      }
+    ],
+    "idiom_word_routing": {
+      "cut to the chase": [
+        "en",
+        "hu"
+      ]
+    }
+  },
+  {
+    "case": "T5",
+    "sentence": "Most már tényleg cut to the chase, és menjünk tovább.",
+    "delta_size": 8,
+    "n_deltas": 7,
+    "n_chunks": 2,
+    "n_synth_calls": 3,
+    "chunks": [
+      {
+        "TEXT": "Most már tényleg cut to",
+        "FINAL_INPUT_AFTER_NORMALIZE": "Most már tényleg cut to",
+        "HOST_LANGUAGE": "hu",
+        "DETECTED_ENGLISH_SPANS": [],
+        "SPANS": [
+          {
+            "SPAN_TEXT": "Most már tényleg cut to",
+            "SPAN_LANGUAGE": "hu"
+          }
+        ],
+        "SELECTED_VOICE": "F1",
+        "DIAG_LINE": "TTS voice: F1 · Nyugodt női (Hungarian, mode auto)",
+        "SYNTH_CALLS": [
+          {
+            "ROUTED_LANGUAGE": "hu",
+            "SUPERTONIC_LANG": "hu",
+            "FINAL_TTS_TEXT": "Most már tényleg cut to",
+            "VOICE": "F1"
+          }
+        ]
+      },
+      {
+        "TEXT": "the chase, és menjünk tovább.",
+        "FINAL_INPUT_AFTER_NORMALIZE": "the chase, és menjünk tovább.",
+        "HOST_LANGUAGE": "hu",
+        "DETECTED_ENGLISH_SPANS": [
+          "the chase,"
+        ],
+        "SPANS": [
+          {
+            "SPAN_TEXT": "the chase,",
+            "SPAN_LANGUAGE": "en"
+          },
+          {
+            "SPAN_TEXT": " és menjünk tovább.",
+            "SPAN_LANGUAGE": "hu"
+          }
+        ],
+        "SELECTED_VOICE": "F1",
+        "DIAG_LINE": "TTS voice: F1 · Nyugodt női (Hungarian, mode auto)",
+        "SYNTH_CALLS": [
+          {
+            "ROUTED_LANGUAGE": "en",
+            "SUPERTONIC_LANG": "en",
+            "FINAL_TTS_TEXT": "the chase,",
+            "VOICE": "F1"
+          },
+          {
+            "ROUTED_LANGUAGE": "hu",
+            "SUPERTONIC_LANG": "hu",
+            "FINAL_TTS_TEXT": " és menjünk tovább.",
+            "VOICE": "F1"
+          }
+        ]
+      }
+    ],
+    "idiom_word_routing": {
+      "cut to the chase": [
+        "en",
+        "hu"
+      ]
+    }
+  },
+  {
+    "case": "T5",
+    "sentence": "Most már tényleg cut to the chase, és menjünk tovább.",
+    "delta_size": 53,
+    "n_deltas": 1,
+    "n_chunks": 1,
+    "n_synth_calls": 3,
+    "chunks": [
+      {
+        "TEXT": "Most már tényleg cut to the chase, és menjünk tovább.",
+        "FINAL_INPUT_AFTER_NORMALIZE": "Most már tényleg cut to the chase, és menjünk tovább.",
+        "HOST_LANGUAGE": "hu",
+        "DETECTED_ENGLISH_SPANS": [
+          "cut to the chase,"
+        ],
+        "SPANS": [
+          {
+            "SPAN_TEXT": "Most már tényleg ",
+            "SPAN_LANGUAGE": "hu"
+          },
+          {
+            "SPAN_TEXT": "cut to the chase,",
+            "SPAN_LANGUAGE": "en"
+          },
+          {
+            "SPAN_TEXT": " és menjünk tovább.",
+            "SPAN_LANGUAGE": "hu"
+          }
+        ],
+        "SELECTED_VOICE": "F1",
+        "DIAG_LINE": "TTS voice: F1 · Nyugodt női (Hungarian, mode auto)",
+        "SYNTH_CALLS": [
+          {
+            "ROUTED_LANGUAGE": "hu",
+            "SUPERTONIC_LANG": "hu",
+            "FINAL_TTS_TEXT": "Most már tényleg ",
+            "VOICE": "F1"
+          },
+          {
+            "ROUTED_LANGUAGE": "en",
+            "SUPERTONIC_LANG": "en",
+            "FINAL_TTS_TEXT": "cut to the chase,",
+            "VOICE": "F1"
+          },
+          {
+            "ROUTED_LANGUAGE": "hu",
+            "SUPERTONIC_LANG": "hu",
+            "FINAL_TTS_TEXT": " és menjünk tovább.",
+            "VOICE": "F1"
+          }
+        ]
+      }
+    ],
+    "idiom_word_routing": {
+      "cut to the chase": [
+        "en"
+      ]
+    }
+  },
+  {
+    "case": "T6",
+    "sentence": "Ma először checkeljük a resultot, aztán megnézzük a statuszt, végül pedig beszélünk a next step-ről.",
+    "delta_size": 3,
+    "n_deltas": 34,
+    "n_chunks": 2,
+    "n_synth_calls": 2,
+    "chunks": [
+      {
+        "TEXT": "Ma először checkeljük a",
+        "FINAL_INPUT_AFTER_NORMALIZE": "Ma először checkeljük a",
+        "HOST_LANGUAGE": "hu",
+        "DETECTED_ENGLISH_SPANS": [],
+        "SPANS": [
+          {
+            "SPAN_TEXT": "Ma először checkeljük a",
+            "SPAN_LANGUAGE": "hu"
+          }
+        ],
+        "SELECTED_VOICE": "F1",
+        "DIAG_LINE": "TTS voice: F1 · Nyugodt női (Hungarian, mode auto)",
+        "SYNTH_CALLS": [
+          {
+            "ROUTED_LANGUAGE": "hu",
+            "SUPERTONIC_LANG": "hu",
+            "FINAL_TTS_TEXT": "Ma először checkeljük a",
+            "VOICE": "F1"
+          }
+        ]
+      },
+      {
+        "TEXT": "resultot, aztán megnézzük a statuszt, végül pedig beszélünk a next step-ről.",
+        "FINAL_INPUT_AFTER_NORMALIZE": "resultot, aztán megnézzük a statuszt, végül pedig beszélünk a next step-ről.",
+        "HOST_LANGUAGE": "hu",
+        "DETECTED_ENGLISH_SPANS": [],
+        "SPANS": [
+          {
+            "SPAN_TEXT": "resultot, aztán megnézzük a statuszt, végül pedig beszélünk a next step-ről.",
+            "SPAN_LANGUAGE": "hu"
+          }
+        ],
+        "SELECTED_VOICE": "F1",
+        "DIAG_LINE": "TTS voice: F1 · Nyugodt női (Hungarian, mode auto)",
+        "SYNTH_CALLS": [
+          {
+            "ROUTED_LANGUAGE": "hu",
+            "SUPERTONIC_LANG": "hu",
+            "FINAL_TTS_TEXT": "resultot, aztán megnézzük a statuszt, végül pedig beszélünk a next step-ről.",
+            "VOICE": "F1"
+          }
+        ]
+      }
+    ],
+    "idiom_word_routing": {}
+  },
+  {
+    "case": "T6",
+    "sentence": "Ma először checkeljük a resultot, aztán megnézzük a statuszt, végül pedig beszélünk a next step-ről.",
+    "delta_size": 8,
+    "n_deltas": 13,
+    "n_chunks": 2,
+    "n_synth_calls": 2,
+    "chunks": [
+      {
+        "TEXT": "Ma először checkeljük a",
+        "FINAL_INPUT_AFTER_NORMALIZE": "Ma először checkeljük a",
+        "HOST_LANGUAGE": "hu",
+        "DETECTED_ENGLISH_SPANS": [],
+        "SPANS": [
+          {
+            "SPAN_TEXT": "Ma először checkeljük a",
+            "SPAN_LANGUAGE": "hu"
+          }
+        ],
+        "SELECTED_VOICE": "F1",
+        "DIAG_LINE": "TTS voice: F1 · Nyugodt női (Hungarian, mode auto)",
+        "SYNTH_CALLS": [
+          {
+            "ROUTED_LANGUAGE": "hu",
+            "SUPERTONIC_LANG": "hu",
+            "FINAL_TTS_TEXT": "Ma először checkeljük a",
+            "VOICE": "F1"
+          }
+        ]
+      },
+      {
+        "TEXT": "resultot, aztán megnézzük a statuszt, végül pedig beszélünk a next step-ről.",
+        "FINAL_INPUT_AFTER_NORMALIZE": "resultot, aztán megnézzük a statuszt, végül pedig beszélünk a next step-ről.",
+        "HOST_LANGUAGE": "hu",
+        "DETECTED_ENGLISH_SPANS": [],
+        "SPANS": [
+          {
+            "SPAN_TEXT": "resultot, aztán megnézzük a statuszt, végül pedig beszélünk a next step-ről.",
+            "SPAN_LANGUAGE": "hu"
+          }
+        ],
+        "SELECTED_VOICE": "F1",
+        "DIAG_LINE": "TTS voice: F1 · Nyugodt női (Hungarian, mode auto)",
+        "SYNTH_CALLS": [
+          {
+            "ROUTED_LANGUAGE": "hu",
+            "SUPERTONIC_LANG": "hu",
+            "FINAL_TTS_TEXT": "resultot, aztán megnézzük a statuszt, végül pedig beszélünk a next step-ről.",
+            "VOICE": "F1"
+          }
+        ]
+      }
+    ],
+    "idiom_word_routing": {}
+  },
+  {
+    "case": "T6",
+    "sentence": "Ma először checkeljük a resultot, aztán megnézzük a statuszt, végül pedig beszélünk a next step-ről.",
+    "delta_size": 100,
+    "n_deltas": 1,
+    "n_chunks": 1,
+    "n_synth_calls": 1,
+    "chunks": [
+      {
+        "TEXT": "Ma először checkeljük a resultot, aztán megnézzük a statuszt, végül pedig beszélünk a next step-ről.",
+        "FINAL_INPUT_AFTER_NORMALIZE": "Ma először checkeljük a resultot, aztán megnézzük a statuszt, végül pedig beszélünk a next step-ről.",
+        "HOST_LANGUAGE": "hu",
+        "DETECTED_ENGLISH_SPANS": [],
+        "SPANS": [
+          {
+            "SPAN_TEXT": "Ma először checkeljük a resultot, aztán megnézzük a statuszt, végül pedig beszélünk a next step-ről.",
+            "SPAN_LANGUAGE": "hu"
+          }
+        ],
+        "SELECTED_VOICE": "F1",
+        "DIAG_LINE": "TTS voice: F1 · Nyugodt női (Hungarian, mode auto)",
+        "SYNTH_CALLS": [
+          {
+            "ROUTED_LANGUAGE": "hu",
+            "SUPERTONIC_LANG": "hu",
+            "FINAL_TTS_TEXT": "Ma először checkeljük a resultot, aztán megnézzük a statuszt, végül pedig beszélünk a next step-ről.",
+            "VOICE": "F1"
+          }
+        ]
+      }
+    ],
+    "idiom_word_routing": {}
+  },
+  {
+    "case": "T7",
+    "sentence": "A mai test során először checkeljük a resultot, aztán megnézzük a statuszt, végül pedig beszélünk a next step-ről.",
+    "delta_size": 3,
+    "n_deltas": 38,
+    "n_chunks": 3,
+    "n_synth_calls": 3,
+    "chunks": [
+      {
+        "TEXT": "A mai test során",
+        "FINAL_INPUT_AFTER_NORMALIZE": "A mai test során",
+        "HOST_LANGUAGE": "hu",
+        "DETECTED_ENGLISH_SPANS": [],
+        "SPANS": [
+          {
+            "SPAN_TEXT": "A mai test során",
+            "SPAN_LANGUAGE": "hu"
+          }
+        ],
+        "SELECTED_VOICE": "F1",
+        "DIAG_LINE": "TTS voice: F1 · Nyugodt női (Hungarian, mode auto)",
+        "SYNTH_CALLS": [
+          {
+            "ROUTED_LANGUAGE": "hu",
+            "SUPERTONIC_LANG": "hu",
+            "FINAL_TTS_TEXT": "A mai test során",
+            "VOICE": "F1"
+          }
+        ]
+      },
+      {
+        "TEXT": "először checkeljük a resultot, aztán megnézzük a statuszt, végül pedig",
+        "FINAL_INPUT_AFTER_NORMALIZE": "először checkeljük a resultot, aztán megnézzük a statuszt, végül pedig",
+        "HOST_LANGUAGE": "hu",
+        "DETECTED_ENGLISH_SPANS": [],
+        "SPANS": [
+          {
+            "SPAN_TEXT": "először checkeljük a resultot, aztán megnézzük a statuszt, végül pedig",
+            "SPAN_LANGUAGE": "hu"
+          }
+        ],
+        "SELECTED_VOICE": "F1",
+        "DIAG_LINE": "TTS voice: F1 · Nyugodt női (Hungarian, mode auto)",
+        "SYNTH_CALLS": [
+          {
+            "ROUTED_LANGUAGE": "hu",
+            "SUPERTONIC_LANG": "hu",
+            "FINAL_TTS_TEXT": "először checkeljük a resultot, aztán megnézzük a statuszt, végül pedig",
+            "VOICE": "F1"
+          }
+        ]
+      },
+      {
+        "TEXT": "beszélünk a next step-ről.",
+        "FINAL_INPUT_AFTER_NORMALIZE": "beszélünk a next step-ről.",
+        "HOST_LANGUAGE": "hu",
+        "DETECTED_ENGLISH_SPANS": [],
+        "SPANS": [
+          {
+            "SPAN_TEXT": "beszélünk a next step-ről.",
+            "SPAN_LANGUAGE": "hu"
+          }
+        ],
+        "SELECTED_VOICE": "F1",
+        "DIAG_LINE": "TTS voice: F1 · Nyugodt női (Hungarian, mode auto)",
+        "SYNTH_CALLS": [
+          {
+            "ROUTED_LANGUAGE": "hu",
+            "SUPERTONIC_LANG": "hu",
+            "FINAL_TTS_TEXT": "beszélünk a next step-ről.",
+            "VOICE": "F1"
+          }
+        ]
+      }
+    ],
+    "idiom_word_routing": {}
+  },
+  {
+    "case": "T7",
+    "sentence": "A mai test során először checkeljük a resultot, aztán megnézzük a statuszt, végül pedig beszélünk a next step-ről.",
+    "delta_size": 8,
+    "n_deltas": 15,
+    "n_chunks": 3,
+    "n_synth_calls": 3,
+    "chunks": [
+      {
+        "TEXT": "A mai test során",
+        "FINAL_INPUT_AFTER_NORMALIZE": "A mai test során",
+        "HOST_LANGUAGE": "hu",
+        "DETECTED_ENGLISH_SPANS": [],
+        "SPANS": [
+          {
+            "SPAN_TEXT": "A mai test során",
+            "SPAN_LANGUAGE": "hu"
+          }
+        ],
+        "SELECTED_VOICE": "F1",
+        "DIAG_LINE": "TTS voice: F1 · Nyugodt női (Hungarian, mode auto)",
+        "SYNTH_CALLS": [
+          {
+            "ROUTED_LANGUAGE": "hu",
+            "SUPERTONIC_LANG": "hu",
+            "FINAL_TTS_TEXT": "A mai test során",
+            "VOICE": "F1"
+          }
+        ]
+      },
+      {
+        "TEXT": "először checkeljük a resultot, aztán megnézzük a statuszt, végül pedig",
+        "FINAL_INPUT_AFTER_NORMALIZE": "először checkeljük a resultot, aztán megnézzük a statuszt, végül pedig",
+        "HOST_LANGUAGE": "hu",
+        "DETECTED_ENGLISH_SPANS": [],
+        "SPANS": [
+          {
+            "SPAN_TEXT": "először checkeljük a resultot, aztán megnézzük a statuszt, végül pedig",
+            "SPAN_LANGUAGE": "hu"
+          }
+        ],
+        "SELECTED_VOICE": "F1",
+        "DIAG_LINE": "TTS voice: F1 · Nyugodt női (Hungarian, mode auto)",
+        "SYNTH_CALLS": [
+          {
+            "ROUTED_LANGUAGE": "hu",
+            "SUPERTONIC_LANG": "hu",
+            "FINAL_TTS_TEXT": "először checkeljük a resultot, aztán megnézzük a statuszt, végül pedig",
+            "VOICE": "F1"
+          }
+        ]
+      },
+      {
+        "TEXT": "beszélünk a next step-ről.",
+        "FINAL_INPUT_AFTER_NORMALIZE": "beszélünk a next step-ről.",
+        "HOST_LANGUAGE": "hu",
+        "DETECTED_ENGLISH_SPANS": [],
+        "SPANS": [
+          {
+            "SPAN_TEXT": "beszélünk a next step-ről.",
+            "SPAN_LANGUAGE": "hu"
+          }
+        ],
+        "SELECTED_VOICE": "F1",
+        "DIAG_LINE": "TTS voice: F1 · Nyugodt női (Hungarian, mode auto)",
+        "SYNTH_CALLS": [
+          {
+            "ROUTED_LANGUAGE": "hu",
+            "SUPERTONIC_LANG": "hu",
+            "FINAL_TTS_TEXT": "beszélünk a next step-ről.",
+            "VOICE": "F1"
+          }
+        ]
+      }
+    ],
+    "idiom_word_routing": {}
+  },
+  {
+    "case": "T7",
+    "sentence": "A mai test során először checkeljük a resultot, aztán megnézzük a statuszt, végül pedig beszélünk a next step-ről.",
+    "delta_size": 114,
+    "n_deltas": 1,
+    "n_chunks": 1,
+    "n_synth_calls": 1,
+    "chunks": [
+      {
+        "TEXT": "A mai test során először checkeljük a resultot, aztán megnézzük a statuszt, végül pedig beszélünk a next step-ről.",
+        "FINAL_INPUT_AFTER_NORMALIZE": "A mai test során először checkeljük a resultot, aztán megnézzük a statuszt, végül pedig beszélünk a next step-ről.",
+        "HOST_LANGUAGE": "hu",
+        "DETECTED_ENGLISH_SPANS": [],
+        "SPANS": [
+          {
+            "SPAN_TEXT": "A mai test során először checkeljük a resultot, aztán megnézzük a statuszt, végül pedig beszélünk a next step-ről.",
+            "SPAN_LANGUAGE": "hu"
+          }
+        ],
+        "SELECTED_VOICE": "F1",
+        "DIAG_LINE": "TTS voice: F1 · Nyugodt női (Hungarian, mode auto)",
+        "SYNTH_CALLS": [
+          {
+            "ROUTED_LANGUAGE": "hu",
+            "SUPERTONIC_LANG": "hu",
+            "FINAL_TTS_TEXT": "A mai test során először checkeljük a resultot, aztán megnézzük a statuszt, végül pedig beszélünk a next step-ről.",
+            "VOICE": "F1"
+          }
+        ]
+      }
+    ],
+    "idiom_word_routing": {}
+  },
+  {
+    "case": "T8",
+    "sentence": "Holnap lesz a meeting, utána pedig catch up.",
+    "delta_size": 3,
+    "n_deltas": 15,
+    "n_chunks": 2,
+    "n_synth_calls": 3,
+    "chunks": [
+      {
+        "TEXT": "Holnap lesz a meeting,",
+        "FINAL_INPUT_AFTER_NORMALIZE": "Holnap lesz a meeting,",
+        "HOST_LANGUAGE": "hu",
+        "DETECTED_ENGLISH_SPANS": [],
+        "SPANS": [
+          {
+            "SPAN_TEXT": "Holnap lesz a meeting,",
+            "SPAN_LANGUAGE": "hu"
+          }
+        ],
+        "SELECTED_VOICE": "F1",
+        "DIAG_LINE": "TTS voice: F1 · Nyugodt női (Hungarian, mode auto)",
+        "SYNTH_CALLS": [
+          {
+            "ROUTED_LANGUAGE": "hu",
+            "SUPERTONIC_LANG": "hu",
+            "FINAL_TTS_TEXT": "Holnap lesz a meeting,",
+            "VOICE": "F1"
+          }
+        ]
+      },
+      {
+        "TEXT": "utána pedig catch up.",
+        "FINAL_INPUT_AFTER_NORMALIZE": "utána pedig catch up.",
+        "HOST_LANGUAGE": "hu",
+        "DETECTED_ENGLISH_SPANS": [
+          "catch up."
+        ],
+        "SPANS": [
+          {
+            "SPAN_TEXT": "utána pedig ",
+            "SPAN_LANGUAGE": "hu"
+          },
+          {
+            "SPAN_TEXT": "catch up.",
+            "SPAN_LANGUAGE": "en"
+          }
+        ],
+        "SELECTED_VOICE": "F1",
+        "DIAG_LINE": "TTS voice: F1 · Nyugodt női (Hungarian, mode auto)",
+        "SYNTH_CALLS": [
+          {
+            "ROUTED_LANGUAGE": "hu",
+            "SUPERTONIC_LANG": "hu",
+            "FINAL_TTS_TEXT": "utána pedig ",
+            "VOICE": "F1"
+          },
+          {
+            "ROUTED_LANGUAGE": "en",
+            "SUPERTONIC_LANG": "en",
+            "FINAL_TTS_TEXT": "catch up.",
+            "VOICE": "F1"
+          }
+        ]
+      }
+    ],
+    "idiom_word_routing": {}
+  },
+  {
+    "case": "T8",
+    "sentence": "Holnap lesz a meeting, utána pedig catch up.",
+    "delta_size": 8,
+    "n_deltas": 6,
+    "n_chunks": 2,
+    "n_synth_calls": 3,
+    "chunks": [
+      {
+        "TEXT": "Holnap lesz a meeting,",
+        "FINAL_INPUT_AFTER_NORMALIZE": "Holnap lesz a meeting,",
+        "HOST_LANGUAGE": "hu",
+        "DETECTED_ENGLISH_SPANS": [],
+        "SPANS": [
+          {
+            "SPAN_TEXT": "Holnap lesz a meeting,",
+            "SPAN_LANGUAGE": "hu"
+          }
+        ],
+        "SELECTED_VOICE": "F1",
+        "DIAG_LINE": "TTS voice: F1 · Nyugodt női (Hungarian, mode auto)",
+        "SYNTH_CALLS": [
+          {
+            "ROUTED_LANGUAGE": "hu",
+            "SUPERTONIC_LANG": "hu",
+            "FINAL_TTS_TEXT": "Holnap lesz a meeting,",
+            "VOICE": "F1"
+          }
+        ]
+      },
+      {
+        "TEXT": "utána pedig catch up.",
+        "FINAL_INPUT_AFTER_NORMALIZE": "utána pedig catch up.",
+        "HOST_LANGUAGE": "hu",
+        "DETECTED_ENGLISH_SPANS": [
+          "catch up."
+        ],
+        "SPANS": [
+          {
+            "SPAN_TEXT": "utána pedig ",
+            "SPAN_LANGUAGE": "hu"
+          },
+          {
+            "SPAN_TEXT": "catch up.",
+            "SPAN_LANGUAGE": "en"
+          }
+        ],
+        "SELECTED_VOICE": "F1",
+        "DIAG_LINE": "TTS voice: F1 · Nyugodt női (Hungarian, mode auto)",
+        "SYNTH_CALLS": [
+          {
+            "ROUTED_LANGUAGE": "hu",
+            "SUPERTONIC_LANG": "hu",
+            "FINAL_TTS_TEXT": "utána pedig ",
+            "VOICE": "F1"
+          },
+          {
+            "ROUTED_LANGUAGE": "en",
+            "SUPERTONIC_LANG": "en",
+            "FINAL_TTS_TEXT": "catch up.",
+            "VOICE": "F1"
+          }
+        ]
+      }
+    ],
+    "idiom_word_routing": {}
+  },
+  {
+    "case": "T8",
+    "sentence": "Holnap lesz a meeting, utána pedig catch up.",
+    "delta_size": 44,
+    "n_deltas": 1,
+    "n_chunks": 1,
+    "n_synth_calls": 2,
+    "chunks": [
+      {
+        "TEXT": "Holnap lesz a meeting, utána pedig catch up.",
+        "FINAL_INPUT_AFTER_NORMALIZE": "Holnap lesz a meeting, utána pedig catch up.",
+        "HOST_LANGUAGE": "hu",
+        "DETECTED_ENGLISH_SPANS": [
+          "catch up."
+        ],
+        "SPANS": [
+          {
+            "SPAN_TEXT": "Holnap lesz a meeting, utána pedig ",
+            "SPAN_LANGUAGE": "hu"
+          },
+          {
+            "SPAN_TEXT": "catch up.",
+            "SPAN_LANGUAGE": "en"
+          }
+        ],
+        "SELECTED_VOICE": "F1",
+        "DIAG_LINE": "TTS voice: F1 · Nyugodt női (Hungarian, mode auto)",
+        "SYNTH_CALLS": [
+          {
+            "ROUTED_LANGUAGE": "hu",
+            "SUPERTONIC_LANG": "hu",
+            "FINAL_TTS_TEXT": "Holnap lesz a meeting, utána pedig ",
+            "VOICE": "F1"
+          },
+          {
+            "ROUTED_LANGUAGE": "en",
+            "SUPERTONIC_LANG": "en",
+            "FINAL_TTS_TEXT": "catch up.",
+            "VOICE": "F1"
+          }
+        ]
+      }
+    ],
+    "idiom_word_routing": {}
+  },
+  {
+    "case": "T9",
+    "sentence": "Touch base után megbeszéljük a projektet.",
+    "delta_size": 3,
+    "n_deltas": 14,
+    "n_chunks": 2,
+    "n_synth_calls": 3,
+    "chunks": [
+      {
+        "TEXT": "Touch base után",
+        "FINAL_INPUT_AFTER_NORMALIZE": "Touch base után",
+        "HOST_LANGUAGE": "hu",
+        "DETECTED_ENGLISH_SPANS": [
+          "Touch base"
+        ],
+        "SPANS": [
+          {
+            "SPAN_TEXT": "Touch base",
+            "SPAN_LANGUAGE": "en"
+          },
+          {
+            "SPAN_TEXT": " után",
+            "SPAN_LANGUAGE": "hu"
+          }
+        ],
+        "SELECTED_VOICE": "F1",
+        "DIAG_LINE": "TTS voice: F1 · Nyugodt női (Hungarian, mode auto)",
+        "SYNTH_CALLS": [
+          {
+            "ROUTED_LANGUAGE": "en",
+            "SUPERTONIC_LANG": "en",
+            "FINAL_TTS_TEXT": "Touch base",
+            "VOICE": "F1"
+          },
+          {
+            "ROUTED_LANGUAGE": "hu",
+            "SUPERTONIC_LANG": "hu",
+            "FINAL_TTS_TEXT": " után",
+            "VOICE": "F1"
+          }
+        ]
+      },
+      {
+        "TEXT": "megbeszéljük a projektet.",
+        "FINAL_INPUT_AFTER_NORMALIZE": "megbeszéljük a projektet.",
+        "HOST_LANGUAGE": "hu",
+        "DETECTED_ENGLISH_SPANS": [],
+        "SPANS": [
+          {
+            "SPAN_TEXT": "megbeszéljük a projektet.",
+            "SPAN_LANGUAGE": "hu"
+          }
+        ],
+        "SELECTED_VOICE": "F1",
+        "DIAG_LINE": "TTS voice: F1 · Nyugodt női (Hungarian, mode auto)",
+        "SYNTH_CALLS": [
+          {
+            "ROUTED_LANGUAGE": "hu",
+            "SUPERTONIC_LANG": "hu",
+            "FINAL_TTS_TEXT": "megbeszéljük a projektet.",
+            "VOICE": "F1"
+          }
+        ]
+      }
+    ],
+    "idiom_word_routing": {}
+  },
+  {
+    "case": "T9",
+    "sentence": "Touch base után megbeszéljük a projektet.",
+    "delta_size": 8,
+    "n_deltas": 6,
+    "n_chunks": 2,
+    "n_synth_calls": 3,
+    "chunks": [
+      {
+        "TEXT": "Touch base után",
+        "FINAL_INPUT_AFTER_NORMALIZE": "Touch base után",
+        "HOST_LANGUAGE": "hu",
+        "DETECTED_ENGLISH_SPANS": [
+          "Touch base"
+        ],
+        "SPANS": [
+          {
+            "SPAN_TEXT": "Touch base",
+            "SPAN_LANGUAGE": "en"
+          },
+          {
+            "SPAN_TEXT": " után",
+            "SPAN_LANGUAGE": "hu"
+          }
+        ],
+        "SELECTED_VOICE": "F1",
+        "DIAG_LINE": "TTS voice: F1 · Nyugodt női (Hungarian, mode auto)",
+        "SYNTH_CALLS": [
+          {
+            "ROUTED_LANGUAGE": "en",
+            "SUPERTONIC_LANG": "en",
+            "FINAL_TTS_TEXT": "Touch base",
+            "VOICE": "F1"
+          },
+          {
+            "ROUTED_LANGUAGE": "hu",
+            "SUPERTONIC_LANG": "hu",
+            "FINAL_TTS_TEXT": " után",
+            "VOICE": "F1"
+          }
+        ]
+      },
+      {
+        "TEXT": "megbeszéljük a projektet.",
+        "FINAL_INPUT_AFTER_NORMALIZE": "megbeszéljük a projektet.",
+        "HOST_LANGUAGE": "hu",
+        "DETECTED_ENGLISH_SPANS": [],
+        "SPANS": [
+          {
+            "SPAN_TEXT": "megbeszéljük a projektet.",
+            "SPAN_LANGUAGE": "hu"
+          }
+        ],
+        "SELECTED_VOICE": "F1",
+        "DIAG_LINE": "TTS voice: F1 · Nyugodt női (Hungarian, mode auto)",
+        "SYNTH_CALLS": [
+          {
+            "ROUTED_LANGUAGE": "hu",
+            "SUPERTONIC_LANG": "hu",
+            "FINAL_TTS_TEXT": "megbeszéljük a projektet.",
+            "VOICE": "F1"
+          }
+        ]
+      }
+    ],
+    "idiom_word_routing": {}
+  },
+  {
+    "case": "T9",
+    "sentence": "Touch base után megbeszéljük a projektet.",
+    "delta_size": 41,
+    "n_deltas": 1,
+    "n_chunks": 1,
+    "n_synth_calls": 2,
+    "chunks": [
+      {
+        "TEXT": "Touch base után megbeszéljük a projektet.",
+        "FINAL_INPUT_AFTER_NORMALIZE": "Touch base után megbeszéljük a projektet.",
+        "HOST_LANGUAGE": "hu",
+        "DETECTED_ENGLISH_SPANS": [
+          "Touch base"
+        ],
+        "SPANS": [
+          {
+            "SPAN_TEXT": "Touch base",
+            "SPAN_LANGUAGE": "en"
+          },
+          {
+            "SPAN_TEXT": " után megbeszéljük a projektet.",
+            "SPAN_LANGUAGE": "hu"
+          }
+        ],
+        "SELECTED_VOICE": "F1",
+        "DIAG_LINE": "TTS voice: F1 · Nyugodt női (Hungarian, mode auto)",
+        "SYNTH_CALLS": [
+          {
+            "ROUTED_LANGUAGE": "en",
+            "SUPERTONIC_LANG": "en",
+            "FINAL_TTS_TEXT": "Touch base",
+            "VOICE": "F1"
+          },
+          {
+            "ROUTED_LANGUAGE": "hu",
+            "SUPERTONIC_LANG": "hu",
+            "FINAL_TTS_TEXT": " után megbeszéljük a projektet.",
+            "VOICE": "F1"
+          }
+        ]
+      }
+    ],
+    "idiom_word_routing": {}
+  },
+  {
+    "case": "T10",
+    "sentence": "Ez a projekt fontos, de most nem akarok meetinget.",
+    "delta_size": 3,
+    "n_deltas": 17,
+    "n_chunks": 2,
+    "n_synth_calls": 2,
+    "chunks": [
+      {
+        "TEXT": "Ez a projekt fontos, de",
+        "FINAL_INPUT_AFTER_NORMALIZE": "Ez a projekt fontos, de",
+        "HOST_LANGUAGE": "hu",
+        "DETECTED_ENGLISH_SPANS": [],
+        "SPANS": [
+          {
+            "SPAN_TEXT": "Ez a projekt fontos, de",
+            "SPAN_LANGUAGE": "hu"
+          }
+        ],
+        "SELECTED_VOICE": "F1",
+        "DIAG_LINE": "TTS voice: F1 · Nyugodt női (Hungarian, mode auto)",
+        "SYNTH_CALLS": [
+          {
+            "ROUTED_LANGUAGE": "hu",
+            "SUPERTONIC_LANG": "hu",
+            "FINAL_TTS_TEXT": "Ez a projekt fontos, de",
+            "VOICE": "F1"
+          }
+        ]
+      },
+      {
+        "TEXT": "most nem akarok meetinget.",
+        "FINAL_INPUT_AFTER_NORMALIZE": "most nem akarok meetinget.",
+        "HOST_LANGUAGE": "hu",
+        "DETECTED_ENGLISH_SPANS": [],
+        "SPANS": [
+          {
+            "SPAN_TEXT": "most nem akarok meetinget.",
+            "SPAN_LANGUAGE": "hu"
+          }
+        ],
+        "SELECTED_VOICE": "F1",
+        "DIAG_LINE": "TTS voice: F1 · Nyugodt női (Hungarian, mode auto)",
+        "SYNTH_CALLS": [
+          {
+            "ROUTED_LANGUAGE": "hu",
+            "SUPERTONIC_LANG": "hu",
+            "FINAL_TTS_TEXT": "most nem akarok meetinget.",
+            "VOICE": "F1"
+          }
+        ]
+      }
+    ],
+    "idiom_word_routing": {}
+  },
+  {
+    "case": "T10",
+    "sentence": "Ez a projekt fontos, de most nem akarok meetinget.",
+    "delta_size": 8,
+    "n_deltas": 7,
+    "n_chunks": 2,
+    "n_synth_calls": 2,
+    "chunks": [
+      {
+        "TEXT": "Ez a projekt fontos, de",
+        "FINAL_INPUT_AFTER_NORMALIZE": "Ez a projekt fontos, de",
+        "HOST_LANGUAGE": "hu",
+        "DETECTED_ENGLISH_SPANS": [],
+        "SPANS": [
+          {
+            "SPAN_TEXT": "Ez a projekt fontos, de",
+            "SPAN_LANGUAGE": "hu"
+          }
+        ],
+        "SELECTED_VOICE": "F1",
+        "DIAG_LINE": "TTS voice: F1 · Nyugodt női (Hungarian, mode auto)",
+        "SYNTH_CALLS": [
+          {
+            "ROUTED_LANGUAGE": "hu",
+            "SUPERTONIC_LANG": "hu",
+            "FINAL_TTS_TEXT": "Ez a projekt fontos, de",
+            "VOICE": "F1"
+          }
+        ]
+      },
+      {
+        "TEXT": "most nem akarok meetinget.",
+        "FINAL_INPUT_AFTER_NORMALIZE": "most nem akarok meetinget.",
+        "HOST_LANGUAGE": "hu",
+        "DETECTED_ENGLISH_SPANS": [],
+        "SPANS": [
+          {
+            "SPAN_TEXT": "most nem akarok meetinget.",
+            "SPAN_LANGUAGE": "hu"
+          }
+        ],
+        "SELECTED_VOICE": "F1",
+        "DIAG_LINE": "TTS voice: F1 · Nyugodt női (Hungarian, mode auto)",
+        "SYNTH_CALLS": [
+          {
+            "ROUTED_LANGUAGE": "hu",
+            "SUPERTONIC_LANG": "hu",
+            "FINAL_TTS_TEXT": "most nem akarok meetinget.",
+            "VOICE": "F1"
+          }
+        ]
+      }
+    ],
+    "idiom_word_routing": {}
+  },
+  {
+    "case": "T10",
+    "sentence": "Ez a projekt fontos, de most nem akarok meetinget.",
+    "delta_size": 50,
+    "n_deltas": 1,
+    "n_chunks": 1,
+    "n_synth_calls": 1,
+    "chunks": [
+      {
+        "TEXT": "Ez a projekt fontos, de most nem akarok meetinget.",
+        "FINAL_INPUT_AFTER_NORMALIZE": "Ez a projekt fontos, de most nem akarok meetinget.",
+        "HOST_LANGUAGE": "hu",
+        "DETECTED_ENGLISH_SPANS": [],
+        "SPANS": [
+          {
+            "SPAN_TEXT": "Ez a projekt fontos, de most nem akarok meetinget.",
+            "SPAN_LANGUAGE": "hu"
+          }
+        ],
+        "SELECTED_VOICE": "F1",
+        "DIAG_LINE": "TTS voice: F1 · Nyugodt női (Hungarian, mode auto)",
+        "SYNTH_CALLS": [
+          {
+            "ROUTED_LANGUAGE": "hu",
+            "SUPERTONIC_LANG": "hu",
+            "FINAL_TTS_TEXT": "Ez a projekt fontos, de most nem akarok meetinget.",
+            "VOICE": "F1"
+          }
+        ]
+      }
+    ],
+    "idiom_word_routing": {}
+  }
+]

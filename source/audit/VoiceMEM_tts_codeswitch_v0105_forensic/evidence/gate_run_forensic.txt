@@ -1,0 +1,56 @@
+========================================================================
+VoiceMem RELEASE GATE (v0.8.1 gate-order fix)
+========================================================================
+tree: VERSION=0.10.5 files=347 fingerprint=de354c444da031b0…
+
+[1/3] compileall app/ …
+      OK — app/*.py compile clean
+
+[2/3] full unittest discovery (unit + integration + validation) …
+      discover tests/unit …
+        tests/unit: 1127 tests, 8 failures, 1 errors, 5 skipped [104.4s] FAILED
+      discover tests/integration …
+        tests/integration: 73 tests, 0 failures, 20 errors, 1 skipped [81.2s] FAILED
+      discover tests/validation …
+        tests/validation: 271 tests, 2 failures, 0 errors, 29 skipped [3.1s] FAILED
+
+[3/3] classification vs the pinned sandbox env-gap baseline …
+      total tests      : 1471 (floor 1090)
+      skipped          : 35
+      env-gap failures : 14 (pinned, documented)
+        · setUpClass (tests.integration.test_memory_safety.LeftBrainDeleteGateTests)
+        · setUpClass (tests.integration.test_memory_safety.OccurrenceExplicitNoneTests)
+        · setUpClass (tests.integration.test_memory_safety.OccurrenceOmitNoneTests)
+        · setUpClass (tests.integration.test_memory_safety.RightBrainDeleteGateTests)
+        · setUpClass (tests.integration.test_memory_safety.UpdateHistoryPreservationTests)
+        · tests.unit.test_asr_modular.ParakeetPlaceholderLoadTests.test_missing_dir_same_actionable_error
+        · tests.unit.test_asr_modular.ParakeetPlaceholderLoadTests.test_placeholder_dir_raises_actionable_load_error
+        · tests.unit.test_asr_modular.ParakeetPlaceholderLoadTests.test_transcribe_maps_placeholder_to_error_result
+        · tests.unit.test_asr_modular.SileroContextContractTests.test_model_windows_are_576_with_rolling_context
+        · tests.unit.test_asr_modular.SileroContextContractTests.test_real_silero_fires_on_real_speech
+        · tests.unit.test_asr_modular.SileroContextContractTests.test_reset_zeroes_the_context
+        · tests.unit.test_install_manifest.BuildManifestTests.test_voicemem_controlled_fork_identity_from_pin
+        · tests.unit.test_voicemem_bridge.VoiceMemBridgeDegradedTests.test_is_available_false_without_package
+        · tests.validation.test_feature_release.ReleaseVersionFeatureTest.test_logic_release_index_schema_and_zip_integrity
+      REGRESSIONS      : 17
+        ! setUpClass (tests.integration.test_temporal_memory.ClassACurrentTests)  <<< NOT in the env baseline — investigate
+        ! setUpClass (tests.integration.test_temporal_memory.ClassBPastTests)  <<< NOT in the env baseline — investigate
+        ! setUpClass (tests.integration.test_temporal_memory.ClassCCessationTests)  <<< NOT in the env baseline — investigate
+        ! setUpClass (tests.integration.test_temporal_memory.ClassDUncertainTests)  <<< NOT in the env baseline — investigate
+        ! setUpClass (tests.integration.test_temporal_memory.ClassEFutureTests)  <<< NOT in the env baseline — investigate
+        ! setUpClass (tests.integration.test_temporal_memory.ClassGReinforcementThenChangeTests)  <<< NOT in the env baseline — investigate
+        ! setUpClass (tests.integration.test_temporal_memory.CrossLanguageSupersessionTests)  <<< NOT in the env baseline — investigate
+        ! setUpClass (tests.integration.test_temporal_memory.ObservationTimeTests)  <<< NOT in the env baseline — investigate
+        ! tests.integration.test_temporal_memory.SupersessionChainTests.test_all_four_states_retrievable  <<< NOT in the env baseline — investigate
+        ! tests.integration.test_temporal_memory.SupersessionChainTests.test_chain_structure_complete  <<< NOT in the env baseline — investigate
+        ! tests.integration.test_temporal_memory.SupersessionChainTests.test_current_intent_prefers_b2  <<< NOT in the env baseline — investigate
+        ! tests.integration.test_temporal_memory.SupersessionChainTests.test_exactly_one_current_row  <<< NOT in the env baseline — investigate
+        ! tests.integration.test_temporal_memory.SupersessionChainTests.test_intervals_closed_in_order  <<< NOT in the env baseline — investigate
+        ! tests.integration.test_temporal_memory.SupersessionChainTests.test_memory_history_walks_the_whole_chain  <<< NOT in the env baseline — investigate
+        ! tests.integration.test_temporal_memory.SupersessionChainTests.test_past_intent_prefers_history_over_current  <<< NOT in the env baseline — investigate
+        ! tests.unit.test_prompt_reduction.PromptReductionTests.test_size_contract  <<< NOT in the env baseline — investigate
+        ! tests.validation.test_feature_release.ReleaseVersionFeatureTest.test_deep_zip_inner_build_info  <<< NOT in the env baseline — investigate
+      deep validation  : pass [runtime-deps], skip 19
+
+VERDICT: RED
+gate record written: releases/gate_record.json

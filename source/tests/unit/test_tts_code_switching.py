@@ -1,4 +1,4 @@
-"""TTS code-switching tests (field reports v0.10.4 + v0.10.5 phase 2).
+"""TTS code-switching tests (field reports v0.10.4 + v0.10.5 phase 2 + forensic).
 
 Production bug (v0.10.4): language selection happened ONCE PER TTS CHUNK,
 so an English phrase quoted inside a Hungarian sentence ("A "touch base" egy
@@ -11,12 +11,25 @@ stayed with the Hungarian model — the LLM rarely sets phrases off with
 quotes in conversational turns. Phrase RUNS now route them by evidence;
 single words NEVER re-route ("projekt"/"meeting"/"hazai" stay host).
 
+Production bug (v0.10.5 forensic fix, operator case "VOICE MEM — TTS
+CODE-SWITCHING FORENSIC + FIX"): multi-word English idioms whose HEAD
+word is orthographically signal-free ("**cut** to the chase", "**hit**
+the ground running", "**burn** the midnight oil") were AMPUTATED — the
+run started at the first evidence word, the head stayed in the host
+span and the idiom was spoken half-Hungarian. Leading absorption now
+merges ONE preceding signal-free word into a run that carries at least
+PHRASE_RUN_LEADING_MIN_EVIDENCE foreign-evidence words. "break a leg"
+(zero orthographic evidence) is a documented limitation: it routes by
+host language only — fixing it needs a lexicon or loosened
+ambiguous-word rules, both rejected by the operator order.
+
 These tests pin the fix at all three levels:
 
 1. ``segment_language_spans`` (pure) — span boundaries and languages for the
    field-reported sentences + the edge battery (contractions, quotes,
    parentheses, commas, hyphens, numbers, URLs, e-mails, unmatched quotes,
-   phrase runs, budgets, caps, the run cap and suffix tails).
+   phrase runs, budgets, caps, the run cap and suffix tails) + the
+   operator's 10-sentence forensic matrix and the idiom regressions.
 2. ``WebSession._synthesize_chunk`` (integration, mock components) — the
    per-span Supertonic language SEQUENCE actually requested by the web
    backend, the returned PCM (audio exists), the text-preservation invariant
@@ -78,6 +91,31 @@ HU_UNQUOTED_SYL_CAPS = "Rendben, SEE YOU LATER!"
 HU_LOAN_MEETING = "A meeting után átbeszéljük a projektet."
 EN_PURE_CATCH = "Let's catch up later."
 EN_PURE_SYL = "See you later."
+
+#: v0.10.5 forensic fix — the operator's four idiom cases (both hosts) and
+#: the 10-sentence mandatory matrix, verbatim from the order.
+IDIOM_CUT = "Let's cut to the chase."
+IDIOM_HIT = "Sometimes you just have to hit the ground running."
+IDIOM_BURN = "We had to burn the midnight oil."
+IDIOM_BREAK = "Before the show, everyone said break a leg."
+HU_IDIOM_CUT = "Most már tényleg cut to the chase, és menjünk tovább."
+HU_IDIOM_HIT = "Holnap kell hit the ground running-gyel indulni."
+HU_IDIOM_BURN = "Muszáj volt burn the midnight oil, de sikerült."
+MANDATORY_MATRIX = [
+    ("T1", IDIOM_CUT),
+    ("T2", IDIOM_HIT),
+    ("T3", IDIOM_BURN),
+    ("T4", IDIOM_BREAK),
+    ("T5", HU_IDIOM_CUT),
+    ("T6", "Ma először checkeljük a resultot, aztán megnézzük a "
+           "statuszt, végül pedig beszélünk a next step-ről."),
+    ("T7", "A mai test során először checkeljük a resultot, aztán "
+           "megnézzük a statuszt, végül pedig beszélünk a next "
+           "step-ről."),
+    ("T8", "Holnap lesz a meeting, utána pedig catch up."),
+    ("T9", "Touch base után megbeszéljük a projektet."),
+    ("T10", "Ez a projekt fontos, de most nem akarok meetinget."),
+]
 
 
 def _spans(text: str, host: str) -> list[tuple[str, str]]:
@@ -440,6 +478,262 @@ class SegmentPhraseRunTests(unittest.TestCase):
             self.assertTrue(all(s.strip() for s, _ in spans), text)
 
 
+class IdiomLeadingAbsorptionTests(unittest.TestCase):
+    """v0.10.5 forensic fix: idiom heads join their evidence runs.
+
+    Root cause (audit/VoiceMEM_tts_codeswitch_v0105_forensic): the run
+    detector started runs AT the first foreign-evidence word, so English
+    idioms with signal-free heads ("cut to the chase", "hit the ground
+    running", "burn the midnight oil") were amputated — the head stayed
+    in the host span. Leading absorption (PHRASE_RUN_LEADING_BUDGET)
+    merges ONE preceding signal-free word when the run carries at least
+    PHRASE_RUN_LEADING_MIN_EVIDENCE evidence words. The ambiguous-loanword
+    protections (single words, "Holnap"-class neutrals, digits, suffixes)
+    are pinned here as guards of exactly that rule.
+    """
+
+    def test_idiom_cut_to_the_chase_in_hungarian(self):
+        # Operator case T5 — the whole idiom becomes one EN span.
+        self.assertEqual(
+            _spans(HU_IDIOM_CUT, LANG_HU),
+            [
+                ("Most már tényleg ", LANG_HU),
+                ("cut to the chase,", LANG_EN),
+                (" és menjünk tovább.", LANG_HU),
+            ],
+        )
+
+    def test_idiom_hit_the_ground_running_in_hungarian(self):
+        # The head "hit" absorbs; the Hungarian derivational suffix
+        # "-gyel" stays with the host span (trailing hyphen rule).
+        self.assertEqual(
+            _spans(HU_IDIOM_HIT, LANG_HU),
+            [
+                ("Holnap kell ", LANG_HU),
+                ("hit the ground running", LANG_EN),
+                ("-gyel indulni.", LANG_HU),
+            ],
+        )
+
+    def test_idiom_burn_the_midnight_oil_in_hungarian(self):
+        self.assertEqual(
+            _spans(HU_IDIOM_BURN, LANG_HU),
+            [
+                ("Muszáj volt ", LANG_HU),
+                ("burn the midnight oil,", LANG_EN),
+                (" de sikerült.", LANG_HU),
+            ],
+        )
+
+    def test_idiom_break_a_leg_english_host(self):
+        # Operator case T4 — pure-English sentence: one EN span (the
+        # chunk-level host detection routes the whole sentence).
+        self.assertEqual(detect_language(IDIOM_BREAK), LANG_EN)
+        self.assertEqual(_spans(IDIOM_BREAK, LANG_EN),
+                         [(normalize_for_speech(IDIOM_BREAK), LANG_EN)])
+
+    def test_idiom_break_a_leg_hungarian_host_is_documented_limitation(self):
+        # "break a leg" carries ZERO orthographic English evidence
+        # (break/a/leg are all signal-free; "a" is deliberately not an
+        # EN word-stopword — it is the Hungarian definite article).
+        # Detecting it needs a lexicon or loosened ambiguous-word rules,
+        # both rejected by the operator order; the behaviour is pinned so
+        # any future change is a conscious decision.
+        for text in (
+            "Most pedig break a leg, drágám.",
+            'A "break a leg" kifejezés bátorságot jelent.',
+        ):
+            self.assertEqual(_spans(text, LANG_HU),
+                             [(normalize_for_speech(text), LANG_HU)], text)
+
+    def test_idiom_head_at_sentence_start_absorbs(self):
+        # Sentence-initial idiom heads ("Rendben. Cut to the chase.")
+        # join their run: the trailing-rule clause guard is mirrored on
+        # the candidate's OWN last character, not the sentence boundary.
+        text = "Kész. Cut to the chase, légyszives."
+        self.assertEqual(
+            _spans(text, LANG_HU),
+            [
+                ("Kész. ", LANG_HU),
+                ("Cut to the chase,", LANG_EN),
+                (" légyszives.", LANG_HU),
+            ],
+        )
+
+    def test_single_evidence_run_never_absorbs_leading_neutral(self):
+        # "touch base" carries ONE evidence word — the operator's
+        # loanword protection: the signal-free Hungarian "Holnap" must
+        # not be pulled into the EN span.
+        text = "Holnap touch base veled lesz."
+        self.assertEqual(
+            _spans(text, LANG_HU),
+            [("Holnap ", LANG_HU), ("touch base", LANG_EN),
+             (" veled lesz.", LANG_HU)],
+        )
+
+    def test_clause_final_candidate_blocks_absorption(self):
+        # The candidate itself ends a sentence ("cut.") — the mirror of
+        # the trailing rule's guard: "cut. To the chase" are unrelated.
+        text = "Láttam a cut. To the chase, légyszives."
+        self.assertEqual(
+            _spans(text, LANG_HU),
+            [
+                ("Láttam a cut. ", LANG_HU),
+                ("To the chase,", LANG_EN),
+                (" légyszives.", LANG_HU),
+            ],
+        )
+
+    def test_digit_tokens_never_absorbed(self):
+        # Numbers never carry language: "2026-os" stays with the host.
+        text = "A 2026-os team meeting next week lesz."
+        spans = _spans(text, LANG_HU)
+        self.assertEqual(spans[0], ("A 2026-os ", LANG_HU))
+        self.assertEqual("".join(s for s, _ in spans),
+                         normalize_for_speech(text))
+
+    def test_hyphen_trimmed_candidate_never_absorbed(self):
+        # Hungarian-suffixed stems ("next step-ről": neutral head +
+        # suffix) are never absorbed into a foreign run (white-box check
+        # of the trimmed_at_hyphen guard).
+        from app.text_utils import _phrase_runs
+
+        runs = _phrase_runs("next step-ről cut to the chase", LANG_EN)
+        self.assertEqual(len(runs), 1)
+        start, end = runs[0]
+        self.assertEqual("next step-ről cut to the chase"[start:end],
+                         "cut to the chase")
+
+    def test_documented_false_positive_leading_neutral_sweep(self):
+        # The mirror of test_documented_false_positive_neutral_sweep: a
+        # signal-free Hungarian word directly before a >=2-evidence run
+        # is absorbed ("Holnap see you later." reads "Holnap" with EN
+        # phonetics). Pinned as the documented false-positive class —
+        # bounded by the budget (one word) and the evidence gate.
+        text = "Holnap see you later."
+        self.assertEqual(_spans(text, LANG_HU),
+                         [(normalize_for_speech(text), LANG_EN)])
+
+    def test_quoted_idiom_with_evidence_routes_english(self):
+        # Whole idioms inside quotes (level-1 regions) route by region
+        # evidence — already correct before the fix, pinned here.
+        for idiom in ("cut to the chase", "hit the ground running",
+                      "burn the midnight oil"):
+            text = f'A "{idiom}" kifejezés angol idióma.'
+            spans = _spans(text, LANG_HU)
+            self.assertEqual(spans[1], (f'"{idiom}"', LANG_EN), idiom)
+
+    def test_mandatory_matrix_language_sequences(self):
+        # The operator's 10-sentence package, span-level, production host
+        # detection per sentence. Expected (see the forensic report):
+        #   T1-T4 pure English       -> one EN span (chunk host routing)
+        #   T5    HU + clear idiom    -> HU, EN(idiom), HU
+        #   T6/T7 ambiguous loanwords -> one HU span (no re-routing)
+        #   T8    meeting HU, catch up EN
+        #   T9    Touch base EN, rest HU
+        #   T10   one HU span (meetinget stays host)
+        expected = {
+            "T1": [LANG_EN],
+            "T2": [LANG_EN],
+            "T3": [LANG_EN],
+            "T4": [LANG_EN],
+            "T5": [LANG_HU, LANG_EN, LANG_HU],
+            "T6": [LANG_HU],
+            "T7": [LANG_HU],
+            "T8": [LANG_HU, LANG_EN],
+            "T9": [LANG_EN, LANG_HU],
+            "T10": [LANG_HU],
+        }
+        for case_id, sentence in MANDATORY_MATRIX:
+            with self.subTest(case=case_id):
+                norm = normalize_for_speech(sentence)
+                host = detect_language(norm)
+                spans = segment_language_spans(norm, host)
+                self.assertEqual(_langs(spans), expected[case_id])
+                self.assertEqual("".join(s for s, _ in spans), norm)
+
+    def test_mandatory_matrix_ambiguous_loanwords_stay_host(self):
+        # T6/T7/T10 loanword battery: checkeljük/resultot/statuszt/
+        # test/next step-ről/meeting(et)/projekt(et) never re-route —
+        # whichever span CONTAINS the word must be the host language.
+        for case_id in ("T6", "T7", "T10"):
+            sentence = dict(MANDATORY_MATRIX)[case_id]
+            norm = normalize_for_speech(sentence)
+            spans = segment_language_spans(norm, detect_language(norm))
+            for word in ("checkeljük", "resultot", "statuszt", "test",
+                         "step", "meetinget", "projektet"):
+                containing = [(t, l) for t, l in spans if word in t]
+                if not containing:
+                    continue  # word not in this sentence
+                for span_text, lang in containing:
+                    self.assertNotEqual(
+                        lang, LANG_EN,
+                        f"{case_id}: {word!r} must stay host "
+                        f"(found in EN span {span_text!r})",
+                    )
+
+    def test_mandatory_matrix_clear_phrases_route_english(self):
+        # The differential the operator asked for: in the SAME sentence
+        # (T8), the clear multi-word phrase routes EN while the ambiguous
+        # single-word loanword stays HU.
+        spans = _spans(dict(MANDATORY_MATRIX)["T8"], LANG_HU)
+        self.assertIn(("catch up.", LANG_EN), spans)
+        self.assertIn("meeting", spans[0][0])
+        # T9: "Touch base" routes EN, "projektet" stays HU.
+        spans = _spans(dict(MANDATORY_MATRIX)["T9"], LANG_HU)
+        self.assertEqual(spans[0], ("Touch base", LANG_EN))
+        self.assertIn("projektet", spans[1][0])
+
+
+class SentenceStreamChunkBoundaryTests(unittest.TestCase):
+    """The streaming chunker's first-window behaviour (documented).
+
+    The SentenceStream first-chunk window (24 chars, config default)
+    cuts at the last space before the limit — independent of language.
+    When a foreign phrase STRADDLES that window, its head stays in the
+    first (host) chunk: a pre-existing property of the low-TTFB chunker
+    that affects every phrase class equally (e.g. "Szeretnék holnap
+    touch b|ase-t ..." splits "touch base" too). Fixing it would need
+    phrase-aware chunking — rejected by the operator order ("NE
+    változtasd meg az egész chunking rendszert"). Pinned as-is so any
+    future change is a conscious decision.
+    """
+
+    def _chunks(self, sentence: str, delta: int = 3) -> list[str]:
+        from app.text_utils import SentenceStream
+
+        stream = SentenceStream(first_chunk_chars=24, chunk_chars=80)
+        out: list[str] = []
+        for i in range(0, len(sentence), delta):
+            out.extend(stream.add_delta(sentence[i : i + delta]))
+        out.extend(stream.flush())
+        return out
+
+    def test_short_english_sentence_emits_whole(self):
+        # 24 chars: never exceeds the first window -> one whole chunk.
+        self.assertEqual(self._chunks(IDIOM_CUT), [IDIOM_CUT])
+
+    def test_hungarian_idiom_sentence_chunk_boundaries(self):
+        # The T5 sentence splits at the deterministic 24-char boundary:
+        # chunk 1 ends inside the idiom ("cut to" stays with the host).
+        self.assertEqual(
+            self._chunks(HU_IDIOM_CUT),
+            ["Most már tényleg cut to", "the chase, és menjünk tovább."],
+        )
+        # ...and each chunk routes independently (documented residual):
+        host = detect_language("Most már tényleg cut to")
+        self.assertEqual(
+            _spans("Most már tényleg cut to", host),
+            [("Most már tényleg cut to", LANG_HU)],
+        )
+        host = detect_language("the chase, és menjünk tovább.")
+        self.assertEqual(host, LANG_HU)
+        self.assertEqual(
+            _spans("the chase, és menjünk tovább.", host),
+            [("the chase,", LANG_EN), (" és menjünk tovább.", LANG_HU)],
+        )
+
+
 class SegmentEdgeCaseTests(unittest.TestCase):
     """Contractions, punctuation, numbers, URLs, e-mails, unmatched quotes."""
 
@@ -715,6 +1009,48 @@ class WebSynthesizeChunkTests(unittest.TestCase):
         self.assertEqual("".join(t for t, _ in recorded),
                          normalize_for_speech(HU_UNQUOTED_MIX))
 
+    def test_idiom_three_calls_in_order(self):
+        # v0.10.5 forensic fix (operator case T5): the idiom head
+        # "cut" absorbs into the EN run — the WHOLE idiom is synthesized
+        # with the English model between two Hungarian spans.
+        session, components = _make_session()
+        pcm = self._run(session, HU_IDIOM_CUT)
+        self.assertIsNotNone(pcm)
+        self.assertGreater(len(pcm), 0)
+        recorded = _recorded(components)
+        self.assertEqual(
+            recorded,
+            [
+                ("Most már tényleg ", LANG_HU),
+                ("cut to the chase,", LANG_EN),
+                (" és menjünk tovább.", LANG_HU),
+            ],
+        )
+        self.assertEqual("".join(t for t, _ in recorded),
+                         normalize_for_speech(HU_IDIOM_CUT))
+        # Same voice across all three spans (one speaker, not three).
+        voices = [v for _t, _l, _ls, v in components.tts.synthesized]
+        self.assertEqual(voices, ["F1", "F1", "F1"])
+
+    def test_idiom_hit_and_burn_absorb_heads(self):
+        # The other two evidence-bearing idioms route whole; the
+        # Hungarian derivational suffix stays host.
+        session, components = _make_session()
+        pcm = self._run(session, HU_IDIOM_HIT)
+        self.assertIsNotNone(pcm)
+        recorded = _recorded(components)
+        self.assertIn(("hit the ground running", LANG_EN), recorded)
+        self.assertIn(("-gyel indulni.", LANG_HU), recorded)
+        self.assertEqual("".join(t for t, _ in recorded),
+                         normalize_for_speech(HU_IDIOM_HIT))
+        session, components = _make_session()
+        pcm = self._run(session, HU_IDIOM_BURN)
+        self.assertIsNotNone(pcm)
+        recorded = _recorded(components)
+        self.assertIn(("burn the midnight oil,", LANG_EN), recorded)
+        self.assertEqual("".join(t for t, _ in recorded),
+                         normalize_for_speech(HU_IDIOM_BURN))
+
     def test_typographic_quotes_no_unsupported_character_exception(self):
         # (4) the v0.10.3 normalization choke point runs BEFORE segmentation,
         # so „ ” ’ never reach the engine — no unsupported-character error.
@@ -811,6 +1147,21 @@ class PipelineSpeakChunkTests(unittest.TestCase):
                 ("A ", LANG_HU),
                 ('"touch base"', LANG_EN),
                 (" egy gyakori angol kifejezés.", LANG_HU),
+            ],
+        )
+
+    def test_idiom_span_sequence(self):
+        # v0.10.5 forensic fix (CLI path mirrors the web backend): the
+        # whole idiom routes to the EN model in one span.
+        pipeline, tts = _make_pipeline()  # _voice_settings=None -> auto
+        status = self._speak(pipeline, HU_IDIOM_CUT)
+        self.assertEqual(status, "played")
+        self.assertEqual(
+            [(t, lang) for t, lang, _ls, _v in tts.synthesized],
+            [
+                ("Most már tényleg ", LANG_HU),
+                ("cut to the chase,", LANG_EN),
+                (" és menjünk tovább.", LANG_HU),
             ],
         )
 
