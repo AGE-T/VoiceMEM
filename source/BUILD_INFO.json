@@ -1,16 +1,28 @@
 {
   "schema_version": 1,
   "name": "voicemem-agent",
-  "version": "0.7.1",
-  "built_from_version": "0.7.0",
+  "version": "0.10.6",
+  "built_from_version": "0.10.5",
   "milestone": "M0",
-  "built_at_utc": "2026-09-13T19:17:37Z",
-  "git_commit": "cbda42ac6fd98b84f049e1c58e01f134923c4c51",
+  "built_at_utc": "2026-09-20T16:54:51Z",
+  "git_commit": "64edfefa7ad719aac24ba1ee5421407a79cc65ae",
   "generator": "sandbox replica of scripts/build_release.ps1",
-  "test_gate": "unittest discover (unit + integration + benchmark + validation)",
+  "test_gate": "run_release_gate.py (unit + integration + validation)",
   "test_gate_exit_code": 0,
-  "validation_deep_pass": "release, scripts-lint, memory-safety-integration",
-  "validation_deep_skipped": 30,
+  "gate_record": {
+    "ran_at_utc": "2026-09-20T16:49:39Z",
+    "verdict": "GREEN",
+    "tree_fingerprint": "672434143af31d709a6b74999044a5e9d3d443357d08890c02a37490d6bc3bc1",
+    "tests": 1521,
+    "failures": 2,
+    "errors": 0,
+    "skipped": 30,
+    "env_gap_failures": 2,
+    "regressions": [],
+    "note": "v0.8.1 gate-order rule: the gate ran on the EXACT tree that was packaged (fingerprint-bound record; every failure is a pinned+documented sandbox environment gap, green on the target machine)"
+  },
+  "validation_deep_pass": "embedding, memory-semantics, release, runtime-deps, vad",
+  "validation_deep_skipped": 15,
   "validation_strict": false,
-  "notes": "v0.7.0 SUPERTONIC 3 TTS MIGRATION (operator order: REPLACE PIPER WITH SUPERTONIC 3). The production TTS is now Supertone Supertonic 3 (open-weight, ~99M params, ONNX Runtime CPU - the RTX 5070 stays reserved for the Qwen3.6 35B LLM; 31 languages incl. Hungarian and English; 44.1 kHz 16-bit mono output; MIT sample code + OpenRAIL-M model licence). Runtime: the pinned supertonic==1.3.1 PyPI SDK (the repo is ARCHIVED - a fixed external dependency); model assets download ONCE at setup time from the supertone-oss-archive/supertonic-3 repo at pinned revision aafc6e32416a into models/tts/supertonic-3 (SHA256 manifest ships as ASSET_MANIFEST.json); the runtime is fully offline (auto_download=False, code-enforced). New app/tts_supertonic.py SupertonicTtsEngine with the SAME interface contract as the retired Piper wrapper (pipeline/web call sites unchanged); the ONNX model loads ONCE (lazy) and stays alive; M2 emotion pacing maps length_scale -> SDK speed 1/length_scale (clamped 0.7-2.0); barge-in abandons the in-flight result (explicit, no fallback engine - Supertonic failure = explicit TTS error). Browser path UNCHANGED (44.1 kHz -> 24 kHz PCM16 resample at the existing web boundary); documented boundary conversion: the vocoder's 0.35-0.9 s edge padding is trimmed (supertonic_trim_silence, on by default). Voices: 10 presets (F1-F5, M1-M5; each speaks BOTH hu and en) in the UI Voice section; production default F1. PIPER REMOVED: app/tts.py deleted, binary download/verify/bootstrap/license steps and MODELS.lock tts+tools entries migrated, ~35 test expectations updated. MEASURED (sandbox 2 vCPU - target will be faster): standalone validation 15/15 OK; ASR-roundtrip gate through the PRODUCTION parakeet: HU mean WER 5.0%, EN 2.2%, insertions (repeats) 0; steps 5/8/10: the official default 8 is the best practical setting (5 measurably worse WER 11.8%); perf: load ~1.4-2.2 s, RTF 0.53-0.75 on the 2-vCPU sandbox, RAM 505 MB stable after 60 syntheses (no leak); 5 consecutive HTTP previews 200 OK; browser-verified voice selectors + turn with TTS DONE, zero console errors. The LLM/ASR/VAD/VoiceMem/E5 configuration is UNTOUCHED (Qwen3.6 35B A3B IQ4_XS ngl20 ctx32768 KVq8_0 parallel1 temp0.7 reasoning off). Gate: full sandbox battery re-run (see BUILD_HISTORY); real MixPre acceptance remains USER VERIFIED."
+  "notes": "v0.10.6 TTS FORENZIKAI JAVITO KIADAS (operator order: a mar implementalt edac5c9 vezeto-semleges abszorpcios javitas TORVENYES, kapuzott kiadasa - semmi mas). A JAVITAS (commit edac5c9, app/text_utils.py EGYETLEN fajl, a v0.10.5 zipben meg NEM volt benne): az angol idiomak FEJ szavai ortografialag jelfogok nelkuliek ('cut to the chase', 'hit the ground running', 'burn the midnight oil'), igy a _phrase_runs a fejet a host-spanben hagyta - a terepen jelentett fel-magyar kiejtes oka. VEZETO-SEMLEGES ABSZORPCIO: PHRASE_RUN_LEADING_BUDGET (en 1 / hu 0, a zaro tukre) + PHRASE_RUN_LEADING_MIN_EVIDENCE=2 (kolcsonzvo-pajzs: a 'Holnap touch base' sosem abszorbeal) + _absorb_leading() orszabalyok (host-bizonyitek tilt, csak tisztan alfabetikus token, kotjel-vagott magyar szuffixum sosem, mondatvegi kozpontozas tilt). NEM VALTOZOTT (szerzodes): nincs lexikon, nincs uj detektalasi rendszer, engine/chunking/hangvaltozas; semmilye ketertelmu-szo szabaly nem lazult (T6/T7/T10 byte-azonos); a 'break a leg' nulla-bizonyiteku esete dokumentalt korlat marad (lexikon nelkul nem javithato - operator altal elutasitva). KIADASI-INTEGRITAS HAZTARTAS: a faban levo ELAVULT BUILD_INFO.json (0.7.1 maradvany, a konsolidalt audit talalata) a 0.10.6-os build-identitasra frissult - a faban mar nincs ket utkozo kiadasi identitas. KORNYEZET-VISSZAALLITAS (NEM termekvaltozas): a v0.10.5 kapu ota a sandbox allapotvesztes miatt elveszett korornyezet visszaallt (torch 2.7.0+cpu, transformers==5.17.0, onnxruntime==1.23.0, openai==3.14.0 pin-ek; mem0ai + qdrant-client + sentence-transformers; E5-modell a pinelt 614241f6 revizion; Qwen3.6-tokenizer a 995ad96e revizion; silero ONNX a 394d7e6b revizion; mind a 28 kiadott ZIP SHA-256-ellenorzott visszaallitasa) - a korabbi RED kapu kornyezeti allapotvesztes volt (byte-azonos hibahalmaz a fix elott es utan, stash-bizonyitott), a mostani gate egy VALOBAN zold korornyezeten fut. TESZTEK: test_tts_code_switching.py 81 teszt (61->81 az edac5c9-ben: negy idiom explicit, mindket host; 10-mondatos kotelezo matrix; orszabaly-batteria; streaming-hatar dokumentacio; web + CLI integracios sorozatok)."
 }

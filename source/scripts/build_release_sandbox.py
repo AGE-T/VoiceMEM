@@ -45,8 +45,8 @@ from pathlib import Path
 REPO = Path(__file__).resolve().parent.parent
 RELEASES = REPO / "releases"
 
-NEW_VERSION = "0.10.5"
-PREV_VERSION = "0.10.4"
+NEW_VERSION = "0.10.6"
+PREV_VERSION = "0.10.5"
 ZIP_NAME = f"VoiceMemAgent_v{NEW_VERSION}.zip"
 
 PLACEHOLDER_DIRS = [
@@ -75,59 +75,41 @@ ROOT_FILES = [
 ]
 
 NOTES = (
-    "v0.10.5 TTS CODE-SWITCHING JAVITO KIADAS (operator order: a v0.10.4 "
-    "utan ertkezett terepi hibajelentes KIZAROLAGOS javitasa - semmi mas). "
-    "A HIBA (terepi jelentes): a beszed nyelve TTS-CHUNK-ONKENT volt "
-    "kivalasztva (detect_language egyetlen cimket ad a teljes chunkra), "
-    "igy a magyar mondatbaagyazott angol kifejezes (pl. A \"touch base\" "
-    "egy gyakori angol kifejezes.) a MAGYAR hangmodellel lett felolvasva - "
-    "a Supertonic HU G2P az angol grafemakat magyar betuertekekkel ejtette, "
-    "a beszed egy resze erthetetlen vagy ertelmetlen hangzasu lett; a "
-    "web-server.log a chunkokat HU->EN->HU->EN valtasokkal mutatta "
-    "(chunk-szintu valtas), a CHUNKON BELULI keveres kifejezhetetlen volt. "
-    "A JAVITAS - SPAN-SZINTU NYELVI UTVONALVALTAS A HIVO OLDALAKON (a TTS "
-    "engine NEM valtozott): (1) app/text_utils.py - uj "
-    "segment_language_spans(text, host_language): EVIDENCIA-KAPUS, SET-OFF "
-    "hataru szegmentacio. CSAK paros idezojel- es zarojel-regiok a "
-    "split-hajok (kizarolag explicit kiemelesi markerek); az "
-    "aposztrof-parositast alnum-hatar orzi, az osszevont alakok (I'd, "
-    "don't) SOHA nem elvalasztok; nyitott/atalapo regiok a host-nyelvre "
-    "degradalnak, soha nem crashelnek. EVIDENCIA-KAPU: csak pozitiv "
-    "szo-szintu idegen-nyelvi bizonyitek eseten split-el egy regio (EN "
-    "osszevont alakok; ch/ck/sh/th/ph/wh/gh/qu + ou/ee/oo/oa/ue/ui/ei "
-    "HANGKULCSCOPORTOK, au/ea/eu/ai KIZARVA az auto/tea/euro/hazai "
-    "magyar szavak miatt; HU eros digrafok sz/cs/gy/zs, ny/ly/ty KIZARVA "
-    "az only/really/city miatt; EN stopwordok az a/is nelkul) - a "
-    "hazai-osztalu hamis pozitivok elnyomva; a detektor csak akkor dont, "
-    "ha MINDKET oldalon van bizonyitek; a signal-semleges kolcsonszavak "
-    "(projekt) a hosttal maradnak; IDEZET NELKULI keveres (touch "
-    "base-elni) dokumentaltan host marad (lexikon nelkuli "
-    "frazishatar lehetetlen). SZINTezis: span-onkenti nyelv UGYANAZZAL a "
-    "feloldott hanggal (egy beszelo idezetel, nem masik ember), PCM "
-    "konkatenacio, EGY rendezett payload - a \"\".join(span_texts) == "
-    "text HARD invariant, a lejatszasi sorrend konstrukciosan "
-    "valtozatlan. (2) app/web_server.py _synthesize_chunk: auto "
-    "hangmodban span-szegmentacio + span-onkenti asyncio.to_thread "
-    "szintezis, a barge-in a meg nem kuldot spanokat ugyanugy eldobja. "
-    "(3) app/pipeline.py _speak_chunk: a CLI utvonal ugyanez (numpy "
-    "konkatenacio). NEM VALTOZOTT (szerzodes): az engine + SDK alairas "
-    "(app/tts_supertonic.py), a rendezett kuldo sor es a "
-    "_TTS_MAX_PARALLEL_CHUNKS=2 pump, a forced hangmodok (hu/en "
-    "egynyelvuek maradnak), a tiszta HU/EN chunkok BYTETAZONOS "
-    "egy-hivo utvonala (NULLA hozzaadott kesleltetes), LLM/ASR/futasi "
-    "vezerles, a llama-baseline (ngl 16 -c 16000 --parallel 1, q8_0 KV, "
-    "temp 0.7), memoria- es gate-szemantika, konfiguracio. TESZTEK: +42 "
-    "uj (tests/unit/test_tts_code_switching.py: tiszta szegmentacios "
-    "bateria - az osszes kotelezo mondat + osszevont alakok + idezojel/"
-    "zarojel/kotjel/szam/URL/e-mail + nyitatlan idezojel + osszefuto "
-    "regiok + szoveg-megorzesi invariant + kesleltetesi or; web "
-    "integracio a WebSession._synthesize_chunk-en MockTtsEngine-nel "
-    "(span-onkenti hivo-sorozatok, hang-folytonossag, forced modok); CLI "
-    "integracio a VoicePipeline._speak_chunk-on). KESLELTETES (mert "
-    "sandbox): szegmentacio 3.7-9.4 us/chunk, 362 karakteres 3-span "
-    "legrosszabb eset 80 us; tiszta chunkokra pontosan az eddigi egy "
-    "hivo - nulla plusz. AUDIT: audit/VoiceMEM_tts_codeswitch_v0104/ "
-    "(REPORT.md A-G + evidence)."
+    "v0.10.6 TTS FORENZIKAI JAVITO KIADAS (operator order: a mar implementalt "
+    "edac5c9 vezeto-semleges abszorpcios javitas TORVENYES, kapuzott "
+    "kiadasa - semmi mas). A JAVITAS (commit edac5c9, app/text_utils.py "
+    "EGYETLEN fajl, a v0.10.5 zipben meg NEM volt benne): az angol "
+    "idiomak FEJ szavai ortografialag jelfogok nelkuliek ('cut to the "
+    "chase', 'hit the ground running', 'burn the midnight oil'), igy a "
+    "_phrase_runs a fejet a host-spanben hagyta - a terepen jelentett "
+    "fel-magyar kiejtes oka. VEZETO-SEMLEGES ABSZORPCIO: "
+    "PHRASE_RUN_LEADING_BUDGET (en 1 / hu 0, a zaro tukre) + "
+    "PHRASE_RUN_LEADING_MIN_EVIDENCE=2 (kolcsonzvo-pajzs: a 'Holnap touch "
+    "base' sosem abszorbeal) + _absorb_leading() orszabalyok "
+    "(host-bizonyitek tilt, csak tisztan alfabetikus token, "
+    "kotjel-vagott magyar szuffixum sosem, mondatvegi kozpontozas tilt). "
+    "NEM VALTOZOTT (szerzodes): nincs lexikon, nincs uj detektalasi "
+    "rendszer, engine/chunking/hangvaltozas; semmilye ketertelmu-szo "
+    "szabaly nem lazult (T6/T7/T10 byte-azonos); a 'break a leg' "
+    "nulla-bizonyiteku esete dokumentalt korlat marad (lexikon nelkul "
+    "nem javithato - operator altal elutasitva). KIADASI-INTEGRITAS "
+    "HAZTARTAS: a faban levo ELAVULT BUILD_INFO.json (0.7.1 maradvany, a "
+    "konsolidalt audit talalata) a 0.10.6-os build-identitasra frissult "
+    "- a faban mar nincs ket utkozo kiadasi identitas. KORNYEZET-"
+    "VISSZAALLITAS (NEM termekvaltozas): a v0.10.5 kapu ota a sandbox "
+    "allapotvesztes miatt elveszett korornyezet visszaallt (torch "
+    "2.7.0+cpu, transformers==5.17.0, onnxruntime==1.23.0, "
+    "openai==3.14.0 pin-ek; mem0ai + qdrant-client + "
+    "sentence-transformers; E5-modell a pinelt 614241f6 revizion; "
+    "Qwen3.6-tokenizer a 995ad96e revizion; silero ONNX a 394d7e6b "
+    "revizion; mind a 28 kiadott ZIP SHA-256-ellenorzott visszaallitasa) "
+    "- a korabbi RED kapu kornyezeti allapotvesztes volt (byte-azonos "
+    "hibahalmaz a fix elott es utan, stash-bizonyitott), a mostani gate "
+    "egy VALOBAN zold korornyezeten fut. TESZTEK: "
+    "test_tts_code_switching.py 81 teszt (61->81 az edac5c9-ben: negy "
+    "idiom explicit, mindket host; 10-mondatos kotelezo matrix; "
+    "orszabaly-batteria; streaming-hatar dokumentacio; web + CLI "
+    "integracios sorozatok)."
 )
 
 #: v0.6.0 markers: the modular ASR engine contract - asr_core (AudioBuffer,
@@ -953,6 +935,27 @@ V0105_MARKERS = {
         "class SegmentEdgeCaseTests",
         "class WebSynthesizeChunkTests",
         "class PipelineSpeakChunkTests",
+    ],
+}
+
+#: v0.10.6 markers: the leading-neutral absorption fix (edac5c9) - the
+#: leading budget + min-evidence shield + _absorb_leading guards in
+#: text_utils, and the IdiomLeadingAbsorptionTests battery that pins
+#: them (idiom heads join their evidence runs; loanword neutrals stay
+#: host).
+V0106_MARKERS = {
+    "app/text_utils.py": [
+        "PHRASE_RUN_LEADING_BUDGET",
+        "PHRASE_RUN_LEADING_MIN_EVIDENCE",
+        "def _absorb_leading",
+    ],
+    "tests/unit/test_tts_code_switching.py": [
+        "class IdiomLeadingAbsorptionTests",
+        "class SentenceStreamChunkBoundaryTests",
+        "test_idiom_cut_to_the_chase_in_hungarian",
+        "test_idiom_break_a_leg_hungarian_host_is_documented_limitation",
+        "test_single_evidence_run_never_absorbs_leading_neutral",
+        "test_hyphen_trimmed_candidate_never_absorbed",
     ],
 }
 
@@ -2480,7 +2483,7 @@ def build() -> int:
                             f"self-check: {rel} lacks v0.4.11 marker {m!r}"
                         )
             # v0.4.12: stale-page detection + raw capture + send-as-turn
-            for rel, markers in {**V0412_MARKERS, **V0413_MARKERS, **V0414_MARKERS, **V0415_MARKERS, **V0416_MARKERS, **V0417_MARKERS, **V0418_MARKERS, **V0419_MARKERS, **V0420_MARKERS, **V0421_MARKERS, **V050_MARKERS, **V052_MARKERS, **V060_MARKERS, **V061_MARKERS, **V062_MARKERS, **V063_MARKERS, **V064_MARKERS, **V070_MARKERS, **V071_MARKERS, **V072_MARKERS, **V080_MARKERS, **V081_MARKERS, **V090_MARKERS, **V091_MARKERS, **V092_MARKERS, **V0100_MARKERS, **V0101_MARKERS, **V0102_MARKERS, **V0103_MARKERS, **V0104_MARKERS, **V0105_MARKERS}.items():
+            for rel, markers in {**V0412_MARKERS, **V0413_MARKERS, **V0414_MARKERS, **V0415_MARKERS, **V0416_MARKERS, **V0417_MARKERS, **V0418_MARKERS, **V0419_MARKERS, **V0420_MARKERS, **V0421_MARKERS, **V050_MARKERS, **V052_MARKERS, **V060_MARKERS, **V061_MARKERS, **V062_MARKERS, **V063_MARKERS, **V064_MARKERS, **V070_MARKERS, **V071_MARKERS, **V072_MARKERS, **V080_MARKERS, **V081_MARKERS, **V090_MARKERS, **V091_MARKERS, **V092_MARKERS, **V0100_MARKERS, **V0101_MARKERS, **V0102_MARKERS, **V0103_MARKERS, **V0104_MARKERS, **V0105_MARKERS, **V0106_MARKERS}.items():
                 src_text = zf.read(root_prefix + rel).decode("utf-8", errors="replace")
                 for m in markers:
                     if m not in src_text:
