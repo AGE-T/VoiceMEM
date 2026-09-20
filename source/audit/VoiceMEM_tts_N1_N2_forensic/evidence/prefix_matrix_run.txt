@@ -1,0 +1,181 @@
+test_n1_differential_english_phrases_still_route (tests.unit.test_tts_n1_n2_matrix.N1TrailingHungarianWordTests.test_n1_differential_english_phrases_still_route) ... ok
+test_n1_equivalent_surrounding_contexts (tests.unit.test_tts_n1_n2_matrix.N1TrailingHungarianWordTests.test_n1_equivalent_surrounding_contexts) ... 
+  test_n1_equivalent_surrounding_contexts (tests.unit.test_tts_n1_n2_matrix.N1TrailingHungarianWordTests.test_n1_equivalent_surrounding_contexts) (text='A meeting fontos lesz holnap.') ... FAIL
+  test_n1_equivalent_surrounding_contexts (tests.unit.test_tts_n1_n2_matrix.N1TrailingHungarianWordTests.test_n1_equivalent_surrounding_contexts) (text='A meeting fontos eleme volt a napnak.') ... FAIL
+test_n1_leading_hungarian_word_not_absorbed (tests.unit.test_tts_n1_n2_matrix.N1TrailingHungarianWordTests.test_n1_leading_hungarian_word_not_absorbed) ... FAIL
+test_n1_loan_followed_by_hungarian_adjective (tests.unit.test_tts_n1_n2_matrix.N1TrailingHungarianWordTests.test_n1_loan_followed_by_hungarian_adjective) ... FAIL
+test_n1_loan_followed_by_hungarian_noun (tests.unit.test_tts_n1_n2_matrix.N1TrailingHungarianWordTests.test_n1_loan_followed_by_hungarian_noun) ... ok
+test_n1_loan_followed_by_hungarian_verb (tests.unit.test_tts_n1_n2_matrix.N1TrailingHungarianWordTests.test_n1_loan_followed_by_hungarian_verb) ... FAIL
+test_n1_multiple_loans_budget_accounting (tests.unit.test_tts_n1_n2_matrix.N1TrailingHungarianWordTests.test_n1_multiple_loans_budget_accounting) ... ok
+test_n1_operator_case_meeting_fontos (tests.unit.test_tts_n1_n2_matrix.N1TrailingHungarianWordTests.test_n1_operator_case_meeting_fontos) ... FAIL
+test_n2_accent_free_host_with_function_words (tests.unit.test_tts_n1_n2_matrix.N2HostLanguageFlipTests.test_n2_accent_free_host_with_function_words) ... 
+  test_n2_accent_free_host_with_function_words (tests.unit.test_tts_n1_n2_matrix.N2HostLanguageFlipTests.test_n2_accent_free_host_with_function_words) (text='Reggel lesz a meeting a csapattal.') ... FAIL
+test_n2_accented_host_control (tests.unit.test_tts_n1_n2_matrix.N2HostLanguageFlipTests.test_n2_accented_host_control) ... ok
+test_n2_audit_variant_with_trailing_context (tests.unit.test_tts_n1_n2_matrix.N2HostLanguageFlipTests.test_n2_audit_variant_with_trailing_context) ... FAIL
+test_n2_operator_case (tests.unit.test_tts_n1_n2_matrix.N2HostLanguageFlipTests.test_n2_operator_case) ... ok
+test_n2_pure_english_stays_english (tests.unit.test_tts_n1_n2_matrix.N2HostLanguageFlipTests.test_n2_pure_english_stays_english) ... ok
+test_n2_pure_hungarian_stays_hungarian (tests.unit.test_tts_n1_n2_matrix.N2HostLanguageFlipTests.test_n2_pure_hungarian_stays_hungarian) ... ok
+test_n2_several_english_loans (tests.unit.test_tts_n1_n2_matrix.N2HostLanguageFlipTests.test_n2_several_english_loans) ... ok
+test_n2_touch_base_control (tests.unit.test_tts_n1_n2_matrix.N2HostLanguageFlipTests.test_n2_touch_base_control) ... FAIL
+
+======================================================================
+FAIL: test_n1_equivalent_surrounding_contexts (tests.unit.test_tts_n1_n2_matrix.N1TrailingHungarianWordTests.test_n1_equivalent_surrounding_contexts) (text='A meeting fontos lesz holnap.')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/z/my-project/voicemem-agent/tests/unit/test_tts_n1_n2_matrix.py", line 103, in test_n1_equivalent_surrounding_contexts
+    self.assertEqual(_auto(text),
+AssertionError: Lists differ: [('A ', 'hu'), ('meeting fontos', 'en'), (' lesz holnap.', 'hu')] != [('A meeting fontos lesz holnap.', 'hu')]
+
+First differing element 0:
+('A ', 'hu')
+('A meeting fontos lesz holnap.', 'hu')
+
+First list contains 2 additional elements.
+First extra element 1:
+('meeting fontos', 'en')
+
+- [('A ', 'hu'), ('meeting fontos', 'en'), (' lesz holnap.', 'hu')]
+?      ------------              ------------
+
++ [('A meeting fontos lesz holnap.', 'hu')] : A meeting fontos lesz holnap.
+
+======================================================================
+FAIL: test_n1_equivalent_surrounding_contexts (tests.unit.test_tts_n1_n2_matrix.N1TrailingHungarianWordTests.test_n1_equivalent_surrounding_contexts) (text='A meeting fontos eleme volt a napnak.')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/z/my-project/voicemem-agent/tests/unit/test_tts_n1_n2_matrix.py", line 103, in test_n1_equivalent_surrounding_contexts
+    self.assertEqual(_auto(text),
+AssertionError: Lists differ: [('A meeting fontos eleme volt a napnak.', 'en')] != [('A meeting fontos eleme volt a napnak.', 'hu')]
+
+First differing element 0:
+('A meeting fontos eleme volt a napnak.', 'en')
+('A meeting fontos eleme volt a napnak.', 'hu')
+
+- [('A meeting fontos eleme volt a napnak.', 'en')]
+?                                             ^^
+
++ [('A meeting fontos eleme volt a napnak.', 'hu')]
+?                                             ^^
+ : A meeting fontos eleme volt a napnak.
+
+======================================================================
+FAIL: test_n1_leading_hungarian_word_not_absorbed (tests.unit.test_tts_n1_n2_matrix.N1TrailingHungarianWordTests.test_n1_leading_hungarian_word_not_absorbed)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/z/my-project/voicemem-agent/tests/unit/test_tts_n1_n2_matrix.py", line 121, in test_n1_leading_hungarian_word_not_absorbed
+    self.assertEqual(
+AssertionError: Lists differ: [('Fontos see you later,', 'en'), (' rendben?', 'hu')] != [('Fontos ', 'hu'), ('see you later,', 'en'), (' rendben?', 'hu')]
+
+First differing element 0:
+('Fontos see you later,', 'en')
+('Fontos ', 'hu')
+
+Second list contains 1 additional elements.
+First extra element 2:
+(' rendben?', 'hu')
+
+- [('Fontos see you later,', 'en'), (' rendben?', 'hu')]
++ [('Fontos ', 'hu'), ('see you later,', 'en'), (' rendben?', 'hu')]
+?           ++++++++++++
+
+
+======================================================================
+FAIL: test_n1_loan_followed_by_hungarian_adjective (tests.unit.test_tts_n1_n2_matrix.N1TrailingHungarianWordTests.test_n1_loan_followed_by_hungarian_adjective)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/z/my-project/voicemem-agent/tests/unit/test_tts_n1_n2_matrix.py", line 80, in test_n1_loan_followed_by_hungarian_adjective
+    self.assertEqual(_spans(text, LANG_HU),
+AssertionError: Lists differ: [('Az új ', 'hu'), ('meeting fontos', 'en'), (' lett.', 'hu')] != [('Az új meeting fontos lett.', 'hu')]
+
+First differing element 0:
+('Az új ', 'hu')
+('Az új meeting fontos lett.', 'hu')
+
+First list contains 2 additional elements.
+First extra element 1:
+('meeting fontos', 'en')
+
+- [('Az új ', 'hu'), ('meeting fontos', 'en'), (' lett.', 'hu')]
+?          ------------              ------------
+
++ [('Az új meeting fontos lett.', 'hu')]
+
+======================================================================
+FAIL: test_n1_loan_followed_by_hungarian_verb (tests.unit.test_tts_n1_n2_matrix.N1TrailingHungarianWordTests.test_n1_loan_followed_by_hungarian_verb)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/z/my-project/voicemem-agent/tests/unit/test_tts_n1_n2_matrix.py", line 87, in test_n1_loan_followed_by_hungarian_verb
+    self.assertEqual(_spans(text, LANG_HU),
+AssertionError: Lists differ: [('A ', 'hu'), ('meeting marad,', 'en'), (' ahogy van.', 'hu')] != [('A meeting marad, ahogy van.', 'hu')]
+
+First differing element 0:
+('A ', 'hu')
+('A meeting marad, ahogy van.', 'hu')
+
+First list contains 2 additional elements.
+First extra element 1:
+('meeting marad,', 'en')
+
+- [('A ', 'hu'), ('meeting marad,', 'en'), (' ahogy van.', 'hu')]
+?      ------------              ------------
+
++ [('A meeting marad, ahogy van.', 'hu')]
+
+======================================================================
+FAIL: test_n1_operator_case_meeting_fontos (tests.unit.test_tts_n1_n2_matrix.N1TrailingHungarianWordTests.test_n1_operator_case_meeting_fontos)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/z/my-project/voicemem-agent/tests/unit/test_tts_n1_n2_matrix.py", line 75, in test_n1_operator_case_meeting_fontos
+    self.assertEqual(_auto(text), [(normalize_for_speech(text), LANG_HU)])
+AssertionError: Lists differ: [('A 2026-os ', 'hu'), ('meeting fontos', 'en'), (' lesz mindenkinnek.', 'hu')] != [('A 2026-os meeting fontos lesz mindenkinnek.', 'hu')]
+
+First differing element 0:
+('A 2026-os ', 'hu')
+('A 2026-os meeting fontos lesz mindenkinnek.', 'hu')
+
+First list contains 2 additional elements.
+First extra element 1:
+('meeting fontos', 'en')
+
+- [('A 2026-os ', 'hu'), ('meeting fontos', 'en'), (' lesz mindenkinnek.', 'hu')]
+?              ------------              ------------
+
++ [('A 2026-os meeting fontos lesz mindenkinnek.', 'hu')]
+
+======================================================================
+FAIL: test_n2_accent_free_host_with_function_words (tests.unit.test_tts_n1_n2_matrix.N2HostLanguageFlipTests.test_n2_accent_free_host_with_function_words) (text='Reggel lesz a meeting a csapattal.')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/z/my-project/voicemem-agent/tests/unit/test_tts_n1_n2_matrix.py", line 174, in test_n2_accent_free_host_with_function_words
+    self.assertEqual(
+AssertionError: 'en' != 'hu'
+- en
++ hu
+ : Reggel lesz a meeting a csapattal.
+
+======================================================================
+FAIL: test_n2_audit_variant_with_trailing_context (tests.unit.test_tts_n1_n2_matrix.N2HostLanguageFlipTests.test_n2_audit_variant_with_trailing_context)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/z/my-project/voicemem-agent/tests/unit/test_tts_n1_n2_matrix.py", line 162, in test_n2_audit_variant_with_trailing_context
+    self.assertEqual(detect_language(norm), LANG_HU)
+AssertionError: 'en' != 'hu'
+- en
++ hu
+
+
+======================================================================
+FAIL: test_n2_touch_base_control (tests.unit.test_tts_n1_n2_matrix.N2HostLanguageFlipTests.test_n2_touch_base_control)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/z/my-project/voicemem-agent/tests/unit/test_tts_n1_n2_matrix.py", line 201, in test_n2_touch_base_control
+    self.assertEqual(detect_language(norm), LANG_HU)
+AssertionError: 'en' != 'hu'
+- en
++ hu
+
+
+----------------------------------------------------------------------
+Ran 16 tests in 0.004s
+
+FAILED (failures=9)

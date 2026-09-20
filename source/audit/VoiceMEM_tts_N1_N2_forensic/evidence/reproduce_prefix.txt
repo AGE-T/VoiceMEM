@@ -1,0 +1,89 @@
+=== N1: EN-evidence loan absorbs following HU word ===
+--- N1-a operator case
+    text : A 2026-os meeting fontos lesz mindenkinnek.
+    host : hu
+     hu | 'A 2026-os '
+     en | 'meeting fontos'
+     hu | ' lesz mindenkinnek.'
+
+--- N1-b loan + HU adjective
+    text : A meeting fontos volta meglepett.
+    host : en
+     en | 'A meeting fontos volta meglepett.'
+
+--- N1-c loan + HU verb
+    text : Holnap meeting kezdődik.
+    host : hu
+     hu | 'Holnap meeting kezdődik.'
+
+--- N1-d loan + HU noun
+    text : A meeting előtt még beszélünk.
+    host : hu
+     hu | 'A meeting előtt még beszélünk.'
+
+--- N1-e multiple loans
+    text : A meeting afterparty fontos volt.
+    host : hu
+     hu | 'A '
+     en | 'meeting afterparty'
+     hu | ' fontos volt.'
+
+--- N1-f control: touch base (correct EN)
+    text : Holnap touch base-t tartunk.
+    host : en
+     en | 'Holnap touch base-t tartunk.'
+
+=== N2: accent-free HU host flips to EN ===
+--- N2-a operator case
+    text : Holnap lesz a meeting a csapattal.
+    host : en
+     en | 'Holnap lesz a meeting a csapattal.'
+
+--- N2-b meeting + plain HU
+    text : Holnap meeting van.
+    host : hu
+     hu | 'Holnap meeting van.'
+
+--- N2-c accented control
+    text : Holnap lesz a meeting a csapatával.
+    host : hu
+     hu | 'Holnap lesz a '
+     en | 'meeting a'
+     hu | ' csapatával.'
+
+--- N2-d pure accent-free HU
+    text : Holnap lesz a stands a csapattal.
+    host : en
+     en | 'Holnap lesz a stands a csapattal.'
+
+--- N2-e touch base control
+    text : Holnap touch base.
+    host : en
+     en | 'Holnap touch base.'
+
+=== protections that must NOT move ===
+--- guard
+    text : A hazai a leghasznosabb megoldás.
+    host : hu
+     hu | 'A hazai a leghasznosabb megoldás.'
+
+--- guard
+    text : Az autó gyors.
+    host : hu
+     hu | 'Az autó gyors.'
+
+--- guard
+    text : Ezt a projektet szeretem.
+    host : hu
+     hu | 'Ezt a projektet szeretem.'
+
+--- guard
+    text : This only really makes sense in the city.
+    host : en
+     en | 'This only really makes sense in the city.'
+
+--- guard
+    text : Nagyon sok a munka, de rendben van.
+    host : hu
+     hu | 'Nagyon sok a munka, de rendben van.'
+

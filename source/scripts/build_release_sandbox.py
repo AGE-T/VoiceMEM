@@ -45,8 +45,8 @@ from pathlib import Path
 REPO = Path(__file__).resolve().parent.parent
 RELEASES = REPO / "releases"
 
-NEW_VERSION = "0.10.6"
-PREV_VERSION = "0.10.5"
+NEW_VERSION = "0.10.7"
+PREV_VERSION = "0.10.6"
 ZIP_NAME = f"VoiceMemAgent_v{NEW_VERSION}.zip"
 
 PLACEHOLDER_DIRS = [
@@ -75,41 +75,56 @@ ROOT_FILES = [
 ]
 
 NOTES = (
-    "v0.10.6 TTS FORENZIKAI JAVITO KIADAS (operator order: a mar implementalt "
-    "edac5c9 vezeto-semleges abszorpcios javitas TORVENYES, kapuzott "
-    "kiadasa - semmi mas). A JAVITAS (commit edac5c9, app/text_utils.py "
-    "EGYETLEN fajl, a v0.10.5 zipben meg NEM volt benne): az angol "
-    "idiomak FEJ szavai ortografialag jelfogok nelkuliek ('cut to the "
-    "chase', 'hit the ground running', 'burn the midnight oil'), igy a "
-    "_phrase_runs a fejet a host-spanben hagyta - a terepen jelentett "
-    "fel-magyar kiejtes oka. VEZETO-SEMLEGES ABSZORPCIO: "
-    "PHRASE_RUN_LEADING_BUDGET (en 1 / hu 0, a zaro tukre) + "
-    "PHRASE_RUN_LEADING_MIN_EVIDENCE=2 (kolcsonzvo-pajzs: a 'Holnap touch "
-    "base' sosem abszorbeal) + _absorb_leading() orszabalyok "
-    "(host-bizonyitek tilt, csak tisztan alfabetikus token, "
-    "kotjel-vagott magyar szuffixum sosem, mondatvegi kozpontozas tilt). "
-    "NEM VALTOZOTT (szerzodes): nincs lexikon, nincs uj detektalasi "
-    "rendszer, engine/chunking/hangvaltozas; semmilye ketertelmu-szo "
-    "szabaly nem lazult (T6/T7/T10 byte-azonos); a 'break a leg' "
-    "nulla-bizonyiteku esete dokumentalt korlat marad (lexikon nelkul "
-    "nem javithato - operator altal elutasitva). KIADASI-INTEGRITAS "
-    "HAZTARTAS: a faban levo ELAVULT BUILD_INFO.json (0.7.1 maradvany, a "
-    "konsolidalt audit talalata) a 0.10.6-os build-identitasra frissult "
-    "- a faban mar nincs ket utkozo kiadasi identitas. KORNYEZET-"
-    "VISSZAALLITAS (NEM termekvaltozas): a v0.10.5 kapu ota a sandbox "
-    "allapotvesztes miatt elveszett korornyezet visszaallt (torch "
-    "2.7.0+cpu, transformers==5.17.0, onnxruntime==1.23.0, "
-    "openai==3.14.0 pin-ek; mem0ai + qdrant-client + "
-    "sentence-transformers; E5-modell a pinelt 614241f6 revizion; "
-    "Qwen3.6-tokenizer a 995ad96e revizion; silero ONNX a 394d7e6b "
-    "revizion; mind a 28 kiadott ZIP SHA-256-ellenorzott visszaallitasa) "
-    "- a korabbi RED kapu kornyezeti allapotvesztes volt (byte-azonos "
-    "hibahalmaz a fix elott es utan, stash-bizonyitott), a mostani gate "
-    "egy VALOBAN zold korornyezeten fut. TESZTEK: "
-    "test_tts_code_switching.py 81 teszt (61->81 az edac5c9-ben: negy "
-    "idiom explicit, mindket host; 10-mondatos kotelezo matrix; "
-    "orszabaly-batteria; streaming-hatar dokumentacio; web + CLI "
-    "integracios sorozatok)."
+    "v0.10.7 TTS N1/N2 DETERMINISZTIKUS JAVITO KIADAS (operator order: a "
+    "2026-09-20 konszolidalt audit KET ujonnan azonositott hibaosztalyanak "
+    "KIZAROLAGOS javitasa - semmi mas; audit/VoiceMEM_tts_N1_N2_forensic). "
+    "N1 (angol kolcsonzo MAGYAR szavat nyel el): a 'meeting' tipusu "
+    "ee-bizonyiteku kolcsonzo a trailing budgettel magyar szavakat "
+    "soprit az EN spanbe ('A 2026-os meeting fontos...' -> en 'meeting "
+    "fontos'). GYOKER: a magyar tartalmaszavak egy resze ortografialag "
+    "láthatatlan a szint-szintu osztalyozo elott (nincs ekezet, nincs "
+    "stopword-bejegyzes, nincs eros digraf). JAVITAS: MAGYAR "
+    "MAGANHANGZO-HARMONIA OR (a nativ magyar szo maganhangzoi vagy "
+    "mind hatso a/o/u, vagy mind elolso e/i/o-umlaut; a vegyes "
+    "elolso+hatso kombinacio jelentos reszt angol sajatsag - "
+    "'base'/'later'/'afterparty'): _hu_harmonic() or a KEPT budget "
+    "(trailing ES leading) aln: legalabb 2 harmonikus maganhangzoju "
+    "semleges jeloltet SOHA nem abszorbeal az EN spanbe; egymaganhangzos "
+    "tokenek mentesek ('up', 'next' valtozatlanul abszorbealodik). N2 "
+    "(ekezet nelkuli magyar host EN-re billen): a chunk-szintu "
+    "szamitas a magyar nevelot ('a') angol stopword-kent szamolja "
+    "('Holnap lesz a meeting a csapattal.' -> hu 2 vs en 2 dontoen "
+    "EN), es a 'holnap' hianyzott a HU_PLAIN_WORDS F-O kategoriabol. "
+    "JAVITAS: (1) 'holnap' belepett a tablaba (a 'mikor'/'hol' "
+    "osztalya); (2) donto-szabaly finomitas: ekezet nelkuli dontetlennel "
+    "a magyar HOST-KONTEXTUS funkcioszav-bizonyitek gyoz (az idzett "
+    "regionben levo tokenek - pl. 'The word \"szia\" means hello here.' "
+    "- NEM szavaznak a hostrol: a regiongep sajat spant ad nekik; a "
+    "szamitas lazy - csak a dontetlen uton fut). TESZTEK: +16 uj "
+    "(tests/unit/test_tts_n1_n2_matrix.py: N1 operator-eset + "
+    "melleknev/ige/fonev-korulmenyek + tobbszoros kolcsonso-budget-"
+    "szamitas + leading tukor + differencial-vedelmek; N2 operator-eset "
+    "+ audit-varians + ekezet nelkuli funkcioszavas hostok + tobb "
+    "kolcsonso + ekezetes kontrollok + tiszta EN/HU differencialok); "
+    "a ket dokumentalt hamis-pozitiv pin TUDATOSAN korrigalva (mindketto "
+    "magyar szo EN-spanbe soprasa = az N1 osztaly maga: 'Nyisd ki a "
+    "chat ablakot.' most egyetlen HU span; 'Holnap see you later.' most "
+    "hu 'Holnap ' + en 'see you later.'). NEM VALTOZOTT (szerzodes): "
+    "nincs lexikon, nincs LLM, nincs uj detektalos rendszer, "
+    "engine/chunking/hang; a vedett angol frazisteszek ('touch base', "
+    "'catch up', 'see you later', 'cut to the chase', 'hit the ground "
+    "running', 'burn the midnight oil') valtozatlanul EN-be iranyitanak; "
+    "a keteertelmu kolcsonzo-vedelmek (hazai/auto/tea/euro/projekt/"
+    "only/really/city/money/many) es a 'break a leg' nulla-bizonyiteku "
+    "korlat valtozatlan. DOKUMENTALT MARADVANYOK (határon kivul): a "
+    "csupa 'a' nevelo utazasa a kolcsonzo utan ('meeting a csapattal' "
+    "-> en 'meeting a'); az ekezet nelkuli DIsharmonikus magyar "
+    "tartalmaszavak (fiu/kavics-osztaly); a funkcioszo nelkuli mondatok "
+    "host-billenese. ELOSZLAS (mert sandbox, a 22-mondatos N1/N2 korpusz "
+    "4400 mintaja): median 46.4 -> 49.8 us (+7.3%), p90 61.1 -> 64.3 us "
+    "- a detektor mikrosecundum-osztalyu marad, a dontetlen-ag lazy. "
+    "GATE: a javitott fan GREEN - 1537 teszt (+16 az uj matrix), 0 "
+    "regresszio, 2 pinned sandbox env-gap, fingerprint 28749983..."
 )
 
 #: v0.6.0 markers: the modular ASR engine contract - asr_core (AudioBuffer,
@@ -935,6 +950,27 @@ V0105_MARKERS = {
         "class SegmentEdgeCaseTests",
         "class WebSynthesizeChunkTests",
         "class PipelineSpeakChunkTests",
+    ],
+}
+
+#: v0.10.7 markers: the N1/N2 deterministic fix - the Hungarian
+#: vowel-harmony guard (_hu_harmonic + HU_BACK_VOWELS/HU_FRONT_VOWELS)
+#: on both budget absorptions, the "holnap" HU_PLAIN_WORDS entry, the
+#: lazy host-context tie-break (_hu_host_context_function_evidence),
+#: and the N1/N2 regression matrix.
+V0107_MARKERS = {
+    "app/text_utils.py": [
+        "HU_BACK_VOWELS",
+        "HU_FRONT_VOWELS",
+        "def _hu_harmonic",
+        "def _hu_host_context_function_evidence",
+        "[v0.10.6 N2 fix] \"holnap\" joins the category",
+    ],
+    "tests/unit/test_tts_n1_n2_matrix.py": [
+        "class N1TrailingHungarianWordTests",
+        "class N2HostLanguageFlipTests",
+        "test_n1_operator_case_meeting_fontos",
+        "test_n2_operator_case",
     ],
 }
 
@@ -2483,7 +2519,7 @@ def build() -> int:
                             f"self-check: {rel} lacks v0.4.11 marker {m!r}"
                         )
             # v0.4.12: stale-page detection + raw capture + send-as-turn
-            for rel, markers in {**V0412_MARKERS, **V0413_MARKERS, **V0414_MARKERS, **V0415_MARKERS, **V0416_MARKERS, **V0417_MARKERS, **V0418_MARKERS, **V0419_MARKERS, **V0420_MARKERS, **V0421_MARKERS, **V050_MARKERS, **V052_MARKERS, **V060_MARKERS, **V061_MARKERS, **V062_MARKERS, **V063_MARKERS, **V064_MARKERS, **V070_MARKERS, **V071_MARKERS, **V072_MARKERS, **V080_MARKERS, **V081_MARKERS, **V090_MARKERS, **V091_MARKERS, **V092_MARKERS, **V0100_MARKERS, **V0101_MARKERS, **V0102_MARKERS, **V0103_MARKERS, **V0104_MARKERS, **V0105_MARKERS, **V0106_MARKERS}.items():
+            for rel, markers in {**V0412_MARKERS, **V0413_MARKERS, **V0414_MARKERS, **V0415_MARKERS, **V0416_MARKERS, **V0417_MARKERS, **V0418_MARKERS, **V0419_MARKERS, **V0420_MARKERS, **V0421_MARKERS, **V050_MARKERS, **V052_MARKERS, **V060_MARKERS, **V061_MARKERS, **V062_MARKERS, **V063_MARKERS, **V064_MARKERS, **V070_MARKERS, **V071_MARKERS, **V072_MARKERS, **V080_MARKERS, **V081_MARKERS, **V090_MARKERS, **V091_MARKERS, **V092_MARKERS, **V0100_MARKERS, **V0101_MARKERS, **V0102_MARKERS, **V0103_MARKERS, **V0104_MARKERS, **V0105_MARKERS, **V0106_MARKERS, **V0107_MARKERS}.items():
                 src_text = zf.read(root_prefix + rel).decode("utf-8", errors="replace")
                 for m in markers:
                     if m not in src_text:

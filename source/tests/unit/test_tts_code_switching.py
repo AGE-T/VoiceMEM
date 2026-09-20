@@ -458,12 +458,18 @@ class SegmentPhraseRunTests(unittest.TestCase):
 
     def test_documented_false_positive_neutral_sweep(self):
         # "chat" (ch) is evidence, "ablakot" is signal-free: the budget
-        # sweeps it — the documented false-positive class, pinned here so
-        # any change is a conscious decision (same class as the quoted
+        # used to sweep it — the documented false-positive class, pinned
+        # so any change is a conscious decision (same class as the quoted
         # "technika" case from v0.10.4).
+        # [v0.10.6 N1 fix — CORRECTED] "ablakot" (a/a/o) is Hungarian
+        # by vowel harmony: the harmony guard keeps it with the host, so
+        # the single-word loan "chat" follows the documented single-word
+        # loan policy (no re-routing, HU phonetics) instead of dragging
+        # a Hungarian noun into the EN span. The false positive is gone;
+        # this pin now documents the corrected behaviour.
         text = "Nyisd ki a chat ablakot."
         spans = _spans(text, LANG_HU)
-        self.assertIn(("chat ablakot.", LANG_EN), spans)
+        self.assertEqual(spans, [(normalize_for_speech(text), LANG_HU)])
         self.assertEqual("".join(s for s, _ in spans),
                          normalize_for_speech(text))
 
@@ -607,12 +613,20 @@ class IdiomLeadingAbsorptionTests(unittest.TestCase):
     def test_documented_false_positive_leading_neutral_sweep(self):
         # The mirror of test_documented_false_positive_neutral_sweep: a
         # signal-free Hungarian word directly before a >=2-evidence run
-        # is absorbed ("Holnap see you later." reads "Holnap" with EN
-        # phonetics). Pinned as the documented false-positive class —
-        # bounded by the budget (one word) and the evidence gate.
+        # used to be absorbed ("Holnap see you later." read "Holnap" with
+        # EN phonetics) — the documented false-positive class, bounded by
+        # the budget (one word) and the evidence gate.
+        # [v0.10.6 N2/N1 fix — CORRECTED] "holnap" joined HU_PLAIN_WORDS
+        # (the F-O accent-free function-word category), so the leading
+        # candidate now carries HOST evidence and the existing
+        # host-evidence guard blocks the absorption: "Holnap" stays
+        # Hungarian, the English phrase keeps its own EN span. The
+        # false positive is gone; this pin now documents the corrected
+        # behaviour.
         text = "Holnap see you later."
         self.assertEqual(_spans(text, LANG_HU),
-                         [(normalize_for_speech(text), LANG_EN)])
+                         [("Holnap ", LANG_HU),
+                          ("see you later.", LANG_EN)])
 
     def test_quoted_idiom_with_evidence_routes_english(self):
         # Whole idioms inside quotes (level-1 regions) route by region

@@ -34,12 +34,16 @@ HU_STOPWORDS = frozenset({
 #: diacritics — they survive informal typing without accents ("szerintem",
 #: "persze", "mikor"...). Without these, an accent-free Hungarian sentence
 #: with few listed stopwords could lose to English and get the EN voice.
+#: [v0.10.6 N2 fix] "holnap" joins the category (temporal adverb, the
+#: same class as "mikor"/"hol"): without it "Holnap touch base." scores
+#: zero Hungarian evidence and the no-diacritic tie-break flips the host
+#: to English (the consolidated-audit N2 class).
 HU_PLAIN_WORDS = frozenset({
     "szia", "sziasztok", "persze", "koszi", "koszonom", "szivesen",
     "mikor", "hol", "ki", "mit", "miert", "rendben", "igen",
     "vagyok", "voltam", "leszek", "tudom", "tudok", "tudsz",
     "akarom", "akarok", "gondolom", "gondoltam", "szerintem", "na",
-    "ugye", "talalkozunk", "meseld",
+    "ugye", "talalkozunk", "meseld", "holnap",
 })
 
 #: [F-O fix] Hungarian digraphs — they appear in most Hungarian words even
@@ -88,8 +92,11 @@ def detect_language(text: str) -> str:
     English stopwords weigh 1. A Hungarian digraph-density signal (sz/cs/gy/
     ny/ly/ty/zs in at least half the tokens) adds +2 to the Hungarian score;
     any q in the text adds +2 to English (native Hungarian lacks it). Ties go to ``"hu"`` iff any Hungarian diacritic is present in
-    the text, otherwise ``"en"``. Empty/whitespace text is detected as
-    ``"en"``.
+    the text, else to ``"hu"`` when positive Hungarian function-word
+    evidence exists (v0.10.6 N2 fix — the HU definite article "a" counts
+    as an EN stopword here, so a no-diacritic tie with real HU function
+    words is a Hungarian tie), otherwise ``"en"``. Empty/whitespace
+    text is detected as ``"en"``.
     """
     if not text or not text.strip():
         return LANG_EN
@@ -126,7 +133,39 @@ def detect_language(text: str) -> str:
         return LANG_HU
     if en_score > hu_score:
         return LANG_EN
-    return LANG_HU if has_hu_diacritic else LANG_EN
+    if has_hu_diacritic:
+        return LANG_HU
+    # [v0.10.6 N2 fix] no-diacritic tie: Hungarian host-context
+    # function-word evidence beats the EN side's article counting
+    # (see _hu_host_context_function_evidence); neutral ties keep the
+    # historical EN fallback.
+    if _hu_host_context_function_evidence(text):
+        return LANG_HU
+    return LANG_EN
+
+
+def _hu_host_context_function_evidence(text: str) -> bool:
+    """[v0.10.6 N2 fix] True when an UNQUOTED Hungarian function word
+    is present (tie-break evidence).
+
+    The chunk-level EN table counts the HU definite article "a" as an
+    English stopword ("Holnap lesz a meeting a csapattal." -> hu 2 vs
+    en 2), and a no-diacritic tie used to hand the whole Hungarian
+    sentence to the EN voice. A tie with real (unquoted) Hungarian
+    function words present is a Hungarian tie. Tokens inside set-off
+    regions (quotes/parens — foreign material under discussion, e.g.
+    'The word "szia" means hello here.') do NOT vote on the host: the
+    region machinery gives them their own span. Computed lazily — only
+    on the (rare) tie path, so the hot path pays nothing.
+    """
+    regions = _scan_regions(text)
+    for m in re.finditer(r"\S+", text):
+        if any(s <= m.start() and m.end() - 1 <= e for s, e in regions):
+            continue  # quoted/parenthesised content — not host context
+        token = m.group(0).strip(_TOKEN_STRIP).lower()
+        if token in HU_STOPWORDS or token in HU_PLAIN_WORDS:
+            return True
+    return False
 
 
 # --------------------------------------------------------------------------- #
@@ -316,6 +355,38 @@ def _region_language(content: str, host: str, foreign: str) -> str:
 # chunk with too many runs stays whole (fragmentation guard). Full policy
 # and false-positive analysis: audit/VoiceMEM_tts_codeswitch_v0105_unquoted.
 
+#: [v0.10.6 N1 fix] Hungarian vowel harmony: a native Hungarian word's
+#: vowels are either all back (a, á, o, ó, u, ú) or all front
+#: (e, é, i, í, ö, ő, ü, ű) — front/back mixtures in one word are
+#: essentially an English trait ("base", "later", "afterparty"). A
+#: signal-free budget candidate with at least two harmonic vowels is
+#: therefore treated as a Hungarian word and is never absorbed into an
+#: English span: "A 2026-os meeting fontos..." must not read "fontos"
+#: with English phonetics (the consolidated-audit N1 class).
+#: Single-vowel tokens are exempt — they carry no harmony signal either
+#: way, so the established trailing absorption of English particles
+#: ("up", "next") is untouched. Accent-free DISHARMONIC Hungarian
+#: content words (fiú/kavics-class) remain a documented residual.
+HU_BACK_VOWELS = frozenset("aáoóuú")
+HU_FRONT_VOWELS = frozenset("eéiíöőüű")
+
+
+def _hu_harmonic(token: str) -> bool:
+    """True when *token* looks Hungarian by vowel harmony (N1 guard).
+
+    At least two vowels, all in one harmony class (back OR front).
+    "fontos" (o, o) -> True; "base" (a, e) / "later" (a, e) -> False;
+    "up" (one vowel) -> False (exempt).
+    """
+    back = front = 0
+    for ch in token:
+        if ch in HU_BACK_VOWELS:
+            back += 1
+        elif ch in HU_FRONT_VOWELS:
+            front += 1
+    return back + front >= 2 and (back == 0 or front == 0)
+
+
 #: A run must span at least this many words; single words stay host.
 PHRASE_RUN_MIN_WORDS = 2
 
@@ -449,6 +520,16 @@ def _phrase_runs(text: str, foreign: str) -> list[tuple[int, int]]:
                 and budget > 0
                 and not _ends_clause(text, words[j].end)
             ):
+                # [v0.10.6 N1 fix] vowel-harmony guard: a signal-free
+                # candidate that looks Hungarian (>= 2 harmonic vowels —
+                # "fontos", "marad") is a Hungarian word, not an English
+                # phrase body; the budget must not sweep it into the EN
+                # span. Disharmonic neutrals ("base", "afterparty") and
+                # single-vowel tokens ("up", "next") keep the historical
+                # absorption (the protected phrase bodies).
+                core = text[nxt.start : nxt.end].strip(_TOKEN_STRIP)
+                if _hu_harmonic(core.split("-")[0].lower()):
+                    break
                 j += 1
                 budget -= 1
                 if nxt.trimmed_at_hyphen:
@@ -494,6 +575,11 @@ def _absorb_leading(
         return i
     core = text[prev.start : prev.end].strip(_TOKEN_STRIP)
     if not (core and core.isalpha()):
+        return i
+    # [v0.10.6 N1 fix] the leading mirror of the trailing harmony guard:
+    # a Hungarian-looking (harmonic) leading neutral stays with the host
+    # ("Fontos see you later" keeps "Fontos" Hungarian).
+    if _hu_harmonic(core.lower()):
         return i
     if _ends_clause(text, prev.end):
         return i
