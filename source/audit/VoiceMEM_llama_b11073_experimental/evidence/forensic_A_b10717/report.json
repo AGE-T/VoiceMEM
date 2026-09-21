@@ -1,0 +1,419 @@
+{
+ "schema": "llm-slot-forensic/2",
+ "base_url": "http://127.0.0.1:8080",
+ "max_tokens_probe": 192,
+ "s1_server": {
+  "/health": {
+   "status": 200,
+   "body_head": "{\"status\":\"ok\"}"
+  },
+  "/props": {
+   "status": 200,
+   "body_head": "{\"default_generation_settings\":{\"params\":{\"seed\":4294967295,\"temperature\":0.699999988079071,\"dynatemp_range\":0.0,\"dynatemp_exponent\":1.0,\"top_k\":40,\"top_p\":0.949999988079071,\"min_p\":0.05000000074505806,\"top_n_sigma\":-1.0,\"xtc_probability\":0.0,\"xtc_threshold\":0.10000000149011612,\"typical_p\":1.0,\"repeat_last_n\":64,\"repeat_penalty\":1.0,\"presence_penalty\":0.0,\"frequency_penalty\":0.0,\"dry_multiplier\":0.0,\"dry_base\":1.75,\"dry_allowed_length\":2,\"dry_penalty_last_n\":64,\"mirostat\":0,\"mirostat_tau\":5.0,\"mirostat_eta\":0.10000000149011612,\"adaptive_target\":-1.0,\"adaptive_decay\":0.8999999761581421,\"max_tokens\":-1,\"n_predict\":-1,\"n_keep\":0,\"n_discard\":0,\"ignore_eos\":false,\"stream\":false,\"n_probs\":0,\"min_keep\":0,\"chat_format\":\"Content-only\",\"reasoning_format\":\"none\",\"reasoning_in_content\":false,\"generation_prompt\":\"\",\"samplers\":[\"penalties\",\"dry\",\"top_n_sigma\",\"top_k\",\"typ_p\",\"top_p\",\"min_p\",\"xtc\",\"temperature\"],\"speculative.types\":\"none\",\"timings_per_token\":false,\"post_sampling_probs\":false,\"backend_sampling\":false,\"lora\":[]},\"n_ctx\":8192},\"total_slots\":1,\"model_alias\":\"/tmp/llama/qwen3-1.7b-q4km.gguf\",\"model_ftype\":\"Q4_K - Medium\",\"model_path\":\"/tmp/llama/qwen3-1.7b-q4km.gguf\",\"modalities\":{\"vision\":false,\"video\":false,\"audio\":false},\"media_marker\":\"<__media_HZB5ybOboutUO37seagx14yPJFLohtUS__>\",\"endpoint_slots\":true,\"endpoint_props\":false,\"endpoint_metrics\":true,\"ui\":false,\"ui_settings\":{},\"chat_template\":\"{%- if tools %}\\n    {{- '<|im_start|>system\\\\n' }}\\n    {%- if messages[0].role == 'system' %}\\n        {{- messages[0].content + '\\\\n\\\\n' }}\\n    {%- endif %}\\n    {{- \\\"# Tools\\\\n\\\\nYou may call one or more functions to assist with the user query.\\\\n\\\\nYou are provided with function signatures within <tools></tools> XML tags:\\\\n<tools>\\\" }}\\n    {%- for tool in tools %}\\n        {{- \\\"\\\\n\\\" }}\\n        {{- tool | tojson }}\\n    {%- endfor %}\\n    {{- \\\"\\\\n</tools>\\\\n\\\\nFor each function call, return a json object with function name and arguments within <tool_call></tool_cal"
+  },
+  "/slots": {
+   "status": 200,
+   "body_head": "[{\"id\":0,\"n_ctx\":8192,\"speculative\":false,\"is_processing\":false}]"
+  },
+  "/metrics": {
+   "status": 200,
+   "body_head": "(2553 bytes)"
+  }
+ },
+ "phase_windows": {
+  "s1": {
+   "start": "2026-09-21T18:33:06",
+   "start_epoch": 1790015586.046,
+   "end_epoch": 1790015586.049
+  },
+  "s2": {
+   "start": "2026-09-21T18:33:06",
+   "start_epoch": 1790015586.049,
+   "end_epoch": 1790015586.653
+  },
+  "s3": {
+   "start": "2026-09-21T18:33:06",
+   "start_epoch": 1790015586.654,
+   "end_epoch": 1790015639.498
+  },
+  "s4": {
+   "start": "2026-09-21T18:33:59",
+   "start_epoch": 1790015639.499,
+   "end_epoch": 1790015641.302
+  },
+  "s5": {
+   "start": "2026-09-21T18:34:01",
+   "start_epoch": 1790015641.303,
+   "end_epoch": 1790015838.198
+  },
+  "s6": {
+   "start": "2026-09-21T18:37:18",
+   "start_epoch": 1790015838.199,
+   "end_epoch": 1790015902.063
+  },
+  "s7": {
+   "start": "2026-09-21T18:38:22",
+   "start_epoch": 1790015902.063,
+   "end_epoch": 1790016024.55
+  }
+ },
+ "generated": "2026-09-21T18:40:24",
+ "s2_baseline": {
+  "ttft_ms": 366.1,
+  "first_data_ms": 366.0,
+  "total_ms": 604.2,
+  "text_len": 3,
+  "finish_reason": "stop"
+ },
+ "s3_fifo": {
+  "background": "non-streaming, max_tokens=192",
+  "user_chat": {
+   "ttft_ms": 47647.0,
+   "first_data_ms": 47646.9,
+   "total_ms": 47934.7,
+   "text_len": 6,
+   "finish_reason": "stop"
+  },
+  "slots_before": [
+   {
+    "id": 0,
+    "n_ctx": 8192,
+    "speculative": false,
+    "is_processing": false,
+    "id_task": 3,
+    "n_prompt_tokens": 18,
+    "n_prompt_tokens_processed": 0,
+    "n_prompt_tokens_cache": 0,
+    "params": {
+     "seed": 4294967295,
+     "temperature": 0.10000000149011612,
+     "dynatemp_range": 0.0,
+     "dynatemp_exponent": 1.0,
+     "top_k": 40,
+     "top_p": 0.949999988079071,
+     "min_p": 0.05000000074505806,
+     "top_n_sigma": -1.0,
+     "xtc_probability": 0.0,
+     "xtc_threshold": 0.10000000149011612,
+     "typical_p": 1.0,
+     "repeat_last_n": 64,
+     "repeat_penalty": 1.0,
+     "presence_penalty": 0.0,
+     "frequency_penalty": 0.0,
+     "dry_multiplier": 0.0,
+     "dry_base": 1.75,
+     "dry_allowed_length": 2,
+     "dry_penalty_last_n": 64,
+     "mirostat": 0,
+     "mirostat_tau": 5.0,
+     "mirostat_eta": 0.10000000149011612,
+     "adaptive_target": -1.0,
+     "adaptive_decay": 0.8999999761581421,
+     "max_tokens": 16,
+     "n_predict": 16,
+     "n_keep": 0,
+     "n_discard": 0,
+     "ignore_eos": false,
+     "stream": true,
+     "n_probs": 0,
+     "min_keep": 0,
+     "chat_format": "peg-native",
+     "reasoning_format": "deepseek",
+     "reasoning_in_content": false,
+     "generation_prompt": "<|im_start|>assistant\n<think>\n\n</think>\n\n",
+     "samplers": [
+      "penalties",
+      "dry",
+      "top_n_sigma",
+      "top_k",
+      "typ_p",
+      "top_p",
+      "min_p",
+      "xtc",
+      "temperature"
+     ],
+     "speculative.types": "none",
+     "timings_per_token": false,
+     "post_sampling_probs": false,
+     "backend_sampling": false,
+     "lora": []
+    },
+    "next_token": [
+     {
+      "has_next_token": false,
+      "has_new_line": false,
+      "n_remain": -1,
+      "n_decoded": 0
+     }
+    ]
+   }
+  ]
+ },
+ "s3_disconnect_yield": {
+  "background": "streaming, disconnected at ~1.5 s",
+  "disconnect": {
+   "first_line_at_s": 0.12,
+   "at_s": 1.6,
+   "sse_lines": 25
+  },
+  "user_chat": {
+   "ttft_ms": 311.0,
+   "first_data_ms": 311.0,
+   "total_ms": 503.1,
+   "text_len": 3,
+   "finish_reason": "stop"
+  },
+  "slots_after": [
+   {
+    "id": 0,
+    "n_ctx": 8192,
+    "speculative": false,
+    "is_processing": false,
+    "id_task": 221,
+    "n_prompt_tokens": 18,
+    "n_prompt_tokens_processed": 0,
+    "n_prompt_tokens_cache": 0,
+    "params": {
+     "seed": 4294967295,
+     "temperature": 0.10000000149011612,
+     "dynatemp_range": 0.0,
+     "dynatemp_exponent": 1.0,
+     "top_k": 40,
+     "top_p": 0.949999988079071,
+     "min_p": 0.05000000074505806,
+     "top_n_sigma": -1.0,
+     "xtc_probability": 0.0,
+     "xtc_threshold": 0.10000000149011612,
+     "typical_p": 1.0,
+     "repeat_last_n": 64,
+     "repeat_penalty": 1.0,
+     "presence_penalty": 0.0,
+     "frequency_penalty": 0.0,
+     "dry_multiplier": 0.0,
+     "dry_base": 1.75,
+     "dry_allowed_length": 2,
+     "dry_penalty_last_n": 64,
+     "mirostat": 0,
+     "mirostat_tau": 5.0,
+     "mirostat_eta": 0.10000000149011612,
+     "adaptive_target": -1.0,
+     "adaptive_decay": 0.8999999761581421,
+     "max_tokens": 16,
+     "n_predict": 16,
+     "n_keep": 0,
+     "n_discard": 0,
+     "ignore_eos": false,
+     "stream": true,
+     "n_probs": 0,
+     "min_keep": 0,
+     "chat_format": "peg-native",
+     "reasoning_format": "deepseek",
+     "reasoning_in_content": false,
+     "generation_prompt": "<|im_start|>assistant\n<think>\n\n</think>\n\n",
+     "samplers": [
+      "penalties",
+      "dry",
+      "top_n_sigma",
+      "top_k",
+      "typ_p",
+      "top_p",
+      "min_p",
+      "xtc",
+      "temperature"
+     ],
+     "speculative.types": "none",
+     "timings_per_token": false,
+     "post_sampling_probs": false,
+     "backend_sampling": false,
+     "lora": []
+    },
+    "next_token": [
+     {
+      "has_next_token": false,
+      "has_new_line": false,
+      "n_remain": -1,
+      "n_decoded": 0
+     }
+    ]
+   }
+  ],
+  "verdict_hint": "user_ttft_after_disconnect << user_ttft_behind_nonstreaming => the server FREES the slot on streaming client disconnect (the llm_bg_gate cancellation transport is sound)"
+ },
+ "s4_json_streaming": {
+  "assembles_to_json_object": true,
+  "text": "{\"ok\": true, \"n\": 3}",
+  "wall_ms": 1803.2
+ },
+ "s5_lcp_cache": {
+  "same_prefix_again": {
+   "usage_prompt_tokens": 2657,
+   "reprocessed": {
+    "counter": "llamacpp:prompt_tokens_total",
+    "tokens": 20,
+    "raw_llamacpp_counters": {
+     "llamacpp:n_busy_slots_per_decode": 0.0,
+     "llamacpp:n_decode_total": 3.0,
+     "llamacpp:n_tokens_max": 3.0,
+     "llamacpp:prompt_seconds_total": 1.9950000000000045,
+     "llamacpp:prompt_tokens_cached_total": 2637.0,
+     "llamacpp:prompt_tokens_total": 20.0,
+     "llamacpp:requests_deferred": 0.0,
+     "llamacpp:requests_processing": 0.0,
+     "llamacpp:spec_decode_num_accepted_tokens_total": 0.0,
+     "llamacpp:spec_decode_num_draft_tokens_total": 0.0,
+     "llamacpp:spec_decode_num_drafts_total": 0.0,
+     "llamacpp:tokens_predicted_seconds_total": 0.4159000000000006,
+     "llamacpp:tokens_predicted_total": 3.0
+    }
+   },
+   "wall_ms": 2424.1
+  },
+  "disjoint_prompt": {
+   "usage_prompt_tokens": 2650,
+   "reprocessed": {
+    "counter": "llamacpp:prompt_tokens_total",
+    "tokens": 2647,
+    "raw_llamacpp_counters": {
+     "llamacpp:n_busy_slots_per_decode": 0.0,
+     "llamacpp:n_decode_total": 4.0,
+     "llamacpp:n_tokens_max": 0.0,
+     "llamacpp:prompt_seconds_total": 97.81599999999999,
+     "llamacpp:prompt_tokens_cached_total": 3.0,
+     "llamacpp:prompt_tokens_seconds": 17.0367,
+     "llamacpp:prompt_tokens_total": 2647.0,
+     "llamacpp:requests_deferred": 0.0,
+     "llamacpp:requests_processing": 0.0,
+     "llamacpp:spec_decode_num_accepted_tokens_total": 0.0,
+     "llamacpp:spec_decode_num_draft_tokens_total": 0.0,
+     "llamacpp:spec_decode_num_drafts_total": 0.0,
+     "llamacpp:tokens_predicted_seconds_total": 0.4281999999999968,
+     "llamacpp:tokens_predicted_total": 3.0
+    }
+   },
+   "wall_ms": 98375.9
+  },
+  "first_prompt": {
+   "usage_prompt_tokens": 2655,
+   "reprocessed": {
+    "counter": "llamacpp:prompt_tokens_total",
+    "tokens": 2652,
+    "raw_llamacpp_counters": {
+     "llamacpp:n_busy_slots_per_decode": 0.0,
+     "llamacpp:n_decode_total": 3.0,
+     "llamacpp:n_tokens_max": 1387.0,
+     "llamacpp:prompt_seconds_total": 95.8784,
+     "llamacpp:prompt_tokens_cached_total": 3.0,
+     "llamacpp:prompt_tokens_total": 2652.0,
+     "llamacpp:requests_deferred": 0.0,
+     "llamacpp:requests_processing": 0.0,
+     "llamacpp:spec_decode_num_accepted_tokens_total": 0.0,
+     "llamacpp:spec_decode_num_draft_tokens_total": 0.0,
+     "llamacpp:spec_decode_num_drafts_total": 0.0,
+     "llamacpp:tokens_predicted_seconds_total": 0.19610000000000127,
+     "llamacpp:tokens_predicted_total": 2.0
+    }
+   },
+   "wall_ms": 96090.0
+  }
+ },
+ "s6_cache_after_cancel": {
+  "cancelled_generation_after_s": 30.15,
+  "resend_reprocessed": {
+   "counter": "llamacpp:prompt_tokens_total",
+   "tokens": 2128,
+   "raw_llamacpp_counters": {
+    "llamacpp:n_busy_slots_per_decode": 0.0,
+    "llamacpp:n_decode_total": 9.0,
+    "llamacpp:n_tokens_max": 0.0,
+    "llamacpp:predicted_tokens_seconds": 3.97216,
+    "llamacpp:prompt_seconds_total": 61.976,
+    "llamacpp:prompt_tokens_cached_total": 2051.0,
+    "llamacpp:prompt_tokens_seconds": 34.3358,
+    "llamacpp:prompt_tokens_total": 2128.0,
+    "llamacpp:requests_deferred": 0.0,
+    "llamacpp:spec_decode_num_accepted_tokens_total": 0.0,
+    "llamacpp:spec_decode_num_draft_tokens_total": 0.0,
+    "llamacpp:spec_decode_num_drafts_total": 0.0,
+    "llamacpp:tokens_predicted_seconds_total": 1.7623000000000033,
+    "llamacpp:tokens_predicted_total": 8.0
+   }
+  },
+  "resend_usage_prompt_tokens": 2131,
+  "resend_wall_ms": 33709.6
+ },
+ "s7_production_interleave": [
+  {
+   "phase": "user-1",
+   "reprocessed": {
+    "counter": "llamacpp:prompt_tokens_total",
+    "tokens": 727,
+    "raw_llamacpp_counters": {
+     "llamacpp:n_busy_slots_per_decode": 0.0,
+     "llamacpp:n_decode_total": 2.0,
+     "llamacpp:n_tokens_max": 0.0,
+     "llamacpp:predicted_tokens_seconds": 7.38596,
+     "llamacpp:prompt_seconds_total": 12.456000000000017,
+     "llamacpp:prompt_tokens_cached_total": 3.0,
+     "llamacpp:prompt_tokens_seconds": 58.3644,
+     "llamacpp:prompt_tokens_total": 727.0,
+     "llamacpp:requests_deferred": 0.0,
+     "llamacpp:requests_processing": 0.0,
+     "llamacpp:spec_decode_num_accepted_tokens_total": 0.0,
+     "llamacpp:spec_decode_num_draft_tokens_total": 0.0,
+     "llamacpp:spec_decode_num_drafts_total": 0.0,
+     "llamacpp:tokens_predicted_seconds_total": 0.13539999999999708,
+     "llamacpp:tokens_predicted_total": 2.0
+    }
+   },
+   "wall_ms": 12689.8
+  },
+  {
+   "phase": "extraction",
+   "reprocessed": {
+    "counter": "llamacpp:prompt_tokens_total",
+    "tokens": 2649,
+    "raw_llamacpp_counters": {
+     "llamacpp:n_busy_slots_per_decode": 0.0,
+     "llamacpp:n_decode_total": 33.0,
+     "llamacpp:n_tokens_max": 24.0,
+     "llamacpp:prompt_seconds_total": 101.714,
+     "llamacpp:prompt_tokens_cached_total": 3.0,
+     "llamacpp:prompt_tokens_total": 2649.0,
+     "llamacpp:requests_deferred": 0.0,
+     "llamacpp:requests_processing": 0.0,
+     "llamacpp:spec_decode_num_accepted_tokens_total": 0.0,
+     "llamacpp:spec_decode_num_draft_tokens_total": 0.0,
+     "llamacpp:spec_decode_num_drafts_total": 0.0,
+     "llamacpp:tokens_predicted_seconds_total": 7.309800000000003,
+     "llamacpp:tokens_predicted_total": 32.0
+    }
+   },
+   "wall_ms": 109059.3
+  },
+  {
+   "phase": "user-2-after-extraction",
+   "reprocessed": {
+    "counter": "llamacpp:prompt_tokens_total",
+    "tokens": 19,
+    "raw_llamacpp_counters": {
+     "llamacpp:n_busy_slots_per_decode": 0.0,
+     "llamacpp:n_decode_total": 2.0,
+     "llamacpp:n_tokens_max": 0.0,
+     "llamacpp:predicted_tokens_seconds": 2.84837,
+     "llamacpp:prompt_seconds_total": 0.45999999999997954,
+     "llamacpp:prompt_tokens_cached_total": 711.0,
+     "llamacpp:prompt_tokens_seconds": 15.247500000000002,
+     "llamacpp:prompt_tokens_total": 19.0,
+     "llamacpp:requests_deferred": 0.0,
+     "llamacpp:requests_processing": 0.0,
+     "llamacpp:spec_decode_num_accepted_tokens_total": 0.0,
+     "llamacpp:spec_decode_num_draft_tokens_total": 0.0,
+     "llamacpp:spec_decode_num_drafts_total": 0.0,
+     "llamacpp:tokens_predicted_seconds_total": 0.14110000000000156,
+     "llamacpp:tokens_predicted_total": 2.0
+    }
+   },
+   "wall_ms": 733.3
+  }
+ ]
+}

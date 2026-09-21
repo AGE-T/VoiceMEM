@@ -1,0 +1,5 @@
+[override proof] llama_server_url = http://127.0.0.1:8080/v1
+[override proof] health_url      = http://127.0.0.1:8080/health
+[health] True
+[stream] ttft=0.3s reply received
+[json]   FAILED on this run: b10717 returned markdown-fenced ```json (the JSON grammar is not enforced) -> ValueError: LLM returned invalid JSON

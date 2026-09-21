@@ -1,0 +1,48 @@
+FORENSIC COMPARISON — llm_slot_forensic.py schema 2, identical flags (ctx 8192, ngl 0, t 2), identical stand-in model
+
+--- A: b10717 (pinned production) ---
+  s1 endpoints: health=200 props=200 slots=200 metrics=200
+  s1 slots body: "[{\"id\":0,\"n_ctx\":8192,\"speculative\":false,\"is_processing\":false}]"
+  s2_baseline: {"ttft_ms": 366.1, "first_data_ms": 366.0, "total_ms": 604.2, "text_len": 3, "finish_reason": "stop"}
+  s3_fifo: {"background": "non-streaming, max_tokens=192", "user_chat": {"ttft_ms": 47647.0, "first_data_ms": 47646.9, "total_ms": 47934.7, "text_len": 6, "finish_reason": "stop"}, "slots_before": [{"id": 0, "n_ctx": 8192, "speculative": fal...
+  s3_disconnect_yield: {"background": "streaming, disconnected at ~1.5 s", "disconnect": {"first_line_at_s": 0.12, "at_s": 1.6, "sse_lines": 25}, "user_chat": {"ttft_ms": 311.0, "first_data_ms": 311.0, "total_ms": 503.1, "text_len": 3, "finish_reason": ...
+  s4_json_streaming: {"assembles_to_json_object": true, "text": "{\"ok\": true, \"n\": 3}", "wall_ms": 1803.2}
+  s5_lcp_cache: {"same_prefix_again": {"usage_prompt_tokens": 2657, "reprocessed": {"counter": "llamacpp:prompt_tokens_total", "tokens": 20, "raw_llamacpp_counters": {"llamacpp:n_busy_slots_per_decode": 0.0, "llamacpp:n_decode_total": 3.0, "llama...
+  s6_cache_after_cancel: {"cancelled_generation_after_s": 30.15, "resend_reprocessed": {"counter": "llamacpp:prompt_tokens_total", "tokens": 2128, "raw_llamacpp_counters": {"llamacpp:n_busy_slots_per_decode": 0.0, "llamacpp:n_decode_total": 9.0, "llamacpp...
+  s7_production_interleave: [{"phase": "user-1", "reprocessed": {"counter": "llamacpp:prompt_tokens_total", "tokens": 727, "raw_llamacpp_counters": {"llamacpp:n_busy_slots_per_decode": 0.0, "llamacpp:n_decode_total": 2.0, "llamacpp:n_tokens_max": 0.0, "llamacpp:predicted_tokens_seconds": 7.38596, "llamacpp:prompt_seconds_total": 12.456000000000017, "llamacpp:prompt_tokens_cached_total": 3.0, "llamacpp:prompt_tokens_seconds":...
+
+--- B: b11073 (experimental) ---
+  s1 endpoints: health=200 props=200 slots=200 metrics=200
+  s1 slots body: "[{\"id\":0,\"n_ctx\":8192,\"speculative\":false,\"is_processing\":false}]"
+  s2_baseline: {"ttft_ms": 421.1, "first_data_ms": 421.1, "total_ms": 740.4, "text_len": 3, "finish_reason": "stop"}
+  s3_fifo: {"background": "non-streaming, max_tokens=192", "user_chat": {"ttft_ms": 54982.2, "first_data_ms": 54982.1, "total_ms": 55197.0, "text_len": 6, "finish_reason": "stop"}, "slots_before": [{"id": 0, "n_ctx": 8192, "speculative": fal...
+  s3_disconnect_yield: {"background": "streaming, disconnected at ~1.5 s", "disconnect": {"first_line_at_s": 0.19, "at_s": 1.57, "sse_lines": 19}, "user_chat": {"ttft_ms": 259.5, "first_data_ms": 259.4, "total_ms": 575.3, "text_len": 3, "finish_reason":...
+  s4_json_streaming: {"assembles_to_json_object": true, "text": "{\"ok\": true, \"n\": 3}", "wall_ms": 1816.6}
+  s5_lcp_cache: {"same_prefix_again": {"usage_prompt_tokens": 2657, "reprocessed": {"counter": "llamacpp:prompt_tokens_total", "tokens": 20, "raw_llamacpp_counters": {"llamacpp:n_busy_slots_per_decode": 0.0, "llamacpp:n_decode_total": 3.0, "llama...
+  s6_cache_after_cancel: {"cancelled_generation_after_s": 30.12, "resend_reprocessed": {"counter": "llamacpp:prompt_tokens_total", "tokens": 2128, "raw_llamacpp_counters": {"llamacpp:n_busy_slots_per_decode": 0.0, "llamacpp:n_decode_total": 9.0, "llamacpp...
+  s7_production_interleave: [{"phase": "user-1", "reprocessed": {"counter": "llamacpp:prompt_tokens_total", "tokens": 727, "raw_llamacpp_counters": {"llamacpp:n_busy_slots_per_decode": 0.0, "llamacpp:n_decode_total": 2.0, "llamacpp:n_tokens_max": 0.0, "llamacpp:predicted_tokens_seconds": 7.13878, "llamacpp:prompt_seconds_total": 12.906000000000006, "llamacpp:prompt_tokens_cached_total": 3.0, "llamacpp:prompt_tokens_seconds":...
+
+
+== S5 LCP cache detail (identical prefix re-sent) ==
+  A b10717:
+    first_prompt.usage_prompt_tokens=2655 wall_ms=96090.0
+    same_prefix_again: reprocessed_tokens=20 wall_ms=2424.1 usage_prompt_tokens=2657
+    disjoint_prompt: reprocessed_tokens=2647 wall_ms=98375.9 usage_prompt_tokens=2650
+  B b11073:
+    first_prompt.usage_prompt_tokens=2655 wall_ms=105582.4
+    same_prefix_again: reprocessed_tokens=20 wall_ms=2467.0 usage_prompt_tokens=2657
+    disjoint_prompt: reprocessed_tokens=2647 wall_ms=107704.3 usage_prompt_tokens=2650
+
+== S7 production interleave (user chat / extraction / user chat) ==
+  A b10717:
+    user-1: reprocessed_tokens=727 wall_ms=12689.8 ttft_ms=None
+    extraction: reprocessed_tokens=2649 wall_ms=109059.3 ttft_ms=None
+    user-2-after-extraction: reprocessed_tokens=19 wall_ms=733.3 ttft_ms=None
+  B b11073:
+    user-1: reprocessed_tokens=727 wall_ms=13131.1 ttft_ms=None
+    extraction: reprocessed_tokens=2649 wall_ms=117974.1 ttft_ms=None
+    user-2-after-extraction: reprocessed_tokens=19 wall_ms=849.7 ttft_ms=None
+
+== S3 verdicts ==
+  A b10717: s3_disconnect_yield.verdict_hint = user_ttft_after_disconnect << user_ttft_behind_nonstreaming => the server FREES the slot on streaming client disconnect (the llm_bg_gate cancellation transport is sound)
+  B b11073: s3_disconnect_yield.verdict_hint = user_ttft_after_disconnect << user_ttft_behind_nonstreaming => the server FREES the slot on streaming client disconnect (the llm_bg_gate cancellation transport is sound)

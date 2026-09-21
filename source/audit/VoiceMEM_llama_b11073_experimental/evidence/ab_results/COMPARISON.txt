@@ -1,0 +1,45 @@
+metric                                   A1 (b10717 prod)   B1 (b11073 same)     A2 (b10717 op)     B2 (b11073 op)
+== version ==
+version line                           version: 0.3.0-dev (build 10717, commit a32af33de) 0.00.000.290 I srv  llama_server: initializing ... version: 0.3.0-dev (build 10717, commit a32af33de) 0.00.000.302 I srv  llama_server: initializing ...
+normal TTFT median s                                0.614              0.580              0.597              0.562
+normal TTFT p90 s                                   0.690              0.651              0.636              0.688
+normal total median s                               6.639              8.025              7.689              6.697
+normal total max s                                 11.134             10.124             11.357             13.510
+streaming ok (of 8)                                     8                  8                  8                  8
+
+extract total median s                              9.518              9.595              8.772              9.251
+extract total max s                                11.459             11.602             12.975             11.033
+extract JSON valid (of 4)                               4                  4                  4                  4
+extract prompt tokens                                 152                152                152                152
+
+contend user TTFT median s                         11.423              7.988              8.785             10.239
+contend user TTFT max s                            14.043             10.094             11.626             12.484
+bg-disconnect slot-free ms                            6.8                6.5                6.7                6.4
+
+barge-in slot-free median ms                        480.5              209.9              183.2              461.0
+barge-in slot-free max ms                           502.3              299.5              342.5              582.3
+follow-up TTFT median s                             0.414              0.410              0.395              0.426
+
+== SSE integrity ==
+  A1: role=1 content=74 reasoning=0 finish=1 done=True other=0 first=role http=200
+  B1: role=1 content=80 reasoning=0 finish=1 done=True other=0 first=role http=200
+  A2: role=1 content=47 reasoning=0 finish=1 done=True other=0 first=role http=200
+  B2: role=1 content=44 reasoning=0 finish=1 done=True other=0 first=role http=200
+
+== cache reuse (identical prompt 2x) ==
+  A1: run0 ttft=0.7s run1 ttft=0.1495s prompt_tokens=414 cached=413
+  B1: run0 ttft=0.6178s run1 ttft=0.1294s prompt_tokens=414 cached=413
+  A2: run0 ttft=0.6439s run1 ttft=0.1235s prompt_tokens=414 cached=413
+  B2: run0 ttft=0.6969s run1 ttft=0.1222s prompt_tokens=414 cached=413
+
+== metrics delta (cell totals) ==
+  A1: {'llamacpp:predicted_tokens_seconds': -0.6, 'llamacpp:prompt_tokens_seconds': -26.4, 'llamacpp:prompt_tokens_total': 628.0, 'llamacpp:tokens_predicted_total': 1449.0}
+  B1: {'llamacpp:predicted_tokens_seconds': 0.1, 'llamacpp:prompt_tokens_seconds': -23.8, 'llamacpp:prompt_tokens_total': 628.0, 'llamacpp:tokens_predicted_total': 1480.0}
+  A2: {'llamacpp:predicted_tokens_seconds': -0.0, 'llamacpp:prompt_tokens_seconds': -22.6, 'llamacpp:prompt_tokens_total': 628.0, 'llamacpp:tokens_predicted_total': 1441.0}
+  B2: {'llamacpp:predicted_tokens_seconds': -0.3, 'llamacpp:prompt_tokens_seconds': -24.8, 'llamacpp:prompt_tokens_total': 628.0, 'llamacpp:tokens_predicted_total': 1445.0}
+
+== cell wall time ==
+  A1: 201.7s
+  B1: 198.1s
+  A2: 201.0s
+  B2: 200.8s

@@ -1,0 +1,35 @@
+KEY NUMBERS — 2x2 matrix (version x config), identical stand-in model, sequential single-server runs
+
+                                    A1 b10717/prod  B1 b11073/same    A2 b10717/op    B2 b11073/op
+normal TTFT median (s)                       0.614            0.58           0.597           0.562
+normal TTFT p90 (s)                           0.69           0.651           0.636           0.688
+normal TTFT max (s)                          0.891           0.886           0.938           0.923
+normal total median (s)                      6.639           8.025           7.689           6.697
+normal total max (s)                        11.134          10.124          11.357           13.51
+streaming ok /8                                  8               8               8               8
+extract total median (s)                     9.518           9.595           8.772           9.251
+extract JSON valid /4                            4               4               4               4
+contend user TTFT median (s)                11.423           7.988           8.785          10.239
+contend user TTFT max (s)                   14.043          10.094          11.626          12.484
+bg-disconnect slot-free (ms)                  6.75            6.45             6.7             6.4
+barge-in slot-free median(ms)                480.5           209.9           183.2           461.0
+barge-in slot-free max (ms)                  502.3           299.5           342.5           582.3
+follow-up TTFT median (s)                    0.414            0.41           0.395           0.426
+
+ttft_behind_bg (the 30-42s outlier class, sandbox scale):
+  A1: [14.0, 8.4, 11.5, 11.3]
+  B1: [7.9, 10.1, 6.6, 8.1]
+  A2: [11.6, 8.9, 7.1, 8.7]
+  B2: [12.5, 7.2, 9.8, 10.7]
+
+generation tok/s (extract legs):
+  A1: median 7.95 tok/s  [6.69, 8.04, 7.85, 8.06]
+  B1: median 7.64 tok/s  [6.89, 7.43, 8.05, 7.86]
+  A2: median 7.53 tok/s  [7.48, 8.42, 7.38, 7.58]
+  B2: median 8.19 tok/s  [6.56, 8.16, 8.39, 8.23]
+
+normal-turn effective gen rate (chars/s of stream):
+  A1: median 16.4 chars/s
+  B1: median 17.6 chars/s
+  A2: median 16.5 chars/s
+  B2: median 17.3 chars/s

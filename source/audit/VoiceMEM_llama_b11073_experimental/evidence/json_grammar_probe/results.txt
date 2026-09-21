@@ -1,0 +1,11 @@
+=== b10717 (A-side, 3 trials, identical minimal prompt, response_format=json_object) ===
+trial0: http=200 NOT-JSON content='```json\n{\n  "ok": true,\n  "n": 7\n}\n```'
+trial1: http=200 NOT-JSON content='```json\n{"ok": true, "n": 7}\n```'
+trial2: http=200 VALID-JSON content='{"ok": true, "n": 7}'
+
+=== b11073 (B-side, 3 trials, identical prompt) ===
+trial0: http=200 VALID-JSON content='{"ok": true, "n": 7}'
+trial1: http=200 VALID-JSON content='{"ok": true, "n": 7}'
+trial2: http=200 VALID-JSON content='{"ok": true, "n": 7}'
+
+VERDICT [PROVEN]: b11073 grammar-enforces response_format=json_object; b10717 does not.

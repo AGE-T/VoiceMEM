@@ -1,0 +1,12 @@
+{
+  "base_taken": "2026-09",
+  "files": 102,
+  "fingerprint": "56d2ced579fcb84b07c3b1489002d3ddc7957350dce8a9fd9d499ffe8bcd3633",
+  "fingerprint_algorithm": "sha256-over-sorted-relpath-digests-v1",
+  "local_fixes": 7,
+  "schema": 1,
+  "source": "controlled-vendor",
+  "upstream_commit": "e8384e087bd2f44eb05fc7ae1a3c525ea8244179",
+  "upstream_repo": "https://github.com/xzf-thu/VoiceMem",
+  "upstream_tag": "v0.0.1"
+}

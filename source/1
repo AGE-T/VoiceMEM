@@ -1,0 +1,88 @@
+{
+  "features": {
+    "asr": {
+      "reason": "torch/transformers not installed",
+      "status": "skipped"
+    },
+    "audio": {
+      "reason": "sounddevice not installed",
+      "status": "skipped"
+    },
+    "embedding": {
+      "reason": "sentence-transformers not installed",
+      "status": "skipped"
+    },
+    "emotion": {
+      "reason": "funasr/torch not installed here: No module named 'funasr'",
+      "status": "skipped"
+    },
+    "gemma": {
+      "reason": "llama-server not running on 127.0.0.1:8080 (build sandbox: run scripts/smoke_test_gemma.py on the RTX 5070 target machine)",
+      "status": "skipped"
+    },
+    "gpu-check": {
+      "reason": "no powershell.exe / pwsh on PATH",
+      "status": "skipped"
+    },
+    "llm": {
+      "reason": "llama-server not running on 127.0.0.1:8080 (ConnectError)",
+      "status": "skipped"
+    },
+    "memory": {
+      "reason": "voicemem package not installed (degraded mode)",
+      "status": "skipped"
+    },
+    "models": {
+      "reason": "ASR model not downloaded",
+      "status": "skipped"
+    },
+    "models-download": {
+      "reason": "models not downloaded on this machine",
+      "status": "skipped"
+    },
+    "oneclick-state": {
+      "reason": "START.bat has not run on this machine yet",
+      "status": "skipped"
+    },
+    "pyexec": {
+      "reason": "no powershell.exe / pwsh on PATH",
+      "status": "skipped"
+    },
+    "release": {
+      "detail": "BUILD_INFO.json verified inside 13 ZIP(s)",
+      "status": "pass"
+    },
+    "runtime-deps": {
+      "detail": "core deps importable (numpy, PyYAML, httpx)",
+      "status": "pass"
+    },
+    "runtime-gpu": {
+      "reason": "torch not installed",
+      "status": "skipped"
+    },
+    "runtime-torch-pin": {
+      "reason": "torch not installed",
+      "status": "skipped"
+    },
+    "runtime-venv": {
+      "reason": "no .venv on this machine (installer not run)",
+      "status": "skipped"
+    },
+    "speaker": {
+      "reason": "speechbrain not importable: No module named 'speechbrain'",
+      "status": "skipped"
+    },
+    "tts": {
+      "reason": "piper binary/voices not installed",
+      "status": "skipped"
+    },
+    "vad": {
+      "reason": "onnxruntime not installed",
+      "status": "skipped"
+    }
+  },
+  "generated_at": "2026-09-03T16:20:04+00:00",
+  "platform": "Linux-5.10.134-013.8.3.kangaroo.al8.x86_64-x86_64-with-glibc2.41",
+  "python": "3.12.14",
+  "schema_version": 1
+}

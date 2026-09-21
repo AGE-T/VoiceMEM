@@ -1,0 +1,298 @@
+{
+ "cell": "B2",
+ "label": "b11073 @ operator baseline adapted (ngl 99, ctx 16000, -t explicit)",
+ "version": "0.00.000.302 I srv  llama_server: initializing ...",
+ "flags": {
+  "bin": "b11073",
+  "port": 8081,
+  "ngl": 99,
+  "ctx": 16000,
+  "threads": 2
+ },
+ "machine": {
+  "cpu_count": 2
+ },
+ "props_head": {
+  "total_slots": 1,
+  "model_path": "/tmp/llama/qwen3-1.7b-q4km.gguf",
+  "mode": null
+ },
+ "normal": [
+  {
+   "ttft_s": 0.5512,
+   "total_s": 5.708,
+   "reply_chars": 104,
+   "n_deltas": 40,
+   "ok": true,
+   "i": 0
+  },
+  {
+   "ttft_s": 0.9231,
+   "total_s": 6.14,
+   "reply_chars": 103,
+   "n_deltas": 41,
+   "ok": true,
+   "i": 1
+  },
+  {
+   "ttft_s": 0.6881,
+   "total_s": 7.6689,
+   "reply_chars": 139,
+   "n_deltas": 56,
+   "ok": true,
+   "i": 2
+  },
+  {
+   "ttft_s": 0.5735,
+   "total_s": 13.5097,
+   "reply_chars": 242,
+   "n_deltas": 100,
+   "ok": true,
+   "i": 3
+  },
+  {
+   "ttft_s": 0.6276,
+   "total_s": 3.8701,
+   "reply_chars": 50,
+   "n_deltas": 24,
+   "ok": true,
+   "i": 4
+  },
+  {
+   "ttft_s": 0.5324,
+   "total_s": 9.1032,
+   "reply_chars": 164,
+   "n_deltas": 66,
+   "ok": true,
+   "i": 5
+  },
+  {
+   "ttft_s": 0.5479,
+   "total_s": 4.3885,
+   "reply_chars": 60,
+   "n_deltas": 29,
+   "ok": true,
+   "i": 6
+  },
+  {
+   "ttft_s": 0.5493,
+   "total_s": 7.2538,
+   "reply_chars": 114,
+   "n_deltas": 49,
+   "ok": true,
+   "i": 7
+  }
+ ],
+ "normal_stats": {
+  "ttft_s": {
+   "median": 0.562,
+   "min": 0.532,
+   "max": 0.923,
+   "p90": 0.688,
+   "n": 8
+  },
+  "total_s": {
+   "median": 6.697,
+   "min": 3.87,
+   "max": 13.51,
+   "p90": 9.103,
+   "n": 8
+  },
+  "streaming_ok": 8
+ },
+ "extract": [
+  {
+   "http": 200,
+   "total_s": 9.7537,
+   "prompt_tokens": 152,
+   "cached_tokens": 4,
+   "completion_tokens": 64,
+   "gen_tok_s": 6.562,
+   "json_valid": true,
+   "content_head": "{\n  \"facts\": [\n    \"Imre is planning a meeting tomorrow with",
+   "i": 0
+  },
+  {
+   "http": 200,
+   "total_s": 11.0327,
+   "prompt_tokens": 152,
+   "cached_tokens": 151,
+   "completion_tokens": 90,
+   "gen_tok_s": 8.158,
+   "json_valid": true,
+   "content_head": "{\n  \"facts\": [\n    \"Holnap lesz a meeting a csapattal\",\n    ",
+   "i": 1
+  },
+  {
+   "http": 200,
+   "total_s": 8.2263,
+   "prompt_tokens": 152,
+   "cached_tokens": 151,
+   "completion_tokens": 69,
+   "gen_tok_s": 8.388,
+   "json_valid": true,
+   "content_head": "{\n  \"facts\": [\n    \"Imre is scheduled for a meeting tomorrow",
+   "i": 2
+  },
+  {
+   "http": 200,
+   "total_s": 8.7476,
+   "prompt_tokens": 152,
+   "cached_tokens": 151,
+   "completion_tokens": 72,
+   "gen_tok_s": 8.231,
+   "json_valid": true,
+   "content_head": "{\n  \"facts\": [\n    \"Holnap lesz a meeting a csapattal\",\n    ",
+   "i": 3
+  }
+ ],
+ "extract_stats": {
+  "total_s": {
+   "median": 9.251,
+   "min": 8.226,
+   "max": 11.033,
+   "p90": 11.033,
+   "n": 4
+  },
+  "prompt_tokens": 152,
+  "json_valid_count": 4
+ },
+ "contention": [
+  {
+   "user_ttft_s": 12.4841,
+   "user_total_s": 15.1322,
+   "user_chars": 64,
+   "slot_free_ms": 6.3,
+   "disconnect_transport": "async-httpx-cancel (production v0.10.2 class)",
+   "i": 0
+  },
+  {
+   "user_ttft_s": 7.2096,
+   "user_total_s": 21.0192,
+   "user_chars": 242,
+   "bg_total_s": 7.5336,
+   "i": 1
+  },
+  {
+   "user_ttft_s": 9.7994,
+   "user_total_s": 17.2619,
+   "user_chars": 142,
+   "slot_free_ms": 6.5,
+   "disconnect_transport": "async-httpx-cancel (production v0.10.2 class)",
+   "i": 2
+  },
+  {
+   "user_ttft_s": 10.6787,
+   "user_total_s": 15.3493,
+   "user_chars": 94,
+   "bg_total_s": 10.9316,
+   "i": 3
+  }
+ ],
+ "contention_stats": {
+  "user_ttft_behind_bg_s": {
+   "median": 10.239,
+   "min": 7.21,
+   "max": 12.484,
+   "p90": 12.484,
+   "n": 4
+  },
+  "slot_free_ms_on_disconnect": {
+   "median": 6.4,
+   "min": 6.3,
+   "max": 6.5,
+   "p90": 6.5,
+   "n": 2
+  }
+ },
+ "cancel": [
+  {
+   "first_token_before_disconnect_s": 0.8516,
+   "slot_free_ms": 461.0,
+   "followup_ttft_s": 0.426,
+   "followup_total_s": 1.9225,
+   "followup_chars": 21,
+   "i": 0
+  },
+  {
+   "first_token_before_disconnect_s": 1.0649,
+   "slot_free_ms": 582.3,
+   "followup_ttft_s": 0.3987,
+   "followup_total_s": 1.7447,
+   "followup_chars": 20,
+   "i": 1
+  },
+  {
+   "first_token_before_disconnect_s": 0.9457,
+   "slot_free_ms": 199.1,
+   "followup_ttft_s": 0.501,
+   "followup_total_s": 1.9751,
+   "followup_chars": 21,
+   "i": 2
+  }
+ ],
+ "cancel_stats": {
+  "slot_free_ms": {
+   "median": 461.0,
+   "min": 199.1,
+   "max": 582.3,
+   "p90": 582.3,
+   "n": 3
+  },
+  "followup_ttft_s": {
+   "median": 0.426,
+   "min": 0.399,
+   "max": 0.501,
+   "p90": 0.501,
+   "n": 3
+  }
+ },
+ "cache": {
+  "runs": [
+   {
+    "run": 0,
+    "ttft_s": 0.6969,
+    "total_s": 6.9146
+   },
+   {
+    "run": 1,
+    "ttft_s": 0.1222,
+    "total_s": 5.4797
+   },
+   {
+    "prompt_tokens": 414,
+    "cached_tokens": 413
+   }
+  ]
+ },
+ "sse": {
+  "role_chunks": 1,
+  "content_chunks": 44,
+  "reasoning_chunks": 0,
+  "finish_chunks": 1,
+  "done_marker": true,
+  "other_lines": 0,
+  "total_lines": 47,
+  "assembled_chars": 94,
+  "first_line_kind": "role",
+  "http_status": 200
+ },
+ "metrics_delta": {
+  "llamacpp:n_busy_slots_per_decode": 0.0,
+  "llamacpp:n_decode_total": 1445.0,
+  "llamacpp:n_tokens_max": 89.0,
+  "llamacpp:predicted_tokens_seconds": -0.3,
+  "llamacpp:prompt_seconds_total": 14.1,
+  "llamacpp:prompt_tokens_cached_total": 9611.0,
+  "llamacpp:prompt_tokens_seconds": -24.8,
+  "llamacpp:prompt_tokens_total": 628.0,
+  "llamacpp:requests_deferred": 0.0,
+  "llamacpp:requests_processing": 0.0,
+  "llamacpp:spec_decode_num_accepted_tokens_total": 0.0,
+  "llamacpp:spec_decode_num_draft_tokens_total": 0.0,
+  "llamacpp:spec_decode_num_drafts_total": 0.0,
+  "llamacpp:tokens_predicted_seconds_total": 182.0,
+  "llamacpp:tokens_predicted_total": 1445.0
+ },
+ "cell_wall_s": 200.8
+}

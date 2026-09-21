@@ -1,0 +1,6 @@
+[override proof] llama_server_url = http://127.0.0.1:8081/v1
+[override proof] health_url      = http://127.0.0.1:8081/health
+[health] True
+[stream] ttft=0.315s reply='Experimental runtime compatible.'
+[json]   parsed={'ok': True, 'n': 7}
+[thinking kwargs active] {}
