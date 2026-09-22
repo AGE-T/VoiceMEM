@@ -52,6 +52,42 @@ bash experimental/llama_b11073/start_experimental_8081.sh
 #  LLAMA_EXPERIMENTAL_{BIN,MODEL,HOST,PORT,NGL,CTX,THREADS,LOG})
 ```
 
+## DELTA RUNTIME PACK (2026-09-22) — binary included, unpack and go
+
+`VoiceMemAgent_v0.10.7_LlamaB11073_RuntimeDelta.zip` (141 MB, SHA-256
+`545eec7d3b38bf30a9b4c52883c2e14e5344c4af53afbe0bb84bb7063247c956`)
+packages the runtime itself, so the one-time setup above reduces to
+**unpack into the VoiceMemAgent v0.10.7 root and double-click
+`experimental\llama_b11073\RUN_EXPERIMENTAL.bat`**:
+
+* `bin\llama-server-b11073\` — `llama-server.exe` (b11073, win x64 CUDA
+  13.4) + ONLY the application-local DLLs its measured dependency closure
+  requires (`llama-server-impl`, `llama-common`, `llama`, `mtmd`, `ggml`,
+  `ggml-base`, `libomp`) + the dynamically loaded ggml backends
+  (`ggml-cuda.dll`, 14 `ggml-cpu-*.dll` variants) + `LICENSE-LLVM-OpenMP`;
+* NO CUDA runtime, NO driver, NO cudart, NO models, NO application files, NO
+  Python — the target machine already provides all of those. The single
+  CUDA dependency (`cublas64_13.dll`, imported by `ggml-cuda.dll`) resolves
+  from the EXISTING production `bin\` (the b10717 cudart install) or a
+  system CUDA 13.x — `RUN_EXPERIMENTAL.bat` only extends the child PATH,
+  it never copies or modifies CUDA components;
+* `check_environment.ps1` (read-only) verifies pack integrity
+  (`SHA256SUMS.txt` inside the pack) and every prerequisite on the target
+  before launch;
+* the launcher inside is BYTE-IDENTICAL to the validated
+  `start_llama_server_experimental.ps1` (same operator baseline flags);
+* classification evidence (every DLL, A/B, import edges, exclusions):
+  `DEPENDENCY_INSPECTION.md`; operator quickstart + rollback:
+  `DELTA_PACK_README.md`; inspection tool: `tools/inspect_pe_closure.py`.
+
+Distribution: the local download page (public/) and the GitHub mirror as a
+RELEASE ASSET (the 141 MB zip exceeds the git blob limit, so it is
+deliberately excluded from the git-tree sync).
+
+The manual one-time download above remains valid for other CUDA variants
+(12.4, CPU-only, arm64) — the pack is the recommended path for the
+operator's CUDA 13.x + Blackwell machine.
+
 ## Exact application-side override (existing mechanism, zero code change)
 
 The VoiceMem client surface derives every endpoint from
