@@ -27,6 +27,7 @@ edits, pinned-runtime edits) fails loudly here first.
 from __future__ import annotations
 
 import json
+import re
 from pathlib import Path
 
 import pytest
@@ -64,21 +65,32 @@ def test_sandbox_launcher_carries_operator_baseline() -> None:
 
 def test_windows_launcher_carries_operator_baseline_and_separate_path() -> None:
     """The target-machine launcher: ngl 99 / ctx 16000 / threads 12 /
-    reasoning off, the SEPARATE binary path bin\\llama-server-b11073\\ and
-    port 8081; the pinned production binary/config are never referenced
-    as edit targets."""
+    reasoning off, the SEPARATE script-relative binary location
+    experimental\\llama_b11073\\bin\\ (installed by install_b11073.ps1)
+    and port 8081; version verification at BOTH stages (binary banner +
+    live system fingerprint); cublas64_13.dll resolved via the child-PATH
+    prepend, never by packaging CUDA components."""
     ps1 = (EXP / "start_llama_server_experimental.ps1").read_text(encoding="utf-8")
     assert '"99"' in ps1                    # $Ngl = "99"
     assert '"16000"' in ps1                # $Ctx = "16000"
     assert '"12"' in ps1                    # $Threads = "12"
     assert '"--reasoning", "off"' in ps1 or '"--reasoning off"' in ps1 or '"off"' in ps1
-    assert r"bin\llama-server-b11073" in ps1
+    # the SEPARATE, script-relative binary location (installer model):
+    assert r'Join-Path $ScriptDir "bin\llama-server.exe"' in ps1
     assert "8081" in ps1
     assert "8080" in ps1  # only inside the explanatory notes...
     # ...never as a bind target:
     for line in ps1.splitlines():
         if '"--port"' in line or "-Port " in line and "8081" not in line:
             assert "8080" not in line, f"production port bound in: {line.strip()}"
+    # version verification: binary banner pre-start + live fingerprint post-health
+    assert "--version" in ps1
+    assert "11073" in ps1 and "system_fingerprint" in ps1
+    # the single CUDA dependency resolves via the child-PATH extension only
+    assert "cublas64_13.dll" in ps1
+    assert '$env:PATH = "$ProdBin;$env:PATH"' in ps1
+    # the effective configuration is logged
+    assert "launcher-config_" in ps1
 
 
 # ------------------------------------------------- env override (the client)
@@ -196,6 +208,7 @@ def test_b11073_role_chunk_with_null_content_is_ignored() -> None:
 
 # ----------------------------------------------- thinking suppression kwargs
 
+
 def test_thinking_control_kwargs_shape() -> None:
     """The request-level suppression (both switches land on
     enable_thinking=false server-side) is what the client sends when the
@@ -210,3 +223,111 @@ def test_thinking_control_kwargs_shape() -> None:
     assert kw == {"chat_template_kwargs": {"enable_thinking": False},
                   "reasoning_effort": "none"}
     assert runtime.reasoning_server_arg == "off"
+
+
+# ----------------------------------------------- installer/configurator pack
+
+def test_installer_pack_pins_are_valid_and_pinned() -> None:
+    """The pinned runtime identity: exact release, exact asset, exact
+    SHA-256, exact size, the 24-file measured closure and the experimental
+    profile values. The installer reads and cross-checks this table."""
+    pins = json.loads((EXP / "config" / "b11073.pins.json").read_text(encoding="utf-8"))
+    rt = pins["runtime"]
+    assert rt["tag"] == "b11073"
+    assert rt["build_commit"] == "1aa2954bd"
+    asset = rt["asset"]
+    assert asset["name"] == "llama-b11073-bin-win-cuda-13.4-x64.zip"
+    assert asset["url"] == (
+        "https://github.com/ggml-org/llama.cpp/releases/download/b11073/"
+        "llama-b11073-bin-win-cuda-13.4-x64.zip")
+    assert re.fullmatch(r"[0-9a-f]{64}", asset["sha256"])
+    assert asset["size_bytes"] == 150093926
+    files = rt["files"]
+    assert len(files) == 24
+    names = [f["name"] for f in files]
+    assert "llama-server.exe" in names
+    assert "ggml-cuda.dll" in names            # dynamic GPU backend (category B)
+    assert "ggml-rpc.dll" not in names          # excluded by inspection
+    assert "cublas64_13.dll" not in names       # CUDA is target-provided, never packaged
+    assert all(re.fullmatch(r"[0-9a-f]{64}", f["sha256"]) for f in files)
+    assert len(set(names)) == 24
+    prof = pins["experimental_profile"]
+    assert (prof["ngl"], prof["ctx"], prof["parallel"], prof["threads"],
+            prof["reasoning"], prof["port"]) == (99, 16000, 1, 12, "off", 8081)
+
+
+def test_installer_downloads_the_pinned_asset_and_fails_closed() -> None:
+    """The installer: downloads the pinned asset by exact URL, verifies the
+    SHA-256 BEFORE extraction, fails closed on mismatch, verifies the build
+    identity in-binary, and installs into the isolated experimental tree."""
+    ps1 = (EXP / "install_b11073.ps1").read_text(encoding="utf-8")
+    assert "https://github.com/ggml-org/llama.cpp/releases/download/b11073/llama-b11073-bin-win-cuda-13.4-x64.zip" in ps1
+    assert "85C1B874180FAEC412CCBBA16EE0833062C28E2BF1390B12ED30F7DC6D7D79C4" in ps1
+    assert "Invoke-WebRequest" in ps1 and "Expand-Archive" in ps1
+    assert "Get-FileHash" in ps1
+    assert "ELTERES" in ps1                      # the SHA-256 mismatch failure path
+    assert "1aa2954bd" in ps1                   # in-binary build identity check
+    assert 'Join-Path $ScriptDir "bin"' in ps1   # isolated install location
+    assert "$ProdHash" in ps1                    # production exe hash recorded (untouched proof)
+    # idempotence + offline mode
+    assert "-Force" in ps1 and "-ZipPath" in ps1
+
+
+def test_pack_contains_no_runtime_binaries() -> None:
+    """The installer/configurator pack must not contain any binary: no exe,
+    no dll, no GGUF model, no Python/venv artefact — the runtime is
+    downloaded at installation time."""
+    suffixes = {".exe", ".dll", ".gguf", ".pyd", ".so", ".bin"}
+    hits = [p for p in EXP.rglob("*") if p.is_file() and p.suffix.lower() in suffixes]
+    assert not hits, f"runtime binaries inside the installer pack: {hits}"
+
+
+def test_configurator_uses_operator_local_override_only() -> None:
+    """The configurator's ENABLE generates an operator-local session script
+    that sets the three env variables (the existing mechanism; the third one
+    also guards start_agent.ps1 against re-sourcing env.local.ps1) and
+    reuses the existing starter with -NoServer. Production config files are
+    never written."""
+    ps1 = (EXP / "configure_b11073.ps1").read_text(encoding="utf-8")
+    assert '$env:LLAMA_SERVER_HOST = "127.0.0.1"' in ps1
+    assert '$env:LLAMA_SERVER_PORT = "8081"' in ps1
+    assert re.search(r'\$env:OPENAI_BASE_URL\s*=\s*"http://127\.0\.0\.1:8081/v1"', ps1)
+    assert "start_agent.ps1" in ps1 and "-NoServer" in ps1
+    # the ONLY file writes target the experimental tree (flag + generated
+    # session script); production config files appear solely in the
+    # "UNTOUCHED" documentation header, never as write operations:
+    assert "Set-Content -LiteralPath $FlagFile" in ps1
+    assert "WriteAllText($AppScript" in ps1
+    # no write operation ever targets the production tree (the configurator
+    # only READS config\env.local.ps1 in its preflight):
+    assert "Set-Content -LiteralPath (Join-Path $Root" not in ps1
+    assert "WriteAllText((Join-Path $Root" not in ps1
+    # rollback: stops only processes launched from the experimental bin dir
+    assert "$BinPrefix" in ps1 and "Stop-Process" in ps1
+
+
+def test_verify_script_pins_the_full_contract() -> None:
+    """The verification command covers: per-file SHA-256 (downloaded
+    runtime), manifest consistency, build identity, production-untouched
+    (b10717 pin, VERSION, canonical config), /health on 8081, live
+    fingerprint, and the chat-completions transport."""
+    ps1 = (EXP / "verify_b11073.ps1").read_text(encoding="utf-8")
+    assert "b11073.pins.json" in ps1 and "Get-FileHash" in ps1
+    assert "1aa2954bd" in ps1 and "a32af33de" in ps1
+    assert "b10717" in ps1 and "0.10.7" in ps1
+    assert "8081" in ps1 and "/v1/chat/completions" in ps1
+    assert "-SkipServer" in ps1 and "-ThroughAppClient" in ps1
+
+
+def test_pack_readme_documents_installer_model_and_rollback() -> None:
+    """The pack README documents the installer model (download at install
+    time, pinned SHA-256), the enable/disable flow and the trivial
+    rollback."""
+    md = (EXP / "README.md").read_text(encoding="utf-8")
+    assert "NO binaries" in md or "no binaries" in md.lower()
+    assert "install_b11073.ps1" in md
+    assert "configure_b11073.ps1" in md
+    assert "85c1b874180faec412ccbba16ee0833062c28e2bf1390b12ed30f7dc6d7d79c4" in md
+    assert "-Disable" in md
+    assert "rollback" in md.lower()
+    assert "experimental\\llama_b11073\\bin\\" in md

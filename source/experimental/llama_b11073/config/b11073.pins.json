@@ -1,0 +1,128 @@
+{
+  "runtime": {
+    "component": "llama-server-experimental",
+    "provider": "github-release",
+    "repo": "ggml-org/llama.cpp",
+    "tag": "b11073",
+    "build_commit": "1aa2954bd",
+    "asset": {
+      "name": "llama-b11073-bin-win-cuda-13.4-x64.zip",
+      "url": "https://github.com/ggml-org/llama.cpp/releases/download/b11073/llama-b11073-bin-win-cuda-13.4-x64.zip",
+      "size_bytes": 150093926,
+      "sha256": "85c1b874180faec412ccbba16ee0833062c28e2bf1390b12ed30f7dc6d7d79c4"
+    },
+    "asset_selection_note": "b11073 ships no cuda-13.3 asset; cuda-13.4 is the same-major successor of the production b10717 cuda-13.3 line (NVIDIA minor-version compatibility); the cuda-12.4 line lacks Blackwell support. The cudart companion asset is deliberately NOT downloaded: the target machine already provides CUDA 13.x (production bin\\ cudart install and/or system CUDA).",
+    "install_dir": "experimental/llama_b11073/bin",
+    "files": [
+      {
+        "name": "llama-server.exe",
+        "sha256": "620d3a8781cfa597410e099aa1be3dcc2ceb1c79ff61193aacda156a5eba5038"
+      },
+      {
+        "name": "llama-server-impl.dll",
+        "sha256": "ce51e32a72dc2de63fb9e0ef7a163fb5ed4acdad97ad2393196c9a86d754dc56"
+      },
+      {
+        "name": "llama-common.dll",
+        "sha256": "35a083b77d9b4fae318668bd54ec24cfb4ba97258598ee0c53e30c9ff8a347eb"
+      },
+      {
+        "name": "llama.dll",
+        "sha256": "570eb3b94610b1c7dafcc5eda6c7f81bb11acfc7a7acc912b9b058d58159641e"
+      },
+      {
+        "name": "mtmd.dll",
+        "sha256": "4531f6d107843f885f2823173284b916279623aba40d422650d7fd343eadff54"
+      },
+      {
+        "name": "ggml.dll",
+        "sha256": "0d0dd9a6a278b8c3a9c091ba1d4ba02563c851afc1e7d7b310efc51949c6f37c"
+      },
+      {
+        "name": "ggml-base.dll",
+        "sha256": "98cd434f99a56e75ac8272ed06f9d5be9c6560992aa0d9d093c4651f9233ead5"
+      },
+      {
+        "name": "libomp.dll",
+        "sha256": "a12116ba72d1d6820407cf30be23da04ce79d6bb8a71a5ee71759c5a1faa6f1c"
+      },
+      {
+        "name": "ggml-cuda.dll",
+        "sha256": "8bf331321bccdbc2aaaa972ffa080677e6de10d8b501709514990c41290278c3"
+      },
+      {
+        "name": "ggml-cpu-alderlake.dll",
+        "sha256": "e4b9dae692b96363318780a63a71cef5460b4d230f1efc3f9eda2b4258ddd3f3"
+      },
+      {
+        "name": "ggml-cpu-cannonlake.dll",
+        "sha256": "43343abd5c4dbf3a5c026b4e4f3df5bcc1c46ff4a7d32e74cc41d09ffafbfd4d"
+      },
+      {
+        "name": "ggml-cpu-cascadelake.dll",
+        "sha256": "4eb2d26e3b32e95b7dc8965cb331ac29bef2d398ef28b8f60ff8dea750b2eea6"
+      },
+      {
+        "name": "ggml-cpu-cooperlake.dll",
+        "sha256": "c26120b05cded679d017461b0d5a3aed4d2b0026c980ab1ae97c220d13ed8975"
+      },
+      {
+        "name": "ggml-cpu-haswell.dll",
+        "sha256": "5c5d59d5d5253e943eac8468798d637b0a410cc3f6f7f3a9425d288d335163e1"
+      },
+      {
+        "name": "ggml-cpu-icelake.dll",
+        "sha256": "aa8ccd0b5bb166d7b1b653be64b1c7e05c97f1d611137fef7ebaae9ead097dcd"
+      },
+      {
+        "name": "ggml-cpu-ivybridge.dll",
+        "sha256": "cf2da8c5fc37e83b1e7db124d9c65d0e693062f4f67dbe33f34ee58c0cc3be78"
+      },
+      {
+        "name": "ggml-cpu-piledriver.dll",
+        "sha256": "1213b8c5cdbc0f1a5aed56952a545d3ed79023db576f3bbe2c69be812b49021b"
+      },
+      {
+        "name": "ggml-cpu-sandybridge.dll",
+        "sha256": "42b6f1cca49897a021160cc4d01d489a537775e9457c5ad8c4e7e07d2f15ec30"
+      },
+      {
+        "name": "ggml-cpu-sapphirerapids.dll",
+        "sha256": "b80690d4aaabc7b74b7f2aa269583d16f791b98d284274592d8ecbb9b0b7cb8e"
+      },
+      {
+        "name": "ggml-cpu-skylakex.dll",
+        "sha256": "4c8b3ecf73ff82b13af76611af9c3c55ecbe12127447f4386b8205a53f09bfce"
+      },
+      {
+        "name": "ggml-cpu-sse42.dll",
+        "sha256": "a1f934f1d4181e28756cc3bbace53c872be46633a34809e63c708a90f4d458d0"
+      },
+      {
+        "name": "ggml-cpu-x64.dll",
+        "sha256": "31e99d94f1a03cc4df646f0c44e544af9c0ea7f960132a195d23784ed3fece32"
+      },
+      {
+        "name": "ggml-cpu-zen4.dll",
+        "sha256": "81bdfed50287bdffd7fad03cae2fc16f1917d4d947e85373cfb051fc8d138e48"
+      },
+      {
+        "name": "LICENSE-LLVM-OpenMP",
+        "sha256": "fdad1758a9e1f9d5a81e18879b3406772115edc92c24bfa36b70c654f325e8e4"
+      }
+    ]
+  },
+  "experimental_profile": {
+    "host": "127.0.0.1",
+    "port": 8081,
+    "ngl": 99,
+    "ctx": 16000,
+    "parallel": 1,
+    "threads": 12,
+    "reasoning": "off",
+    "cache_k": "q8_0",
+    "cache_v": "q8_0",
+    "temp": 0.7,
+    "note": "operator-tested baseline (2026-09-20); experimental only \u2014 the production profile (ngl 20 / ctx 32768 / port 8080, b10717) is untouched"
+  }
+}
