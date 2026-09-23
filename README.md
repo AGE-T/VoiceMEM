@@ -25,13 +25,14 @@ the agent workspace.
 | `VoiceMemAgent_v0.10.7_LlamaB11073Experimental.zip` | **Evidence package** for the `LlamaB11073Experimental.zip` work unit (GOLDEN RULE deliverable: RECOVERY.md + identity.json + evidence). | 74 KB |
 | `VoiceMemAgent_v0.10.7_LlamaB11073_Installer.zip` | **The experimental llama.cpp b11073 installer/configurator pack (rev 2)** — scripts + documentation ONLY (no binaries): downloads the pinned b11073 release at install time, SHA-256-gated; the launcher verifies the pinned runtime identity (24-file manifest + build id + live fingerprint) and never gates on `--version`. | 50 KB |
 | `VoiceMemAgent_v0.10.7_MirrorSync.zip` | **The mirror-sync evidence** for this release: PAT permission check (redacted), sync dry-run, push log, and a fresh anonymous-clone verification that the GitHub mirror is byte-identical to the locally produced artifacts (SHA-256 tables from both sides). | 5 KB |
+| `VoiceMemAgent_v0.10.7_ProdB11073_Upgrade.zip` | **The PRODUCTION llama.cpp b11073 runtime upgrade pack** — scripts + documentation ONLY (no binaries, no download): swaps the pinned 24-file runtime set into `bin` from the already-verified experimental install, keeps the CUDA DLLs, the Qwen3.6 model, the app code, the port and the profile untouched; audited, backed up, verified (24/24 SHA-256 + build id + live `system_fingerprint`), auto-rollback on any failure; evidence report for the audit record. | 42 KB |
 | `VoiceMemAgent_v0.10.7_recovery.zip` | **The recovery package** for this release: `RECOVERY.md` + `identity.json` + evidence (the GREEN gate record, the code diff, changed files, test output, the release ZIP hash) — the versioned, independently restorable rollback anchor (what changed, how to verify it, how to roll back). | 17 KB |
 | `VoiceMem_forensic_v0104_recovery.zip` | **The recovery package** for this release: `RECOVERY.md` + `identity.json` + evidence (the GREEN gate record, the code diff, changed files, test output, the release ZIP hash) — the versioned, independently restorable rollback anchor (what changed, how to verify it, how to roll back). | 38 KB |
 
 ## Verify your download
 
 ```bash
-sha256sum VoiceMemAgent_v0.10.7.zip VoiceMemAgent_v0.10.4_MirrorSync.zip VoiceMemAgent_v0.10.4_S8LatencyCorrelation.zip VoiceMemAgent_v0.10.5_MemoryPerformanceAudit.zip VoiceMemAgent_v0.10.5_MirrorSync.zip VoiceMemAgent_v0.10.5_TTSForensicFix.zip VoiceMemAgent_v0.10.5_learning_prep.zip VoiceMemAgent_v0.10.6_MirrorSync.zip VoiceMemAgent_v0.10.6_recovery.zip VoiceMemAgent_v0.10.7_LlamaB11073Experimental.zip VoiceMemAgent_v0.10.7_LlamaB11073_Installer.zip VoiceMemAgent_v0.10.7_MirrorSync.zip VoiceMemAgent_v0.10.7_recovery.zip VoiceMem_forensic_v0104_recovery.zip
+sha256sum VoiceMemAgent_v0.10.7.zip VoiceMemAgent_v0.10.4_MirrorSync.zip VoiceMemAgent_v0.10.4_S8LatencyCorrelation.zip VoiceMemAgent_v0.10.5_MemoryPerformanceAudit.zip VoiceMemAgent_v0.10.5_MirrorSync.zip VoiceMemAgent_v0.10.5_TTSForensicFix.zip VoiceMemAgent_v0.10.5_learning_prep.zip VoiceMemAgent_v0.10.6_MirrorSync.zip VoiceMemAgent_v0.10.6_recovery.zip VoiceMemAgent_v0.10.7_LlamaB11073Experimental.zip VoiceMemAgent_v0.10.7_LlamaB11073_Installer.zip VoiceMemAgent_v0.10.7_MirrorSync.zip VoiceMemAgent_v0.10.7_ProdB11073_Upgrade.zip VoiceMemAgent_v0.10.7_recovery.zip VoiceMem_forensic_v0104_recovery.zip
 ```
 
 Expected:
@@ -49,6 +50,7 @@ c6d9080709647b1b85d5cb13af2b2bdee60750547745a237f3ffd9df7a3e8b4f  VoiceMemAgent_
 d28f7f8c275828318a7bd12a581bc2e7e8f27aac61a2f3c2d5cd9fe8e5e6e5b5  VoiceMemAgent_v0.10.7_LlamaB11073Experimental.zip
 c844ad7168f29dc772911ce11a16040b532fb13de0ff8672c273f7afad52529a  VoiceMemAgent_v0.10.7_LlamaB11073_Installer.zip
 e0f9f7c911e476db55265e71ea1a69819b426e2a289fdf93c99939f74ba051c7  VoiceMemAgent_v0.10.7_MirrorSync.zip
+8f437888c1199d2d6ac8ceeaa0a4bec8d4d2614391135cb6a1092e392fec7727  VoiceMemAgent_v0.10.7_ProdB11073_Upgrade.zip
 8b601582901bfd4e9f4a37253346140d025f7318c487038b2fa9c0b1f4bfa70e  VoiceMemAgent_v0.10.7_recovery.zip
 514ecdd8010e78efcc6c5cd1dd31b062c41b6a8d85019882fa597a442274842c  VoiceMem_forensic_v0104_recovery.zip
 ```
