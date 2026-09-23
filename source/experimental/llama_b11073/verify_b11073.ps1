@@ -16,8 +16,11 @@ Proves, in order (exit 0 only if every check passes):
                 VERSION still 0.10.7, the canonical config is still
                 ngl 20 / ctx 32768 / parallel 1 / reasoning off;
   [5] SERVER    (default; -SkipServer to omit) /health on 127.0.0.1:8081 is
-                OK, and the RUNNING server identifies as b11073 via its
-                system_fingerprint (a real 1-token chat completion);
+                OK, the process LISTENING on 8081 is the pinned experimental
+                binary (listener PID -> executable path; Get-NetTCPConnection
+                with a netstat -ano fallback), and the RUNNING server
+                identifies as b11073 via its system_fingerprint (a real
+                1-token chat completion);
   [6] CLIENT    (default; -SkipServer to omit) a minimal chat completion via
                 the same OpenAI-compatible endpoint the VoiceMem LLM client
                 uses (POST /v1/chat/completions, streaming shape) - proving
@@ -152,10 +155,58 @@ try {
 } catch { Bad ("config\llm_config.yaml nem olvashato: " + $_.Exception.Message) }
 
 if (-not $SkipServer) {
-    # ---------------- [5] live server: health + b11073 identity --------------------
+    # ---------------- [5] live server: health + listener identity + b11073 -----
     Write-Host "[5/6] El szerver (127.0.0.1:8081):"
     if (Test-Health "127.0.0.1" 8081) {
         Ok "/health OK (127.0.0.1:8081)"
+        # REV 2 (2026-09-23): listener identity - the process serving 8081
+        # must be the pinned experimental binary. Primary: Get-NetTCPConnection;
+        # fallback: netstat -ano (the "TCP" protocol token is not localised;
+        # the LOCAL address column must end in ":8081" and the final column
+        # must be numeric - established lines never carry the server port
+        # in the local column).
+        $ListenerPids = @()
+        $GotListeners = $false
+        try {
+            $Conns = Get-NetTCPConnection -LocalPort 8081 -State Listen -ErrorAction Stop
+            foreach ($c in $Conns) { if ($c.OwningProcess) { $ListenerPids += [int]$c.OwningProcess } }
+            $GotListeners = $true
+        } catch { }
+        if (-not $GotListeners) {
+            try {
+                $NsLines = & netstat -ano 2>$null
+                foreach ($L in $NsLines) {
+                    $Cols = @($L -split '\s+' | Where-Object { $_ })
+                    if ($Cols.Count -ge 4 -and [string]$Cols[0] -eq "TCP" -and [string]$Cols[1] -like "*:8081") {
+                        $Pv = 0
+                        if ([int]::TryParse([string]$Cols[-1], [ref]$Pv)) { $ListenerPids += $Pv }
+                    }
+                }
+                $GotListeners = $true
+            } catch { }
+        }
+        $ListenerPids = @($ListenerPids | Sort-Object -Unique)
+        if (-not $GotListeners -or $ListenerPids.Count -eq 0) {
+            Warn "a 8081-es listener PID nem hatarozhato meg (Get-NetTCPConnection / netstat) - a fingerprint-proba az egyetlen azonosit"
+        } else {
+            $VerifiedExe = Join-Path $BinDir "llama-server.exe"
+            foreach ($Lp in $ListenerPids) {
+                $LPath = ""
+                try { $LPath = [string](Get-CimInstance -ClassName Win32_Process -Filter ("ProcessId = " + $Lp)).ExecutablePath } catch { }
+                if ($LPath -eq "") {
+                    try { $LPath = [string](Get-WmiObject -Class Win32_Process -Filter ("ProcessId = " + $Lp)).ExecutablePath } catch { }
+                }
+                if ($LPath -ne "") {
+                    if ($LPath -eq $VerifiedExe) {
+                        Ok ("a 8081-et kiszolgalo PID " + $Lp + " = a pin-elt b11073 binaris")
+                    } else {
+                        Bad ("a 8081-et kiszolgalo PID " + $Lp + " NEM a pin-elt binaris: " + $LPath)
+                    }
+                } else {
+                    Warn ("a 8081-et kiszolgalo PID " + $Lp + " utvonala nem olvashato - a fingerprint-proba dont")
+                }
+            }
+        }
         $Fingerprint = ""
         try {
             $Resp = Invoke-RestMethod -Uri "http://127.0.0.1:8081/v1/chat/completions" `
@@ -169,6 +220,7 @@ if (-not $SkipServer) {
         } catch { Warn ("a fingerprint-proba nem sikerult: " + $_.Exception.Message) }
         if ($Fingerprint -match "b11073") { Ok ("futto szerver rendszerujjlenyomat: " + $Fingerprint + " (b11073 ELO)") }
         elseif ($Fingerprint -ne "") { Bad ("a 8081-en FUTO szerver NEM b11073! fingerprint = " + $Fingerprint) }
+        else { Bad "a futtato szerver system_fingerprint-je nem hatarozhato meg - az azonositas nem teljesult" }
         try {
             $Props = Invoke-WebRequest -Uri "http://127.0.0.1:8081/props" -Method Get -TimeoutSec 5 -UseBasicParsing
             Ok ("/props HTTP " + $Props.StatusCode + " (a validacios audit ugyanezt a vegpontot hasznalta)")

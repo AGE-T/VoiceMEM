@@ -22,7 +22,7 @@ the agent workspace.
 | `VoiceMemAgent_v0.10.6_MirrorSync.zip` | **The mirror-sync evidence** for this release: PAT permission check (redacted), sync dry-run, push log, and a fresh anonymous-clone verification that the GitHub mirror is byte-identical to the locally produced artifacts (SHA-256 tables from both sides). | 5 KB |
 | `VoiceMemAgent_v0.10.6_recovery.zip` | **The recovery package** for this release: `RECOVERY.md` + `identity.json` + evidence (the GREEN gate record, the code diff, changed files, test output, the release ZIP hash) — the versioned, independently restorable rollback anchor (what changed, how to verify it, how to roll back). | 26 KB |
 | `VoiceMemAgent_v0.10.7_LlamaB11073Experimental.zip` | **Evidence package** for the `LlamaB11073Experimental.zip` work unit (GOLDEN RULE deliverable: RECOVERY.md + identity.json + evidence). | 74 KB |
-| `VoiceMemAgent_v0.10.7_LlamaB11073_Installer.zip` | **Evidence package** for the `Installer.zip` work unit (GOLDEN RULE deliverable: RECOVERY.md + identity.json + evidence). | 40 KB |
+| `VoiceMemAgent_v0.10.7_LlamaB11073_Installer.zip` | **The experimental llama.cpp b11073 installer/configurator pack (rev 2)** — scripts + documentation ONLY (no binaries): downloads the pinned b11073 release at install time, SHA-256-gated; the launcher verifies the pinned runtime identity (24-file manifest + build id + live fingerprint) and never gates on `--version`. | 50 KB |
 | `VoiceMemAgent_v0.10.7_MirrorSync.zip` | **The mirror-sync evidence** for this release: PAT permission check (redacted), sync dry-run, push log, and a fresh anonymous-clone verification that the GitHub mirror is byte-identical to the locally produced artifacts (SHA-256 tables from both sides). | 5 KB |
 | `VoiceMemAgent_v0.10.7_recovery.zip` | **The recovery package** for this release: `RECOVERY.md` + `identity.json` + evidence (the GREEN gate record, the code diff, changed files, test output, the release ZIP hash) — the versioned, independently restorable rollback anchor (what changed, how to verify it, how to roll back). | 17 KB |
 | `VoiceMem_forensic_v0104_recovery.zip` | **The recovery package** for this release: `RECOVERY.md` + `identity.json` + evidence (the GREEN gate record, the code diff, changed files, test output, the release ZIP hash) — the versioned, independently restorable rollback anchor (what changed, how to verify it, how to roll back). | 38 KB |
@@ -45,7 +45,7 @@ b5ba47263d7388bb03d599260f21040c2a86d5ce4da863b1e393ad1c75787712  VoiceMemAgent_
 8083e4753734d546d4fb28a0547c4304e5a25dd99bcaac3de039e19fe03a5ae4  VoiceMemAgent_v0.10.6_MirrorSync.zip
 c6d9080709647b1b85d5cb13af2b2bdee60750547745a237f3ffd9df7a3e8b4f  VoiceMemAgent_v0.10.6_recovery.zip
 d28f7f8c275828318a7bd12a581bc2e7e8f27aac61a2f3c2d5cd9fe8e5e6e5b5  VoiceMemAgent_v0.10.7_LlamaB11073Experimental.zip
-4aecd9ae965cf6d5790188a2e5dcaa41d35874c37eebbd73cb62b045b09187ba  VoiceMemAgent_v0.10.7_LlamaB11073_Installer.zip
+c844ad7168f29dc772911ce11a16040b532fb13de0ff8672c273f7afad52529a  VoiceMemAgent_v0.10.7_LlamaB11073_Installer.zip
 e0f9f7c911e476db55265e71ea1a69819b426e2a289fdf93c99939f74ba051c7  VoiceMemAgent_v0.10.7_MirrorSync.zip
 8b601582901bfd4e9f4a37253346140d025f7318c487038b2fa9c0b1f4bfa70e  VoiceMemAgent_v0.10.7_recovery.zip
 514ecdd8010e78efcc6c5cd1dd31b062c41b6a8d85019882fa597a442274842c  VoiceMem_forensic_v0104_recovery.zip

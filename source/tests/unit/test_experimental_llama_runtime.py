@@ -6,6 +6,17 @@ next to the untouched v0.10.7 production baseline:
   * the experimental launchers carry the operator-tested baseline
     (ngl 99 / ctx 16000 / parallel 1 / threads 12 / reasoning off) and bind
     a SEPARATE port (default 127.0.0.1:8081, never 8080);
+  * the Windows launcher verifies the pinned runtime through the
+    ESTABLISHED identity chain — NOT a ``--version`` banner (rev 2,
+    2026-09-23: the banner gate failed on the real target with the
+    correctly installed pinned runtime): the installer's
+    ``runtime_manifest.json`` cross-checked against the pack's
+    ``b11073.pins.json``, a per-file SHA-256 gate over all 24 pinned
+    files, the in-binary build identity ``1aa2954bd``, and — after
+    ``/health`` — the listener-PID identity plus the live
+    ``system_fingerprint``;
+  * ``RUN_EXPERIMENTAL.bat`` is the one-click entry (install-if-needed →
+    enable → verified server window → health wait → app session window);
   * the EXISTING environment-only override (LLAMA_SERVER_HOST/PORT,
     app/config.py apply_env) retargets the whole application client surface
     at the experimental server — and UNSETTING it restores the production
@@ -21,7 +32,8 @@ next to the untouched v0.10.7 production baseline:
 
 No production behaviour is changed by these tests; they PIN the isolation
 contract so a future accidental coupling (hardcoded port, canonical-config
-edits, pinned-runtime edits) fails loudly here first.
+edits, pinned-runtime edits, a reintroduced ``--version`` gate) fails
+loudly here first.
 """
 
 from __future__ import annotations
@@ -67,8 +79,7 @@ def test_windows_launcher_carries_operator_baseline_and_separate_path() -> None:
     """The target-machine launcher: ngl 99 / ctx 16000 / threads 12 /
     reasoning off, the SEPARATE script-relative binary location
     experimental\\llama_b11073\\bin\\ (installed by install_b11073.ps1)
-    and port 8081; version verification at BOTH stages (binary banner +
-    live system fingerprint); cublas64_13.dll resolved via the child-PATH
+    and port 8081; the single CUDA dependency resolves via the child-PATH
     prepend, never by packaging CUDA components."""
     ps1 = (EXP / "start_llama_server_experimental.ps1").read_text(encoding="utf-8")
     assert '"99"' in ps1                    # $Ngl = "99"
@@ -76,21 +87,70 @@ def test_windows_launcher_carries_operator_baseline_and_separate_path() -> None:
     assert '"12"' in ps1                    # $Threads = "12"
     assert '"--reasoning", "off"' in ps1 or '"--reasoning off"' in ps1 or '"off"' in ps1
     # the SEPARATE, script-relative binary location (installer model):
-    assert r'Join-Path $ScriptDir "bin\llama-server.exe"' in ps1
+    assert r'Join-Path $ScriptDir "bin"' in ps1
+    assert r'Join-Path $BinDir "llama-server.exe"' in ps1
     assert "8081" in ps1
     assert "8080" in ps1  # only inside the explanatory notes...
     # ...never as a bind target:
     for line in ps1.splitlines():
         if '"--port"' in line or "-Port " in line and "8081" not in line:
             assert "8080" not in line, f"production port bound in: {line.strip()}"
-    # version verification: binary banner pre-start + live fingerprint post-health
-    assert "--version" in ps1
-    assert "11073" in ps1 and "system_fingerprint" in ps1
     # the single CUDA dependency resolves via the child-PATH extension only
     assert "cublas64_13.dll" in ps1
     assert '$env:PATH = "$ProdBin;$env:PATH"' in ps1
     # the effective configuration is logged
     assert "launcher-config_" in ps1
+
+
+def test_windows_launcher_verifies_identity_not_version_banner() -> None:
+    """REV 2 CONTRACT (field fix, 2026-09-23): the launcher must verify the
+    pinned runtime through the established identity chain and must NOT
+    gate on `llama-server.exe --version` emitting the build tag (that gate
+    failed on the real target with the correctly installed runtime).
+
+    Pre-start (fail-closed): the installer's runtime_manifest.json
+    cross-checked against the pack's b11073.pins.json; every one of the 24
+    pinned files hash-verified; the in-binary build identity 1aa2954bd.
+    Post-start: the listener PID must be the launched child AND the live
+    system_fingerprint must report b11073. `--version` is collected and
+    logged as INFORMATIONAL only."""
+    ps1 = (EXP / "start_llama_server_experimental.ps1").read_text(encoding="utf-8")
+    # [V1] identity tables: manifest (primary) + pins (cross-check/fallback)
+    assert "runtime_manifest.json" in ps1
+    assert "b11073.pins.json" in ps1
+    assert "85C1B874180FAEC412CCBBA16EE0833062C28E2BF1390B12ED30F7DC6D7D79C4" in ps1
+    # [V2] the full per-file SHA-256 gate
+    assert "Get-FileHash" in ps1
+    # [V3] the established in-binary build identity
+    assert "1aa2954bd" in ps1
+    # [V5] listener identity (Get-NetTCPConnection with a netstat fallback)
+    assert "Get-NetTCPConnection" in ps1
+    assert "netstat" in ps1
+    # [V6] the live server identity
+    assert "system_fingerprint" in ps1 and "b11073" in ps1
+    # the rev-1 banner gate is GONE by design...
+    assert '-notmatch "11073"' not in ps1, \
+        "the --version banner gate must not come back (rev-1 field bug)"
+    # ...while --version output is still collected, INFORMATIONALLY:
+    assert "--version" in ps1
+    assert "INFORMATIONAL" in ps1
+    # -VerifyOnly: the pre-flight identity proof on its own
+    assert "-VerifyOnly" in ps1
+
+
+def test_run_experimental_bat_is_the_one_click_entry() -> None:
+    """RUN_EXPERIMENTAL.bat: install-if-needed -> enable-if-needed -> the
+    verified experimental server (window 1) -> wait for /health on 8081 ->
+    the app session (window 2). It never touches the production 8080."""
+    bat = (EXP / "RUN_EXPERIMENTAL.bat").read_text(encoding="utf-8")
+    assert "install_b11073.ps1" in bat
+    assert "configure_b11073.ps1" in bat and "-Enable" in bat
+    assert "start_llama_server_experimental.ps1" in bat
+    assert "start_voicemem_experimental.ps1" in bat
+    assert "http://127.0.0.1:8081/health" in bat
+    assert "-Disable" in bat                 # the rollback hint
+    # the health wait must target the EXPERIMENTAL port only:
+    assert "8080" not in bat.replace("8080)", "PORT8080_REF") or "NOT the production 8080" in bat
 
 
 # ------------------------------------------------- env override (the client)
@@ -259,7 +319,8 @@ def test_installer_pack_pins_are_valid_and_pinned() -> None:
 def test_installer_downloads_the_pinned_asset_and_fails_closed() -> None:
     """The installer: downloads the pinned asset by exact URL, verifies the
     SHA-256 BEFORE extraction, fails closed on mismatch, verifies the build
-    identity in-binary, and installs into the isolated experimental tree."""
+    identity in-binary, installs into the isolated experimental tree, and
+    (rev 2) repairs a missing manifest on re-run WITHOUT re-downloading."""
     ps1 = (EXP / "install_b11073.ps1").read_text(encoding="utf-8")
     assert "https://github.com/ggml-org/llama.cpp/releases/download/b11073/llama-b11073-bin-win-cuda-13.4-x64.zip" in ps1
     assert "85C1B874180FAEC412CCBBA16EE0833062C28E2BF1390B12ED30F7DC6D7D79C4" in ps1
@@ -267,10 +328,11 @@ def test_installer_downloads_the_pinned_asset_and_fails_closed() -> None:
     assert "Get-FileHash" in ps1
     assert "ELTERES" in ps1                      # the SHA-256 mismatch failure path
     assert "1aa2954bd" in ps1                   # in-binary build identity check
-    assert 'Join-Path $ScriptDir "bin"' in ps1   # isolated install location
+    assert r'Join-Path $ScriptDir "bin"' in ps1   # isolated install location
     assert "$ProdHash" in ps1                    # production exe hash recorded (untouched proof)
-    # idempotence + offline mode
+    # idempotence + offline mode + the rev-2 manifest repair
     assert "-Force" in ps1 and "-ZipPath" in ps1
+    assert "Write-RuntimeManifest" in ps1
 
 
 def test_pack_contains_no_runtime_binaries() -> None:
@@ -309,25 +371,32 @@ def test_configurator_uses_operator_local_override_only() -> None:
 def test_verify_script_pins_the_full_contract() -> None:
     """The verification command covers: per-file SHA-256 (downloaded
     runtime), manifest consistency, build identity, production-untouched
-    (b10717 pin, VERSION, canonical config), /health on 8081, live
+    (b10717 pin, VERSION, canonical config), /health on 8081, the LISTENER
+    identity (the serving process must be the pinned binary), the live
     fingerprint, and the chat-completions transport."""
     ps1 = (EXP / "verify_b11073.ps1").read_text(encoding="utf-8")
     assert "b11073.pins.json" in ps1 and "Get-FileHash" in ps1
     assert "1aa2954bd" in ps1 and "a32af33de" in ps1
     assert "b10717" in ps1 and "0.10.7" in ps1
     assert "8081" in ps1 and "/v1/chat/completions" in ps1
+    assert "Get-NetTCPConnection" in ps1          # rev 2: listener identity
     assert "-SkipServer" in ps1 and "-ThroughAppClient" in ps1
 
 
 def test_pack_readme_documents_installer_model_and_rollback() -> None:
     """The pack README documents the installer model (download at install
-    time, pinned SHA-256), the enable/disable flow and the trivial
-    rollback."""
+    time, pinned SHA-256), the enable/disable flow, the rev-2 identity
+    verification and the trivial rollback."""
     md = (EXP / "README.md").read_text(encoding="utf-8")
     assert "NO binaries" in md or "no binaries" in md.lower()
     assert "install_b11073.ps1" in md
     assert "configure_b11073.ps1" in md
+    assert "RUN_EXPERIMENTAL.bat" in md
     assert "85c1b874180faec412ccbba16ee0833062c28e2bf1390b12ed30f7dc6d7d79c4" in md
     assert "-Disable" in md
     assert "rollback" in md.lower()
     assert "experimental\\llama_b11073\\bin\\" in md
+    # the rev-2 verification story is documented:
+    assert "runtime_manifest.json" in md
+    assert "1aa2954bd" in md
+    assert "system_fingerprint" in md

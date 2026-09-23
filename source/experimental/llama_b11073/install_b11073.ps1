@@ -49,6 +49,12 @@ USAGE (from the VoiceMemAgent root, 64-bit PowerShell):
     ... -ZipPath <pre-downloaded llama-b11073-bin-win-cuda-13.4-x64.zip>   # offline/slow link
     ... -Force                                                              # reinstall
 
+REV 2 (2026-09-23): re-running the installer on an ALREADY-INSTALLED runtime
+    now REPAIRS a missing config\runtime_manifest.json in place (re-verifying
+    the 24 pinned hashes first, fail-closed) WITHOUT re-downloading anything -
+    the rev-2 launcher verifies against that manifest (the pack pin table is
+    only the fallback).
+
 EXIT CODES: 0 = installed (or already installed) | 1 = failure (see log).
 
 NOTE: this file is deliberately ASCII (PowerShell 5.1 reads BOM-less files
@@ -153,9 +159,58 @@ if ($PinFileTable.Count -ne $PackFiles.Count) {
 }
 Write-Log ("pins.json cross-check OK: tag=" + $PinTag + " asset=" + $PinAsset + " sha256=" + $PinSha256.Substring(0,12) + "... files=" + $PinFileTable.Count)
 
-# --- 2) idempotencia -------------------------------------------------------------
+# --- manifest-iro fuggveny (a step 2 javitashoz ES a step 10 zaroveghez) ------------
+function Write-RuntimeManifest {
+    param([string]$ProdHashValue)
+    $FileHashes = @{}
+    foreach ($f in $PackFiles) { $FileHashes[$f] = $PinFileTable[$f] }
+    $ManifestObj = [ordered]@{
+        component         = "llama-server-experimental"
+        tag               = $PinTag
+        build_commit      = $PinCommit
+        asset_name        = $PinAsset
+        asset_url         = $PinUrl
+        asset_sha256      = $PinSha256.ToLower()
+        asset_size_bytes  = $PinBytes
+        installed_utc     = (Get-Date).ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ssZ")
+        installed_by      = "VoiceMemAgent_v0.10.7_LlamaB11073_Installer"
+        install_dir       = "experimental/llama_b11073/bin"
+        files_sha256      = $FileHashes
+        production_llama_server_sha256 = $ProdHashValue
+    }
+    $ManifestObj | ConvertTo-Json -Depth 4 | Set-Content -LiteralPath $Manifest -Encoding ASCII
+}
+
+# --- 2) idempotencia (+ a hianyzo manifest helyreallitasa uj letoltes NELKUL) -----
 $ExeInstalled = Join-Path $BinDir "llama-server.exe"
 if ((Test-Path -LiteralPath $ExeInstalled) -and (-not $Force)) {
+    if (-not (Test-Path -LiteralPath $Manifest)) {
+        # REV 2 (2026-09-23): a mar telepitett runtime MEGTARTASA, de a manifest
+        # hianyzik. A 24 fajl hash-et ujra ellenorizzuk a pin-tabla ellen
+        # (fail-closed), es a manifestet ujrairjuk - uj letoltes NEM tortenik
+        # (a rev-2 launcher a manifestet koveteli meg, a pin-tabla csak fallback).
+        Write-Host ""
+        Write-Host "A manifest hianyzik a mar telepitett runtime-hoz - ujraellenorzes es helyreallitas..." -ForegroundColor Yellow
+        Write-Log "manifest missing while runtime present; re-verifying the 24 pinned hashes for repair"
+        foreach ($f in $PackFiles) {
+            $T = Join-Path $BinDir $f
+            if (-not (Test-Path -LiteralPath $T)) {
+                Fail ("manifest-javitas kozben hianyzo fajl: " + $f) "torold az experimental\llama_b11073\bin mappat es futtasd ujra a telepitot -Force-ral."
+            }
+            $H = (Get-FileHash -LiteralPath $T -Algorithm SHA256).Hash
+            if ($H -ne $PinFileTable[$f]) {
+                Fail ("manifest-javitas kozben HASH ELTERES: " + $f + "`n         vart:    " + $PinFileTable[$f] + "`n         kapott:  " + $H) "a telepitett runtime mar NEM a pin-elt b11073 - torold az experimental\llama_b11073\bin mappat es futtasd ujra: install_b11073.ps1 -Force"
+            }
+        }
+        $ProdHashRepair = ""
+        $ProdExeRepair = Join-Path $Root "bin\llama-server.exe"
+        if (Test-Path -LiteralPath $ProdExeRepair) {
+            $ProdHashRepair = (Get-FileHash -LiteralPath $ProdExeRepair -Algorithm SHA256).Hash
+        }
+        Write-RuntimeManifest $ProdHashRepair
+        Write-Host "  OK: a 24 fajl hash-e rendben, a manifest helyreallitva (uj letoltes NEM tortent)." -ForegroundColor Green
+        Write-Log "manifest repaired: 24/24 hashes re-verified against the pin table"
+    }
     $When = "?"
     if (Test-Path -LiteralPath $Manifest) {
         try { $When = [string](Get-Content -LiteralPath $Manifest -Raw | ConvertFrom-Json).installed_utc } catch { }
@@ -164,7 +219,7 @@ if ((Test-Path -LiteralPath $ExeInstalled) -and (-not $Force)) {
     Write-Host ("Mar telepitve van: " + $ExeInstalled) -ForegroundColor Yellow
     Write-Host ("  (telepites ideje: " + $When + "; ujrateszteshez: -Force)") -ForegroundColor Yellow
     Write-Host "A kovetkezo lepes: configure_b11073.ps1 -Enable"
-    Write-Log "already installed; exiting without changes (use -Force to reinstall)"
+    Write-Log "already installed; exiting without further changes (use -Force to reinstall)"
     exit 0
 }
 if ($Force) { Write-Log "-Force: ujratesztes"; }
@@ -294,23 +349,7 @@ if ($CudaFound) {
 }
 
 # --- 10) manifest + zaroveg -------------------------------------------------------
-$FileHashes = @{}
-foreach ($f in $PackFiles) { $FileHashes[$f] = $PinFileTable[$f] }
-$ManifestObj = [ordered]@{
-    component         = "llama-server-experimental"
-    tag               = $PinTag
-    build_commit      = $PinCommit
-    asset_name        = $PinAsset
-    asset_url         = $PinUrl
-    asset_sha256      = $PinSha256.ToLower()
-    asset_size_bytes  = $PinBytes
-    installed_utc     = (Get-Date).ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ssZ")
-    installed_by      = "VoiceMemAgent_v0.10.7_LlamaB11073_Installer"
-    install_dir       = "experimental/llama_b11073/bin"
-    files_sha256      = $FileHashes
-    production_llama_server_sha256 = $ProdHash
-}
-$ManifestObj | ConvertTo-Json -Depth 4 | Set-Content -LiteralPath $Manifest -Encoding ASCII
+Write-RuntimeManifest $ProdHash
 Write-Log ("manifest written: " + $Manifest)
 
 Write-Host ""
